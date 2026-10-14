@@ -222,10 +222,12 @@ void VaultIndex::update(const QStringList &paths)
 void VaultIndex::drop(const QString &path)
 {
     QSqlDatabase db = QSqlDatabase::database(m_connection);
+    // The search table is found by row, which matches the note's; by path it would be read whole.
     for (const QString &statement :
-         {u"DELETE FROM notes WHERE path = ?"_s, u"DELETE FROM tags WHERE path = ?"_s,
+         {u"DELETE FROM notes_fts WHERE rowid = (SELECT rowid FROM notes WHERE path = ?)"_s,
+          u"DELETE FROM notes WHERE path = ?"_s, u"DELETE FROM tags WHERE path = ?"_s,
           u"DELETE FROM aliases WHERE path = ?"_s, u"DELETE FROM links WHERE source = ?"_s,
-          u"DELETE FROM tasks WHERE path = ?"_s, u"DELETE FROM notes_fts WHERE path = ?"_s}) {
+          u"DELETE FROM tasks WHERE path = ?"_s}) {
         QSqlQuery query(db);
         query.prepare(statement);
         query.addBindValue(path);
@@ -306,7 +308,10 @@ void VaultIndex::read(const QString &path)
     }
 
     QSqlQuery fts(db);
-    fts.prepare(u"INSERT INTO notes_fts VALUES (?, ?, ?, ?, ?)"_s);
+    fts.prepare(
+        u"INSERT INTO notes_fts (rowid, path, title, aliases, tags, body) VALUES (?, ?, ?, ?, "
+        u"?, ?)"_s);
+    fts.addBindValue(note.lastInsertId());
     fts.addBindValue(path);
     fts.addBindValue(title);
     fts.addBindValue(aliases.join(u' '));
@@ -358,7 +363,9 @@ public:
                 return path + kNoteSuffix;
             if (m_notes.contains(path))
                 return path;
-            if (!path.endsWith(kNoteSuffix) && QFileInfo(m_vault.absolute(path)).isFile())
+            // Only a name with an extension can be an attachment, so others never touch the disk.
+            if (!QFileInfo(path).suffix().isEmpty() && !path.endsWith(kNoteSuffix) &&
+                QFileInfo(m_vault.absolute(path)).isFile())
                 return path;
         }
 
