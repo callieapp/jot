@@ -4,7 +4,6 @@ qt_add_executable(jot-gui
 
 target_compile_definitions(jot-gui PRIVATE
     JOT_VERSION="${PROJECT_VERSION}"
-    JOT_APP_ID="${JOT_APP_ID}"
 )
 
 target_link_libraries(jot-gui PRIVATE
@@ -12,6 +11,7 @@ target_link_libraries(jot-gui PRIVATE
     Qt6::QuickControls2
     jotui
     jotuiplugin
+    jotcore
 )
 
 install(TARGETS jot-gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

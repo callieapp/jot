@@ -1,3 +1,5 @@
+#include "jot/LogFile.h"
+
 #include <QCommandLineParser>
 #include <QCoreApplication>
 
@@ -13,6 +15,11 @@ int main(int argc, char *argv[])
     parser.setApplicationDescription(u"Plain-file notes for Linux."_s);
     parser.addHelpOption();
     parser.addVersionOption();
+    QCommandLineOption verboseOption(u"verbose"_s, u"Show progress messages."_s);
+    parser.addOption(verboseOption);
     parser.process(app);
+    jot::logfile::install(u"jot"_s);
+    jot::logfile::setVerboseTerminal(parser.isSet(verboseOption) ||
+                                     !qEnvironmentVariableIsEmpty("QT_LOGGING_RULES"));
     return 0;
 }

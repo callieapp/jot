@@ -1,3 +1,6 @@
+#include "jot/Identity.h"
+#include "jot/LogFile.h"
+
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
@@ -7,11 +10,13 @@ using namespace Qt::StringLiterals;
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    QGuiApplication::setApplicationName(u"jot"_s);
-    QGuiApplication::setApplicationDisplayName(u"Jot"_s);
-    QGuiApplication::setApplicationVersion(QStringLiteral(JOT_VERSION));
-    QGuiApplication::setDesktopFileName(QStringLiteral(JOT_APP_ID));
+    app.setApplicationName(u"Jot"_s);
+    app.setOrganizationName(u"Jot"_s);
+    app.setApplicationVersion(QStringLiteral(JOT_VERSION));
+    // Lets Wayland associate the window with the .desktop entry.
+    app.setDesktopFileName(jot::identity::appId());
     QQuickStyle::setStyle(u"Basic"_s);
+    jot::logfile::install(u"jot-gui"_s);
 
     QQmlApplicationEngine engine;
     QObject::connect(
