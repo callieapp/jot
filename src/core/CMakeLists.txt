@@ -5,6 +5,8 @@ find_package(tomlplusplus REQUIRED)
 add_library(jotcore STATIC
     jot/FrontMatter.h
     FrontMatter.cpp
+    jot/Fuzzy.h
+    Fuzzy.cpp
     jot/NoteScan.h
     NoteScan.cpp
     jot/Settings.h
