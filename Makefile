@@ -9,10 +9,9 @@ CLI_TARGET := jot
 GALLERY_TARGET := jot-gallery
 LOG_CATEGORIES := jot.*
 # Fixed options, so the same commit always renders the same pictures. The sample vault
-# is copied first, since opening a folder makes it a vault.
-SHOT_APP := --size 1280x840
-SHOT_VAULT := tests/data/sample-vault
-SHOT_NOTE := Ashfall/Characters/Mara Vey.md
+# is copied first, since opening a folder makes it a vault. SHOTS is set further down.
+SHOT_PREPARE = cp -r tests/data/sample-vault $(SHOTS)/vault
+SHOT_APP = --size 1280x840 --vault $(SHOTS)/vault --note "Ashfall/Characters/Mara Vey.md"
 
 FEDORA_DEPS := gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtdeclarative-devel \
 	qt6-qtquickcontrols2-devel tomlplusplus-devel clang-tools-extra entr nodejs npm
@@ -102,10 +101,11 @@ watch-gallery: $(PRESET_STAMP) ## Like watch, for the gallery; THEME=path option
 SHOTS := $(BUILD)/screenshots
 
 screenshots: build ## Render the app and gallery for every built-in theme
-	@rm -rf $(SHOTS) && mkdir -p $(SHOTS) && cp -r $(SHOT_VAULT) $(SHOTS)/vault
+	@rm -rf $(SHOTS) && mkdir -p $(SHOTS)
+	@$(if $(SHOT_PREPARE),$(SHOT_PREPARE))
 	@for theme in $(basename $(notdir $(wildcard themes/*.toml))); do \
 		QT_QPA_PLATFORM=offscreen $(GUI) $(SHOT_APP) --theme $$theme \
-			--vault $(SHOTS)/vault --note "$(SHOT_NOTE)" --screenshot $(SHOTS)/app-$$theme.png && \
+			--screenshot $(SHOTS)/app-$$theme.png && \
 		QT_QPA_PLATFORM=offscreen $(GALLERY) --theme $$theme \
 			--screenshot $(SHOTS)/gallery-$$theme.png || exit 1; \
 	done

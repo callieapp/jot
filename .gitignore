@@ -7,3 +7,4 @@ compile_commands.json
 node_modules/
 .qmlls.ini
 google-oauth-credentials.json
+tests/data/gitignored/
