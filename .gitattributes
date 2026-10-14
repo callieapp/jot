@@ -2,6 +2,9 @@
 # distro maintainers review contains only what builds the application.
 # Directories are listed without a trailing slash, which export-ignore requires.
 .github                 export-ignore
+# The installer's test and its stand-in release go with the installer.
+tests/install_test.sh   export-ignore
+tests/data              export-ignore
 docs                    export-ignore
 .githooks               export-ignore
 .gitattributes          export-ignore

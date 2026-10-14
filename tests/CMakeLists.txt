@@ -23,3 +23,11 @@ jot_add_test(tst_dropdown)
 target_link_libraries(tst_dropdown PRIVATE jotui jotuiplugin Qt6::QuickControls2)
 jot_add_test(tst_liveqml)
 target_link_libraries(tst_liveqml PRIVATE jotui)
+
+# The installer each release publishes, against stand-in systems and a stand-in
+# GitHub release. Release tarballs leave it out, and it only runs on x86_64.
+if(EXISTS ${PROJECT_SOURCE_DIR}/scripts/install.sh AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    add_test(NAME install_script
+        COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/install_test.sh
+            ${PROJECT_SOURCE_DIR}/scripts/install.sh ${CMAKE_CURRENT_SOURCE_DIR}/data/github-release.json)
+endif()

@@ -14,6 +14,24 @@ for writers and worldbuilders next.
 
 Jot is at the very start. [docs/ROADMAP.md](docs/ROADMAP.md) has the plan.
 
+## Installation
+
+On Fedora 44 or later, Debian 13 (trixie) or later, or Ubuntu 26.04 or later, on x86_64:
+
+```sh
+curl -fsSL https://larakelley.com/sh/jot | sh
+```
+
+It finds the latest [GitHub release](https://github.com/callieapp/jot/releases), checks the
+package against the checksum GitHub records for it, and installs it with `dnf` or `apt`. On any
+other system it stops before changing anything. Run again, it updates Jot, or says it is up to
+date. `sh -s -- --dry-run` shows what it would do, `--version 0.0.1` installs that version, and
+`--force` installs it again. The packages can also be downloaded from the release and installed by
+hand.
+
+This installs the `Jot` desktop app and the `jot` command. A development build from `make run` is
+called Jot Devel and keeps its own settings and folders, so it runs beside an installed Jot.
+
 ## Development
 
 On Fedora 44+, Debian 13+ or Ubuntu 26.04+:
