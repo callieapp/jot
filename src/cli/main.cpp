@@ -1,3 +1,4 @@
+#include "jot/Identity.h"
 #include "jot/LogFile.h"
 
 #include <QCommandLineParser>
@@ -8,7 +9,7 @@ using namespace Qt::StringLiterals;
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName(u"jot"_s);
+    QCoreApplication::setApplicationName(jot::identity::dirName());
     QCoreApplication::setApplicationVersion(QStringLiteral(JOT_VERSION));
 
     QCommandLineParser parser;
