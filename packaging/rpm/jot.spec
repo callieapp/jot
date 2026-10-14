@@ -13,6 +13,7 @@ BuildRequires:  gcc-c++
 BuildRequires:  ninja-build
 BuildRequires:  cmake(Qt6Core)
 BuildRequires:  cmake(Qt6Gui)
+BuildRequires:  cmake(Qt6Network)
 BuildRequires:  cmake(Qt6Qml)
 BuildRequires:  cmake(Qt6Quick)
 BuildRequires:  cmake(Qt6QuickControls2)
@@ -50,6 +51,9 @@ appstream-util validate-relax --nonet \
 %doc README.md
 %{_bindir}/jot
 %{_bindir}/jot-gui
+%{_datadir}/bash-completion/completions/jot
+%{_datadir}/zsh/site-functions/_jot
+%{_datadir}/fish/vendor_completions.d/jot.fish
 %{_datadir}/applications/org.callieapp.Jot.desktop
 %{_datadir}/metainfo/org.callieapp.Jot.metainfo.xml
 %{_datadir}/icons/hicolor/scalable/apps/org.callieapp.Jot.svg

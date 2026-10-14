@@ -3,6 +3,13 @@
 What changed in each version of Jot, for the people using it. Notes collect under Unreleased
 as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md).
 
+## Unreleased
+
+### New
+
+- `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
+  bug reports, and the `jot` command completes in bash, zsh and fish.
+
 ## 0.0.2 - 2026-10-14
 
 ### New
