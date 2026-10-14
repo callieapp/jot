@@ -2,7 +2,6 @@
 
 #include "jot/FrontMatter.h"
 
-#include <QCollator>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -27,6 +26,47 @@ QString join(const QString &folder, const QString &name)
 }
 
 } // namespace
+
+int naturalCompare(QStringView a, QStringView b)
+{
+    // Not QCollator: without ICU, as in minimal systems, it has no numeric mode.
+    qsizetype i = 0;
+    qsizetype j = 0;
+    while (i < a.size() && j < b.size()) {
+        if (a[i].isDigit() && b[j].isDigit()) {
+            qsizetype endA = i;
+            qsizetype endB = j;
+            while (endA < a.size() && a[endA].isDigit())
+                ++endA;
+            while (endB < b.size() && b[endB].isDigit())
+                ++endB;
+            // Compared as numbers by length once leading zeros are gone, then digit by digit.
+            QStringView numberA = a.sliced(i, endA - i);
+            QStringView numberB = b.sliced(j, endB - j);
+            while (numberA.size() > 1 && numberA.front() == u'0')
+                numberA = numberA.sliced(1);
+            while (numberB.size() > 1 && numberB.front() == u'0')
+                numberB = numberB.sliced(1);
+            if (numberA.size() != numberB.size())
+                return numberA.size() < numberB.size() ? -1 : 1;
+            if (const int order = numberA.compare(numberB); order != 0)
+                return order;
+            i = endA;
+            j = endB;
+            continue;
+        }
+        const QChar ca = a[i].toCaseFolded();
+        const QChar cb = b[j].toCaseFolded();
+        if (ca != cb)
+            return ca < cb ? -1 : 1;
+        ++i;
+        ++j;
+    }
+    if (i < a.size() || j < b.size())
+        return i < a.size() ? 1 : -1;
+    // Equal but for case: a stable order all the same.
+    return a.compare(b);
+}
 
 Vault::Vault(QString root) : m_root(QDir::cleanPath(std::move(root))) {}
 
@@ -103,11 +143,8 @@ void Vault::collect(const QString &folder, QList<VaultEntry> &into) const
             kept.append(info);
         }
     }
-    QCollator collator;
-    collator.setNumericMode(true);
-    collator.setCaseSensitivity(Qt::CaseInsensitive);
-    std::sort(kept.begin(), kept.end(), [&collator](const QFileInfo &a, const QFileInfo &b) {
-        return collator.compare(a.fileName(), b.fileName()) < 0;
+    std::sort(kept.begin(), kept.end(), [](const QFileInfo &a, const QFileInfo &b) {
+        return naturalCompare(a.fileName(), b.fileName()) < 0;
     });
 
     for (const QFileInfo &info : std::as_const(kept)) {

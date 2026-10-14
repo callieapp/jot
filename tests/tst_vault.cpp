@@ -22,6 +22,8 @@ private Q_SLOTS:
     void createRecordsTheFormat();
     void listsNotebooksAndNotesInNaturalOrder();
     void leavesHiddenFilesAndAttachmentsOut();
+    void ordersNamesNaturally_data();
+    void ordersNamesNaturally();
     void namesFilesSafely_data();
     void namesFilesSafely();
     void newNotesNeverOverwrite();
@@ -104,6 +106,26 @@ void TestVault::leavesHiddenFilesAndAttachmentsOut()
     QCOMPARE(m_vault->entries(), (QList<VaultEntry>{{u"Mara.md"_s, false},
                                                     {u"Old.assets"_s, true},
                                                     {u"Old.assets/Note.md"_s, false}}));
+}
+
+void TestVault::ordersNamesNaturally_data()
+{
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("after");
+    QTest::newRow("numbers") << u"Ch 2"_s << u"Ch 10"_s;
+    QTest::newRow("case") << u"apple"_s << u"Banana"_s;
+    QTest::newRow("leading zeros") << u"v007"_s << u"v8"_s;
+    QTest::newRow("prefix") << u"Ch"_s << u"Ch 1"_s;
+    QTest::newRow("accents") << u"\u00e9t\u00e9"_s << u"\u00e9t\u00e9s"_s;
+}
+
+void TestVault::ordersNamesNaturally()
+{
+    QFETCH(QString, before);
+    QFETCH(QString, after);
+    QVERIFY(naturalCompare(before, after) < 0);
+    QVERIFY(naturalCompare(after, before) > 0);
+    QCOMPARE(naturalCompare(before, before), 0);
 }
 
 void TestVault::namesFilesSafely_data()
