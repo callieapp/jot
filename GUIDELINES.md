@@ -1,0 +1,47 @@
+# Jot
+
+Plain-file Markdown notes for Linux. Qt6 + QML for the UI, C++ for the core. MIT licensed. App ID
+`org.callieapp.Jot`, homepage `callieapp.org/jot`. Jot shares its design and tooling with
+[Callie](https://github.com/callieapp/callie); [docs/SUITE.md](docs/SUITE.md) says how.
+
+## Layout
+
+| Path        | What                                                                 |
+| ----------- | -------------------------------------------------------------------- |
+| `src/core/` | `libjotcore`: vault, index, search and sync. No UI and no QML types. |
+| `src/ui/`   | The QML module `Jot.Ui`: views and components.                       |
+| `src/gui/`  | `jot-gui` entry point. `main.cpp` only.                              |
+| `src/cli/`  | `jot`, the command-line interface over the same core.                |
+| `tests/`    | Qt Test cases run by ctest.                                          |
+| `scripts/`  | `format.sh`, the single formatter entry point used by CMake and CI.  |
+| `docs/`     | The roadmap, the suite rules and background research.                |
+
+## Conventions
+
+Read `CONTRIBUTING.md` before writing commits or comments. In short:
+
+- Conventional Commits, enforced by commitlint. Lower-case subject, no trailing period,
+  72 character header.
+- Comments are one or two sentences and explain why, not what. No em dashes anywhere in
+  comments, docs, or commit messages.
+- Notes are plain files and stay the source of truth. Anything Jot stores beside them is a cache
+  that can be rebuilt.
+- Text and layout arithmetic belongs in C++ models, not QML.
+- Qt 6.8 (Debian trixie) cannot add a bare `u"..."` literal to a `QString`; use `QStringLiteral` or
+  the `_s` suffix. Newer Qt accepts it, so only the Debian build catches it.
+
+## Existing decisions
+
+Do not re-litigate these without being asked. [docs/ROADMAP.md](docs/ROADMAP.md) has the reasons.
+
+- Qt6 + QML, not Electron, Tauri, or GTK4/libadwaita. No Kirigami.
+- Callie's visual identity and design rules.
+- No AI features, no telemetry, no Jot account or server.
+- The editor edits Markdown text directly; it never round-trips through `QTextDocument`'s
+  Markdown import and export.
+- Shared tooling stays identical to Callie's until it moves to a shared kit.
+
+## Build
+
+Run `make` to list the commands; `make check` runs what CI runs. The Makefile wraps CMake presets,
+which work directly too: `cmake --workflow --preset ci` is CI's build, lint and test.

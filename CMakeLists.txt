@@ -1,0 +1,61 @@
+cmake_minimum_required(VERSION 3.28)
+
+project(jot
+    VERSION 0.0.1
+    DESCRIPTION "Plain-file notes for Linux"
+    HOMEPAGE_URL "https://callieapp.org/jot"
+    LANGUAGES CXX
+)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+include(GNUInstallDirs)
+
+set(JOT_APP_ID "org.callieapp.Jot" CACHE STRING "Reverse-DNS application id")
+
+option(JOT_BUILD_TESTS "Build the unit tests" ON)
+option(JOT_WERROR "Treat compiler warnings as errors" OFF)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    if(JOT_WERROR)
+        add_compile_options(-Werror)
+    endif()
+endif()
+
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2)
+qt_standard_project_setup(REQUIRES 6.8)
+
+if(JOT_BUILD_TESTS)
+    enable_testing()
+endif()
+
+add_subdirectory(src/core)
+add_subdirectory(src/ui)
+add_subdirectory(src/gui)
+add_subdirectory(src/cli)
+
+if(JOT_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+# Formatting is driven by one script so that CMake, CI and a local run agree.
+# The script is development tooling and is left out of release tarballs.
+if(EXISTS "${CMAKE_SOURCE_DIR}/scripts/format.sh")
+    add_custom_target(format
+        COMMAND "${CMAKE_SOURCE_DIR}/scripts/format.sh" fix
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Formatting C++ and QML sources"
+        VERBATIM
+    )
+
+    add_custom_target(format-check
+        COMMAND "${CMAKE_SOURCE_DIR}/scripts/format.sh" check
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Checking C++ and QML formatting"
+        VERBATIM
+    )
+endif()

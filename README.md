@@ -1,0 +1,32 @@
+<img src="https://raw.githubusercontent.com/callieapp/jot/main/assets/logo.svg"
+     width="48" height="48" alt="Jot logo" />
+
+# jot
+
+> plain-file notes for Linux
+
+---
+
+Jot is a Markdown notes app for Linux, from the makers of [Callie](https://callieapp.org). Notes
+are plain files in a folder you choose, and sync is optional: none, a folder Syncthing or
+Nextcloud already syncs, S3, Dropbox or Google Drive. It is built for everyday notes first, and
+for writers and worldbuilders next.
+
+Jot is at the very start. [docs/ROADMAP.md](docs/ROADMAP.md) has the plan.
+
+## Development
+
+On Fedora 44+, Debian 13+ or Ubuntu 26.04+:
+
+```sh
+make deps    # build dependencies, via dnf or apt
+make setup   # dev tooling, git hooks, configure
+make run     # build and open the app
+make check   # what CI runs
+```
+
+Run `make` to list every command. Read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a change.
+
+## License
+
+MIT
