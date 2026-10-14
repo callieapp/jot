@@ -5,10 +5,14 @@ find_package(tomlplusplus REQUIRED)
 add_library(jotcore STATIC
     jot/FrontMatter.h
     FrontMatter.cpp
+    jot/NoteScan.h
+    NoteScan.cpp
     jot/Vault.h
     Vault.cpp
     jot/VaultWatcher.h
     VaultWatcher.cpp
+    jot/VaultIndex.h
+    VaultIndex.cpp
     jot/Identity.h
     Identity.cpp
     jot/Logging.h
@@ -63,6 +67,7 @@ target_link_libraries(jotcore
         Qt6::Core
         Qt6::Gui
         Qt6::Network
+        Qt6::Sql
     PRIVATE
         tomlplusplus::tomlplusplus
 )
