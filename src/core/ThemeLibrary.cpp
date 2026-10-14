@@ -93,10 +93,12 @@ QString setKey(const QString &toml, const QString &section, const QString &key,
     return lines.join(u'\n');
 }
 
+/// A TOML basic string. Control characters cannot appear in one, so they are dropped.
 QString quoted(const QString &text)
 {
     QString escaped = text;
     escaped.replace(u'\\', u"\\\\"_s).replace(u'"', u"\\\""_s);
+    escaped.remove(QRegularExpression(u"[\\x00-\\x1f\\x7f]"_s));
     return u'"' + escaped + u'"';
 }
 
@@ -145,8 +147,15 @@ QString ThemeLibrary::copy(const QString &idOrPath, const QString &name)
         fail(QObject::tr("could not create %1").arg(m_folder));
         return {};
     }
-    const QString path = freshPath(name);
     const QString renamed = setKey(QString::fromUtf8(data), u"theme"_s, u"name"_s, quoted(name));
+    // Check before writing, so a copy that would not load never joins the library.
+    const ThemeLoadResult result =
+        ThemeLoader::parse(renamed.toUtf8(), ThemeLoader::defaultTheme());
+    if (!result.ok()) {
+        fail(result.errors.join(u"; "_s));
+        return {};
+    }
+    const QString path = freshPath(name);
     if (!write(path, renamed.toUtf8(), &problem)) {
         fail(problem);
         return {};

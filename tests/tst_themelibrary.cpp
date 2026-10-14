@@ -17,6 +17,7 @@ private Q_SLOTS:
     void init();
     void copyStartsFromABuiltIn();
     void copiesNeverOverwrite();
+    void copyNamesWithAwkwardCharactersLoad();
     void setColorKeepsTheRest();
     void setColorAddsMissingKeys();
     void setColorRefusesOtherFiles();
@@ -72,6 +73,16 @@ void TestThemeLibrary::copiesNeverOverwrite()
     const QString second = m_library->copy(u"callie"_s, u"Mine"_s);
     QVERIFY(first.endsWith(u"/mine.toml"_s));
     QVERIFY(second.endsWith(u"/mine-2.toml"_s));
+}
+
+void TestThemeLibrary::copyNamesWithAwkwardCharactersLoad()
+{
+    const QString path = m_library->copy(u"callie"_s, u"Say \"hi\" \\ to\nme\t"_s);
+    QVERIFY2(!path.isEmpty(), qPrintable(m_library->error()));
+
+    const ThemeLoadResult loaded = ThemeLoader::load(path);
+    QVERIFY2(loaded.ok(), qPrintable(loaded.errors.join(u"; "_s)));
+    QCOMPARE(loaded.theme.name, u"Say \"hi\" \\ tome"_s);
 }
 
 void TestThemeLibrary::setColorKeepsTheRest()
