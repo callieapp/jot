@@ -29,8 +29,10 @@ date. `sh -s -- --dry-run` shows what it would do, `--version 0.0.1` installs th
 `--force` installs it again. The packages can also be downloaded from the release and installed by
 hand.
 
-This installs the `Jot` desktop app and the `jot` command. A development build from `make run` is
-called Jot Devel and keeps its own settings and folders, so it runs beside an installed Jot.
+This installs the `Jot` desktop app and the `jot` command. `jot upgrade` installs the latest release,
+`jot downgrade` goes back one, and `jot logs` and `jot doctor` help with bug reports. A development
+build from `make run` is called Jot Devel and keeps its own settings and folders, so it runs beside
+an installed Jot.
 
 ## Development
 

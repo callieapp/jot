@@ -23,6 +23,24 @@ jot_add_test(tst_dropdown)
 target_link_libraries(tst_dropdown PRIVATE jotui jotuiplugin Qt6::QuickControls2)
 jot_add_test(tst_liveqml)
 target_link_libraries(tst_liveqml PRIVATE jotui)
+jot_add_test(tst_paint)
+target_link_libraries(tst_paint PRIVATE jotcli)
+jot_add_test(tst_completion)
+target_link_libraries(tst_completion PRIVATE jotcli)
+jot_add_test(tst_upgrade)
+target_link_libraries(tst_upgrade PRIVATE jotcli Qt6::Network)
+jot_add_test(tst_updatecheck)
+target_link_libraries(tst_updatecheck PRIVATE jotcli Qt6::Network)
+jot_add_test(tst_diagnostics)
+
+# The bash completion script, against the built jot.
+find_program(BASH bash)
+if(BASH)
+    add_test(NAME completion_script
+        COMMAND ${BASH} ${CMAKE_CURRENT_SOURCE_DIR}/completion_test.sh
+            ${PROJECT_SOURCE_DIR}/data/completions/jot.bash $<TARGET_FILE:jot>)
+    set_tests_properties(completion_script PROPERTIES ENVIRONMENT "TZ=UTC;NO_COLOR=1")
+endif()
 
 # The installer each release publishes, against stand-in systems and a stand-in
 # GitHub release. Release tarballs leave it out, and it only runs on x86_64.

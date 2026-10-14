@@ -9,7 +9,11 @@ export HOME="$home" XDG_CONFIG_HOME="$home/config" XDG_DATA_HOME="$home/data" \
     XDG_CACHE_HOME="$home/cache" XDG_STATE_HOME="$home/state"
 
 jot --version
-for file in /usr/share/applications/org.callieapp.Jot.desktop \
+jot doctor | grep -q "^Jot "
+for file in /usr/share/bash-completion/completions/jot \
+    /usr/share/zsh/site-functions/_jot \
+    /usr/share/fish/vendor_completions.d/jot.fish \
+    /usr/share/applications/org.callieapp.Jot.desktop \
     /usr/share/metainfo/org.callieapp.Jot.metainfo.xml \
     /usr/share/icons/hicolor/scalable/apps/org.callieapp.Jot.svg \
     /usr/share/icons/hicolor/16x16/apps/org.callieapp.Jot.png \

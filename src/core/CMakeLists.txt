@@ -20,6 +20,12 @@ add_library(jotcore STATIC
     ThemeLoader.cpp
     jot/ThemeLibrary.h
     ThemeLibrary.cpp
+    jot/Releases.h
+    Releases.cpp
+    jot/UpdateCheck.h
+    UpdateCheck.cpp
+    jot/Diagnostics.h
+    Diagnostics.cpp
 )
 
 # Built-in themes are compiled in, so the app works uninstalled and a broken
@@ -52,6 +58,7 @@ target_link_libraries(jotcore
     PUBLIC
         Qt6::Core
         Qt6::Gui
+        Qt6::Network
     PRIVATE
         tomlplusplus::tomlplusplus
 )
