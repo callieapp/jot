@@ -49,7 +49,7 @@ define watch
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help deps setup configure build run cli gallery watch watch-gallery screenshots test lint format check clean
+.PHONY: help deps setup configure build run cli gallery watch watch-gallery screenshots test lint format check clean release release-dry major minor patch
 
 help: ## List commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -120,9 +120,22 @@ format: ## Format C++, QML, Markdown, JSON and YAML in place
 
 check: ## Run everything CI checks: format, lint, a -Werror build, and tests
 	@scripts/format.sh check
+	@scripts/check-version.sh
 	@npx markdownlint-cli2
 	@npm run --silent format:md:check
 	@cmake --workflow --preset ci
+
+# The level comes as a second goal, as in `make release patch`; VERSION=1.2.3 names one.
+LEVEL := $(or $(VERSION),$(firstword $(filter major minor patch,$(MAKECMDGOALS))))
+
+release: ## Release from main: make release patch|minor|major, or VERSION=1.2.3
+	@scripts/release.sh $(LEVEL)
+
+release-dry: ## Show what make release would do, changing nothing
+	@scripts/release.sh $(LEVEL) --dry-run
+
+major minor patch:
+	@:
 
 clean: ## Remove build output
 	@rm -rf build

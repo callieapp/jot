@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Jot
+GenericName=Notes
+Comment=Plain-file notes for Linux
+Exec=jot-gui
+Icon=org.callieapp.Jot
+Terminal=false
+Categories=Office;
+Keywords=notes;notebook;markdown;writing;journal;todo;
+StartupNotify=true
+StartupWMClass=org.callieapp.Jot

@@ -118,12 +118,10 @@ the format and sync are trusted).
   - A build with `jotcore`, `Jot.Ui`, `jot-gui`, `jot` and a first test.
   - CI on fedora:44, debian:trixie and ubuntu:26.04.
   - Draft logo: a spiral-bound pink notebook with Callie's face.
-- Bring over from Callie:
-  - The theme system and themes, the window chrome, the gallery, LiveQml with `make watch`,
-    `Identity` devel builds, logging, and `make screenshots`.
-  - `check-version.sh`, `release-notes.sh`, RELEASING.md, the release workflow, the rpm and deb
-    packaging, `package_smoke.sh`, and the review-bot workflow.
-- Logo: finish the notebook. Hand-tune the 16 and 32 px icons, which Callie still lacks.
+  - Theme system and themes, window chrome, components, gallery, live QML, devel builds, logging
+    and screenshots, brought over from Callie.
+  - Packaging: rpm spec, `debian/`, desktop entry, metainfo, 16 and 32 px icons, the release
+    workflow with install checks on Fedora, Debian and Ubuntu, and `make release`.
 - Website: add `www/jot/` to the Callie repo with the landing page, privacy, terms and
   `install.sh`, and link it from Callie's footer.
 - Review the vault format draft in `docs/FORMAT.md` and mark it final before 0.1.
