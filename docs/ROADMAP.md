@@ -97,46 +97,13 @@ identical to Callie's, and app-specific values sit in one marked place per file.
 | CI workflows (ci, release, pages, review-bot), `package_smoke.sh`, `install.sh` with tests, rpm and deb skeletons                                                                                                |                                                |                                          |
 | `www/` style.css, theme.js, carousel, privacy and terms pages                                                                                                                                                    |                                                |                                          |
 
-## Vault format (draft)
+## Vault format
 
-Settle this before writing code, because everything else depends on it.
-
-```text
-My Notes/
-  .jot/
-    vault.yaml        # vault settings, explicit ordering (optional)
-    types/            # note types: character.yaml, location.yaml, scene.yaml
-    views/            # saved table, card and board views
-    templates/
-  Inbox/
-  Recipes/
-    Pancakes.md
-    Pancakes.assets/  # attachments next to the note (or a shared assets/ folder)
-  Ashfall (game)/
-    Characters/Mara.md
-```
-
-```markdown
----
-title: Mara Vey # optional; filename is the default title
-tags: [ashfall, cast/lead]
-type: character # optional
-aliases: [Mara, the Ferrywoman]
-created: 2026-10-14T15:30:00Z
-todo: false # to-dos are notes with todo fields, as in Joplin
----
-
-Body in CommonMark + GFM, with [[wikilinks]], ![[embeds]], $math$, and footnotes.
-```
-
-Notes on the format:
-
-- Front matter is optional. Unknown keys are preserved. When Jot changes a key, it edits only
-  that key's lines so the user's formatting survives.
-- No ids are required in front matter. Links resolve as in Obsidian: exact path, then shortest
-  unique name, then aliases. That keeps vaults compatible with Obsidian.
-- Machine-local state (the index, sync bases, caches) lives under `$XDG_STATE_HOME` or
-  `$XDG_CACHE_HOME`, never inside the vault, so syncing the vault never syncs the cache.
+[FORMAT.md](FORMAT.md) defines it. In short: folders are notebooks, notes are `.md` files whose
+file name is the title, front matter is optional YAML that Jot edits key by key, links are standard
+relative Markdown links that Jot rewrites on rename, and attachments go in a `Note.assets/` folder
+beside each note. Manual order and folder appearance live in `.jot/layout.yaml`, and Jot's index
+and sync state stay outside the vault.
 
 ## Milestones
 
@@ -159,7 +126,7 @@ the format and sync are trusted).
 - Logo: finish the notebook. Hand-tune the 16 and 32 px icons, which Callie still lacks.
 - Website: add `www/jot/` to the Callie repo with the landing page, privacy, terms and
   `install.sh`, and link it from Callie's footer.
-- Write the vault format spec (above) as `docs/FORMAT.md`.
+- Review the vault format draft in `docs/FORMAT.md` and mark it final before 0.1.
 
 ### Milestone 1: A notes app I can live in (0.1)
 
@@ -332,7 +299,5 @@ This is the foundation for the writer and worldbuilding tools.
 
 ## Open questions
 
-1. Attachments: next to each note (`Note.assets/`) or one `assets/` folder per vault or
-   notebook? Joplin imports and Obsidian compatibility both favor a configurable folder.
-2. Ubuntu support in Callie's installer, which refuses Ubuntu today. Jot's installer will accept
+1. Ubuntu support in Callie's installer, which refuses Ubuntu today. Jot's installer will accept
    26.04, so the shared installer logic should too.
