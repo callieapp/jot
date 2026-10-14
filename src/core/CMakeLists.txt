@@ -5,6 +5,8 @@ find_package(tomlplusplus REQUIRED)
 add_library(jotcore STATIC
     jot/FrontMatter.h
     FrontMatter.cpp
+    jot/Vault.h
+    Vault.cpp
     jot/Identity.h
     Identity.cpp
     jot/Logging.h
