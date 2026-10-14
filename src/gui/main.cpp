@@ -50,6 +50,8 @@ int main(int argc, char *argv[])
     QObject::connect(
         &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
         [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
+    // "Jot Devel" for a development build, so the two windows are told apart.
+    engine.setInitialProperties({{u"title"_s, jot::identity::displayName()}});
     engine.loadFromModule("Jot.Ui", "Main");
     return app.exec();
 }
