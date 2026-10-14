@@ -76,6 +76,9 @@ private:
     QString m_root;
 };
 
+/// Orders names as people read them: case aside, and "Ch 2" before "Ch 10".
+[[nodiscard]] int naturalCompare(QStringView a, QStringView b);
+
 /// Reading and writing note files without losing a byte.
 namespace notefile {
 
