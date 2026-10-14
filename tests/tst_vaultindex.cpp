@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QFile>
+#include <QRegularExpression>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QTemporaryDir>
@@ -45,6 +46,8 @@ private:
 
 void TestVaultIndex::init()
 {
+    // The index logs what it could not store, so any warning is a failure here.
+    QTest::failOnWarning(QRegularExpression(u".*"_s));
     m_dir = std::make_unique<QTemporaryDir>();
     m_vault = std::make_unique<Vault>(m_dir->filePath(u"vault"_s));
     QVERIFY(QDir().mkpath(m_vault->root()));
@@ -247,6 +250,9 @@ void TestVaultIndex::listsUnresolvedLinks()
     m_index->update({u"Someday.md"_s});
     QVERIFY(m_index->unresolved().isEmpty());
     QCOMPARE(m_index->backlinks(u"Someday.md"_s).size(), 1);
+    // A note read after others keeps its own search text.
+    QCOMPARE(m_index->search(u"exists"_s).size(), 1);
+    QCOMPARE(m_index->search(u"exists"_s).first().path, u"Someday.md"_s);
     // A note's links to itself are not backlinks.
     QVERIFY(m_index->backlinks(u"A.md"_s).isEmpty());
 }
