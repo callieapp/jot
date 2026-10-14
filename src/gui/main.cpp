@@ -10,8 +10,10 @@ using namespace Qt::StringLiterals;
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
-    app.setApplicationName(u"Jot"_s);
-    app.setOrganizationName(u"Jot"_s);
+    // The identity's folder name keeps Qt's own config and data folders apart for a
+    // development build, and matches the CLI's.
+    app.setApplicationName(jot::identity::dirName());
+    app.setApplicationDisplayName(jot::identity::displayName());
     app.setApplicationVersion(QStringLiteral(JOT_VERSION));
     // Lets Wayland associate the window with the .desktop entry.
     app.setDesktopFileName(jot::identity::appId());
