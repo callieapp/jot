@@ -1,5 +1,7 @@
 # Deliberately not a QML module. The CLI links this, and pulling QtQml in would
 # cost it startup time for no benefit. QML exposure happens in src/ui.
+find_package(tomlplusplus REQUIRED)
+
 add_library(jotcore STATIC
     jot/FrontMatter.h
     FrontMatter.cpp
@@ -9,10 +11,50 @@ add_library(jotcore STATIC
     Logging.cpp
     jot/LogFile.h
     LogFile.cpp
+    jot/Color.h
+    Color.cpp
+    jot/Base16.h
+    Base16.cpp
+    jot/ThemeSpec.h
+    jot/ThemeLoader.h
+    ThemeLoader.cpp
+    jot/ThemeLibrary.h
+    ThemeLibrary.cpp
+)
+
+# Built-in themes are compiled in, so the app works uninstalled and a broken
+# install can never leave it without its default look. They are the suite's
+# themes, shared with Callie, so a theme file works in either app.
+qt_add_resources(jotcore "jot_themes"
+    PREFIX "/jot"
+    BASE "${PROJECT_SOURCE_DIR}"
+    FILES
+        "${PROJECT_SOURCE_DIR}/themes/callie.toml"
+        "${PROJECT_SOURCE_DIR}/themes/callie-light.toml"
+        "${PROJECT_SOURCE_DIR}/themes/minimal.toml"
+        "${PROJECT_SOURCE_DIR}/themes/minimal-dark.toml"
+        "${PROJECT_SOURCE_DIR}/themes/paper.toml"
+        "${PROJECT_SOURCE_DIR}/themes/tomorrow.toml"
+        "${PROJECT_SOURCE_DIR}/themes/tomorrow-night.toml"
+)
+
+# Both are under the SIL Open Font License; the license files sit beside them.
+qt_add_resources(jotcore "jot_fonts"
+    PREFIX "/jot/fonts"
+    BASE "${PROJECT_SOURCE_DIR}/data/fonts"
+    FILES
+        "${PROJECT_SOURCE_DIR}/data/fonts/Nunito-Variable.ttf"
+        "${PROJECT_SOURCE_DIR}/data/fonts/Fraunces-Variable.ttf"
 )
 
 target_include_directories(jotcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(jotcore PUBLIC Qt6::Core)
+target_link_libraries(jotcore
+    PUBLIC
+        Qt6::Core
+        Qt6::Gui
+    PRIVATE
+        tomlplusplus::tomlplusplus
+)
 
 target_compile_definitions(jotcore PRIVATE
     JOT_APP_ID="${JOT_APP_ID}"

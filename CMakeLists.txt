@@ -41,6 +41,11 @@ add_subdirectory(src/ui)
 add_subdirectory(src/gui)
 add_subdirectory(src/cli)
 
+# Built-in themes are compiled in; installed copies are a starting point for
+# people writing their own.
+install(DIRECTORY themes/ DESTINATION ${CMAKE_INSTALL_DATADIR}/jot/themes
+    FILES_MATCHING PATTERN "*.toml")
+
 if(JOT_BUILD_TESTS)
     add_subdirectory(tests)
 endif()

@@ -6,15 +6,17 @@ Plain-file Markdown notes for Linux. Qt6 + QML for the UI, C++ for the core. MIT
 
 ## Layout
 
-| Path        | What                                                                 |
-| ----------- | -------------------------------------------------------------------- |
-| `src/core/` | `libjotcore`: vault, index, search and sync. No UI and no QML types. |
-| `src/ui/`   | The QML module `Jot.Ui`: views and components.                       |
-| `src/gui/`  | `jot-gui` entry point. `main.cpp` only.                              |
-| `src/cli/`  | `jot`, the command-line interface over the same core.                |
-| `tests/`    | Qt Test cases run by ctest.                                          |
-| `scripts/`  | `format.sh`, the single formatter entry point used by CMake and CI.  |
-| `docs/`     | The roadmap, the suite rules and background research.                |
+| Path        | What                                                                   |
+| ----------- | ---------------------------------------------------------------------- |
+| `src/core/` | `libjotcore`: vault, index, search and sync. No UI and no QML types.   |
+| `src/ui/`   | The QML module `Jot.Ui`: views, components, and the `Theme` singleton. |
+| `src/gui/`  | `jot-gui` entry point. `main.cpp` only.                                |
+| `src/cli/`  | `jot`, the command-line interface over the same core.                  |
+| `tests/`    | Qt Test cases run by ctest.                                            |
+| `scripts/`  | `format.sh`, the single formatter entry point used by CMake and CI.    |
+| `docs/`     | The roadmap, the suite rules and background research.                  |
+| `themes/`   | Built-in themes, shared with Callie. `callie.toml` is the default.     |
+| `data/`     | Bundled fonts.                                                         |
 
 ## Conventions
 
