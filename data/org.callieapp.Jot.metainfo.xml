@@ -35,6 +35,13 @@
   </categories>
 
   <releases>
+    <release version="0.0.2" date="2026-10-14">
+      <description>
+        <ul>
+          <li>Add an install script</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.0.1" date="2026-10-14">
       <description>
         <ul>

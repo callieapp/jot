@@ -3,6 +3,12 @@
 What changed in each version of Jot, for the people using it. Notes collect under Unreleased
 as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md).
 
+## 0.0.2 - 2026-10-14
+
+### New
+
+- Add an install script
+
 ## 0.0.1 - 2026-10-14
 
 ### New
