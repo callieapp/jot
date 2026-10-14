@@ -34,4 +34,14 @@
     <category>Office</category>
   </categories>
 
+  <releases>
+    <release version="0.0.1" date="2026-10-14">
+      <description>
+        <ul>
+          <li>A first window with Callie's look: the shared themes, a rounded frame and its own title bar.</li>
+          <li>.deb and .rpm packages for Fedora, Debian and Ubuntu.</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
 </component>
