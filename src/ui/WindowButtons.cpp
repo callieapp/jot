@@ -68,9 +68,8 @@ void WindowButtons::readGnome()
         gsettings->deleteLater();
         if (code != 0)
             return;
-        const Layout layout = fromGnome(QString::fromUtf8(gsettings->readAllStandardOutput()));
-        if (!layout.left.isEmpty() || !layout.right.isEmpty())
-            apply(layout);
+        // An empty layout is a choice, as on tiling setups: no buttons at all.
+        apply(fromGnome(QString::fromUtf8(gsettings->readAllStandardOutput())));
     });
     // Without gsettings the default layout stands.
     connect(gsettings, &QProcess::errorOccurred, gsettings, &QObject::deleteLater);
