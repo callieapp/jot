@@ -1,0 +1,289 @@
+#include "jot/Vault.h"
+
+#include "jot/FrontMatter.h"
+
+#include <QCollator>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QSaveFile>
+#include <QStringDecoder>
+
+#include <sys/stat.h>
+
+using namespace Qt::StringLiterals;
+
+namespace jot {
+
+namespace {
+
+const QString kSettingsFolder = u".jot"_s;
+const QString kNoteSuffix = u".md"_s;
+const QString kAssetsSuffix = u".assets"_s;
+
+QString join(const QString &folder, const QString &name)
+{
+    return folder.isEmpty() ? name : folder + u'/' + name;
+}
+
+} // namespace
+
+Vault::Vault(QString root) : m_root(QDir::cleanPath(std::move(root))) {}
+
+std::optional<Vault> Vault::create(const QString &root, QString *error)
+{
+    Vault vault(root);
+    if (!QDir().mkpath(vault.absolute(kSettingsFolder))) {
+        *error = QObject::tr("could not create %1").arg(vault.absolute(kSettingsFolder));
+        return std::nullopt;
+    }
+    const QString settings = vault.absolute(kSettingsFolder + u"/vault.yaml"_s);
+    if (!QFileInfo::exists(settings) &&
+        !notefile::write(settings, u"format: %1\n"_s.arg(kFormat), error))
+        return std::nullopt;
+    return vault;
+}
+
+bool Vault::exists() const
+{
+    return QFileInfo(m_root).isDir();
+}
+
+int Vault::format() const
+{
+    QString ignored;
+    const std::optional<QString> settings =
+        notefile::read(absolute(kSettingsFolder + u"/vault.yaml"_s), &ignored);
+    if (!settings)
+        return 1;
+    bool ok = false;
+    const int format = readFrontMatter(*settings).value(u"format"_s).toString().toInt(&ok);
+    return ok ? format : 1;
+}
+
+QList<VaultEntry> Vault::entries() const
+{
+    QList<VaultEntry> found;
+    collect({}, found);
+    return found;
+}
+
+QStringList Vault::notes() const
+{
+    QStringList paths;
+    for (const VaultEntry &entry : entries()) {
+        if (!entry.folder)
+            paths.append(entry.path);
+    }
+    return paths;
+}
+
+void Vault::collect(const QString &folder, QList<VaultEntry> &into) const
+{
+    const QDir dir(absolute(folder));
+    const QFileInfoList all = dir.entryInfoList(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
+    QSet<QString> noteNames;
+    for (const QFileInfo &info : all) {
+        if (info.isFile() && info.fileName().endsWith(kNoteSuffix))
+            noteNames.insert(info.fileName().chopped(kNoteSuffix.size()));
+    }
+
+    QList<QFileInfo> kept;
+    for (const QFileInfo &info : all) {
+        const QString name = info.fileName();
+        if (name.startsWith(u'.'))
+            continue;
+        if (info.isDir()) {
+            // A note's attachments show under the note, not as a notebook.
+            if (name.endsWith(kAssetsSuffix) &&
+                noteNames.contains(name.chopped(kAssetsSuffix.size())))
+                continue;
+            kept.append(info);
+        } else if (name.endsWith(kNoteSuffix)) {
+            kept.append(info);
+        }
+    }
+    QCollator collator;
+    collator.setNumericMode(true);
+    collator.setCaseSensitivity(Qt::CaseInsensitive);
+    std::sort(kept.begin(), kept.end(), [&collator](const QFileInfo &a, const QFileInfo &b) {
+        return collator.compare(a.fileName(), b.fileName()) < 0;
+    });
+
+    for (const QFileInfo &info : std::as_const(kept)) {
+        const QString path = join(folder, info.fileName());
+        into.append({path, info.isDir()});
+        // A link to a folder is shown but not followed, so a loop cannot hang the scan.
+        if (info.isDir() && !info.isSymLink())
+            collect(path, into);
+    }
+}
+
+QString Vault::absolute(const QString &path) const
+{
+    return path.isEmpty() ? m_root : m_root + u'/' + path;
+}
+
+QString Vault::relative(const QString &absolutePath) const
+{
+    const QString relative = QDir(m_root).relativeFilePath(absolutePath);
+    return relative.startsWith(u"../"_s) || relative == u".." || QDir::isAbsolutePath(relative)
+               ? QString()
+               : relative;
+}
+
+QString Vault::titleFromPath(const QString &path)
+{
+    const QString name = path.section(u'/', -1);
+    return name.endsWith(kNoteSuffix) ? name.chopped(kNoteSuffix.size()) : name;
+}
+
+QString Vault::fileNameFor(const QString &title)
+{
+    QString name;
+    for (const QChar c : title) {
+        if (c == u'/' || c == u'\\')
+            name += u" - "_s;
+        else if (c.unicode() < 0x20 || c.unicode() == 0x7f || u":*?\"<>|"_s.contains(c))
+            continue;
+        else
+            name += c;
+    }
+    name = name.simplified();
+    qsizetype start = 0;
+    qsizetype end = name.size();
+    while (start < end && (name[start] == u'.' || name[start].isSpace()))
+        ++start;
+    while (end > start && (name[end - 1] == u'.' || name[end - 1].isSpace()))
+        --end;
+    name = name.sliced(start, end - start);
+    return name.isEmpty() ? QObject::tr("Untitled") : name;
+}
+
+QString Vault::assetsFolderFor(const QString &notePath)
+{
+    const QString stem =
+        notePath.endsWith(kNoteSuffix) ? notePath.chopped(kNoteSuffix.size()) : notePath;
+    return stem + kAssetsSuffix;
+}
+
+QString Vault::freePath(const QString &folder, const QString &title) const
+{
+    const QString base = fileNameFor(title);
+    QString path = join(folder, base + kNoteSuffix);
+    for (int n = 2; QFileInfo::exists(absolute(path)); ++n)
+        path = join(folder, u"%1 %2"_s.arg(base).arg(n) + kNoteSuffix);
+    return path;
+}
+
+std::optional<QString> Vault::createNote(const QString &folder, const QString &title,
+                                         const QDateTime &created, QString *error) const
+{
+    if (!writable()) {
+        *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
+        return std::nullopt;
+    }
+    if (!QDir().mkpath(absolute(folder))) {
+        *error = QObject::tr("could not create %1").arg(absolute(folder));
+        return std::nullopt;
+    }
+    const QString path = freePath(folder, title);
+    QString text;
+    if (fileNameFor(title) != title)
+        text = setFrontMatterKey(text, u"title"_s, title);
+    text = setFrontMatterKey(text, u"created"_s, created.toUTC().toString(Qt::ISODate));
+    if (!notefile::write(absolute(path), text, error))
+        return std::nullopt;
+    return path;
+}
+
+bool Vault::trashNote(const QString &path, QString *error) const
+{
+    const QString assets = absolute(assetsFolderFor(path));
+    if (!QFile::moveToTrash(absolute(path))) {
+        *error = QObject::tr("could not move %1 to the trash").arg(path);
+        return false;
+    }
+    if (QFileInfo(assets).isDir() && !QFile::moveToTrash(assets)) {
+        *error = QObject::tr("could not move %1 to the trash").arg(assetsFolderFor(path));
+        return false;
+    }
+    return true;
+}
+
+bool Vault::moveNote(const QString &from, const QString &to, QString *error) const
+{
+    if (!writable()) {
+        *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
+        return false;
+    }
+    if (QFileInfo::exists(absolute(to))) {
+        *error = QObject::tr("%1 already exists").arg(to);
+        return false;
+    }
+    const QString toFolder = to.contains(u'/') ? to.section(u'/', 0, -2) : QString();
+    if (!QDir().mkpath(absolute(toFolder)) || !QFile::rename(absolute(from), absolute(to))) {
+        *error = QObject::tr("could not move %1 to %2").arg(from, to);
+        return false;
+    }
+    const QString assets = absolute(assetsFolderFor(from));
+    if (QFileInfo(assets).isDir() && !QDir().rename(assets, absolute(assetsFolderFor(to)))) {
+        *error = QObject::tr("moved %1, but not its attachments").arg(from);
+        return false;
+    }
+    return true;
+}
+
+namespace notefile {
+
+std::optional<QString> read(const QString &path, QString *error)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        *error = file.errorString();
+        return std::nullopt;
+    }
+    const QByteArray bytes = file.readAll();
+    QStringDecoder decode(QStringDecoder::Utf8, QStringDecoder::Flag::Stateless);
+    QString text = decode(bytes);
+    if (decode.hasError()) {
+        *error = QObject::tr("%1 is not UTF-8 text").arg(path);
+        return std::nullopt;
+    }
+    // Qt drops a byte order mark when decoding; the note keeps the one it had.
+    if (bytes.startsWith("\xef\xbb\xbf") && !text.startsWith(QChar(0xfeff)))
+        text.prepend(QChar(0xfeff));
+    return text;
+}
+
+bool write(const QString &path, const QString &text, QString *error)
+{
+    const QFileInfo info(path);
+    // Writing to the link's target keeps the link; a new file in its place would not.
+    const QString target = info.isSymLink() ? info.symLinkTarget() : path;
+    struct stat status{};
+    const bool hardLinked =
+        ::stat(QFile::encodeName(target).constData(), &status) == 0 && status.st_nlink > 1;
+    const QByteArray bytes = text.toUtf8();
+
+    if (hardLinked) {
+        QFile file(target);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate) ||
+            file.write(bytes) != bytes.size() || !file.flush()) {
+            *error = file.errorString();
+            return false;
+        }
+        return true;
+    }
+    QSaveFile file(target);
+    file.setDirectWriteFallback(false);
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
+        *error = file.errorString();
+        return false;
+    }
+    return true;
+}
+
+} // namespace notefile
+
+} // namespace jot

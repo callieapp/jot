@@ -1,0 +1,232 @@
+#include "jot/FrontMatter.h"
+#include "jot/Vault.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QTemporaryDir>
+#include <QTest>
+
+#include <unistd.h>
+
+using namespace jot;
+using namespace Qt::StringLiterals;
+
+class TestVault : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void init();
+
+    void createRecordsTheFormat();
+    void listsNotebooksAndNotesInNaturalOrder();
+    void leavesHiddenFilesAndAttachmentsOut();
+    void namesFilesSafely_data();
+    void namesFilesSafely();
+    void newNotesNeverOverwrite();
+    void createdNotesCarryTheirDateAndTitle();
+    void movingANoteTakesItsAttachments();
+    void relativePathsStayInside();
+    void newerVaultsAreOnlyRead();
+
+    void readAndWriteKeepEveryByte();
+    void refusesTextThatIsNotUtf8();
+    void writingThroughALinkKeepsTheLink();
+    void writingAHardLinkedFileKeepsTheLinks();
+
+private:
+    void write(const QString &path, const QByteArray &bytes = "x\n");
+
+    std::unique_ptr<QTemporaryDir> m_dir;
+    std::unique_ptr<Vault> m_vault;
+};
+
+void TestVault::init()
+{
+    m_dir = std::make_unique<QTemporaryDir>();
+    m_vault = std::make_unique<Vault>(m_dir->path());
+}
+
+void TestVault::write(const QString &path, const QByteArray &bytes)
+{
+    const QString file = m_vault->absolute(path);
+    QVERIFY(QDir().mkpath(QFileInfo(file).path()));
+    QFile out(file);
+    QVERIFY(out.open(QIODevice::WriteOnly));
+    out.write(bytes);
+}
+
+void TestVault::createRecordsTheFormat()
+{
+    QString error;
+    const std::optional<Vault> vault = Vault::create(m_dir->filePath(u"New Vault"_s), &error);
+    QVERIFY2(vault, qPrintable(error));
+    QVERIFY(vault->exists());
+    QCOMPARE(vault->format(), 1);
+    QVERIFY(vault->writable());
+    QVERIFY(vault->entries().isEmpty());
+}
+
+void TestVault::listsNotebooksAndNotesInNaturalOrder()
+{
+    write(u"Ch 10.md"_s);
+    write(u"Ch 2.md"_s);
+    write(u"ashfall/Characters/Mara.md"_s);
+    write(u"Recipes/pancakes.md"_s);
+    write(u"Recipes/Bread.md"_s);
+    write(u"Recipes/photo.png"_s);
+
+    const QList<VaultEntry> expected{
+        {u"ashfall"_s, true},
+        {u"ashfall/Characters"_s, true},
+        {u"ashfall/Characters/Mara.md"_s, false},
+        {u"Ch 2.md"_s, false},
+        {u"Ch 10.md"_s, false},
+        {u"Recipes"_s, true},
+        {u"Recipes/Bread.md"_s, false},
+        {u"Recipes/pancakes.md"_s, false},
+    };
+    QCOMPARE(m_vault->entries(), expected);
+    QCOMPARE(m_vault->notes().size(), 5);
+}
+
+void TestVault::leavesHiddenFilesAndAttachmentsOut()
+{
+    write(u".jot/vault.yaml"_s, "format: 1\n");
+    write(u".git/HEAD"_s);
+    write(u".hidden.md"_s);
+    write(u"Mara.md"_s);
+    write(u"Mara.assets/sketch.png"_s);
+    // A folder ending in .assets with no note of that name is a notebook.
+    write(u"Old.assets/Note.md"_s);
+
+    QCOMPARE(m_vault->entries(), (QList<VaultEntry>{{u"Mara.md"_s, false},
+                                                    {u"Old.assets"_s, true},
+                                                    {u"Old.assets/Note.md"_s, false}}));
+}
+
+void TestVault::namesFilesSafely_data()
+{
+    QTest::addColumn<QString>("title");
+    QTest::addColumn<QString>("name");
+    QTest::newRow("plain") << u"Pancakes"_s << u"Pancakes"_s;
+    QTest::newRow("slash") << u"Q&A / Mara"_s << u"Q&A - Mara"_s;
+    QTest::newRow("tight slash") << u"either/or"_s << u"either - or"_s;
+    QTest::newRow("refused") << u"What? \"Now\": <a|b>*"_s << u"What Now ab"_s;
+    QTest::newRow("dots and spaces") << u" ..hidden.. "_s << u"hidden"_s;
+    QTest::newRow("control") << u"tab\there"_s << u"tabhere"_s;
+    QTest::newRow("nothing left") << u"???"_s << u"Untitled"_s;
+}
+
+void TestVault::namesFilesSafely()
+{
+    QFETCH(QString, title);
+    QFETCH(QString, name);
+    QCOMPARE(Vault::fileNameFor(title), name);
+}
+
+void TestVault::newNotesNeverOverwrite()
+{
+    write(u"Inbox/Pancakes.md"_s);
+    write(u"Inbox/Pancakes 2.md"_s);
+    QCOMPARE(m_vault->freePath(u"Inbox"_s, u"Pancakes"_s), u"Inbox/Pancakes 3.md"_s);
+    QCOMPARE(m_vault->freePath({}, u"Pancakes"_s), u"Pancakes.md"_s);
+}
+
+void TestVault::createdNotesCarryTheirDateAndTitle()
+{
+    QString error;
+    const QDateTime when(QDate(2026, 10, 14), QTime(15, 30), QTimeZone::UTC);
+    const std::optional<QString> plain = m_vault->createNote(u"Inbox"_s, u"Ideas"_s, when, &error);
+    QVERIFY2(plain, qPrintable(error));
+    QCOMPARE(*plain, u"Inbox/Ideas.md"_s);
+    QCOMPARE(notefile::read(m_vault->absolute(*plain), &error),
+             std::optional(u"---\ncreated: 2026-10-14T15:30:00Z\n---\n"_s));
+
+    const std::optional<QString> awkward = m_vault->createNote({}, u"Q&A: Mara"_s, when, &error);
+    QVERIFY(awkward);
+    QCOMPARE(*awkward, u"Q&A Mara.md"_s);
+    const QString text = *notefile::read(m_vault->absolute(*awkward), &error);
+    QCOMPARE(readFrontMatter(splitFrontMatter(text).frontMatter).value(u"title"_s).toString(),
+             u"Q&A: Mara"_s);
+}
+
+void TestVault::movingANoteTakesItsAttachments()
+{
+    write(u"Mara.md"_s);
+    write(u"Mara.assets/sketch.png"_s);
+    QString error;
+    QVERIFY2(m_vault->moveNote(u"Mara.md"_s, u"Cast/Mara Vey.md"_s, &error), qPrintable(error));
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Cast/Mara Vey.md"_s)));
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Cast/Mara Vey.assets/sketch.png"_s)));
+    QVERIFY(!QFileInfo::exists(m_vault->absolute(u"Mara.assets"_s)));
+
+    write(u"Other.md"_s);
+    QVERIFY(!m_vault->moveNote(u"Other.md"_s, u"Cast/Mara Vey.md"_s, &error));
+    QVERIFY(error.contains(u"already exists"_s));
+}
+
+void TestVault::relativePathsStayInside()
+{
+    QCOMPARE(m_vault->relative(m_vault->absolute(u"a/b.md"_s)), u"a/b.md"_s);
+    QCOMPARE(m_vault->relative(m_dir->path() + u"/../elsewhere.md"_s), QString());
+    QCOMPARE(m_vault->relative(u"/etc/passwd"_s), QString());
+}
+
+void TestVault::newerVaultsAreOnlyRead()
+{
+    write(u".jot/vault.yaml"_s, "format: 2\n");
+    QCOMPARE(m_vault->format(), 2);
+    QVERIFY(!m_vault->writable());
+    QString error;
+    QVERIFY(!m_vault->createNote({}, u"x"_s, QDateTime::currentDateTimeUtc(), &error));
+    QVERIFY(error.contains(u"newer Jot"_s));
+}
+
+void TestVault::readAndWriteKeepEveryByte()
+{
+    const QByteArray bytes = "\xef\xbb\xbf---\r\ntitle: \xc3\xa9t\xc3\xa9\r\n---\r\n\r\nBody  \r\n";
+    write(u"n.md"_s, bytes);
+    QString error;
+    const std::optional<QString> text = notefile::read(m_vault->absolute(u"n.md"_s), &error);
+    QVERIFY2(text, qPrintable(error));
+    QVERIFY(text->startsWith(QChar(0xfeff)));
+    QVERIFY(notefile::write(m_vault->absolute(u"copy.md"_s), *text, &error));
+    QFile copy(m_vault->absolute(u"copy.md"_s));
+    QVERIFY(copy.open(QIODevice::ReadOnly));
+    QCOMPARE(copy.readAll(), bytes);
+}
+
+void TestVault::refusesTextThatIsNotUtf8()
+{
+    write(u"latin1.md"_s, "caf\xe9\n");
+    QString error;
+    QVERIFY(!notefile::read(m_vault->absolute(u"latin1.md"_s), &error));
+    QVERIFY(error.contains(u"not UTF-8"_s));
+}
+
+void TestVault::writingThroughALinkKeepsTheLink()
+{
+    write(u"real/Note.md"_s, "old\n");
+    const QString link = m_vault->absolute(u"Link.md"_s);
+    QVERIFY(QFile::link(m_vault->absolute(u"real/Note.md"_s), link));
+    QString error;
+    QVERIFY2(notefile::write(link, u"new\n"_s, &error), qPrintable(error));
+    QVERIFY(QFileInfo(link).isSymLink());
+    QCOMPARE(notefile::read(m_vault->absolute(u"real/Note.md"_s), &error),
+             std::optional(u"new\n"_s));
+}
+
+void TestVault::writingAHardLinkedFileKeepsTheLinks()
+{
+    write(u"a.md"_s, "old\n");
+    QVERIFY(::link(QFile::encodeName(m_vault->absolute(u"a.md"_s)).constData(),
+                   QFile::encodeName(m_vault->absolute(u"b.md"_s)).constData()) == 0);
+    QString error;
+    QVERIFY(notefile::write(m_vault->absolute(u"a.md"_s), u"new\n"_s, &error));
+    QCOMPARE(notefile::read(m_vault->absolute(u"b.md"_s), &error), std::optional(u"new\n"_s));
+}
+
+QTEST_GUILESS_MAIN(TestVault)
+#include "tst_vault.moc"

@@ -9,6 +9,7 @@ function(jot_add_test name)
 endfunction()
 
 jot_add_test(tst_frontmatter)
+jot_add_test(tst_vault)
 jot_add_test(tst_identity)
 target_compile_definitions(tst_identity PRIVATE JOT_EXPECT_DEVEL=$<BOOL:${JOT_DEVEL}>)
 jot_add_test(tst_logfile)
