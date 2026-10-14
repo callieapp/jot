@@ -28,4 +28,10 @@ for theme in callie callie-light; do
         --screenshot "$shots/installed-$theme.png"
     test -s "$shots/installed-$theme.png"
 done
+# With a vault open too, from the source tree beside this script.
+vault="$home/vault"
+cp -r "$(dirname "$0")/data/sample-vault" "$vault"
+QT_QPA_PLATFORM=offscreen jot-gui --vault "$vault" --note "Ashfall/Characters/Mara Vey.md" \
+    --size 1280x840 --screenshot "$shots/installed-vault.png"
+test -s "$shots/installed-vault.png"
 echo "the installed app runs"

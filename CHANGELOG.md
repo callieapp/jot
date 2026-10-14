@@ -7,6 +7,9 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 
 ### New
 
+- Open a folder of Markdown notes as your vault. The sidebar lists its notebooks, which fold, and
+  its tags; the middle column lists their notes, newest or by title, and searches them; Ctrl+P
+  finds any note by a few letters of its title, an alias or its folder.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 

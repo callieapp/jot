@@ -48,6 +48,9 @@ Shared code:
 | `Diagnostics`                                                                                   | Versions, environment and log tails; Callie adds its accounts and sync state                                                                                                                               |
 | `ThemeController`                                                                               | Calendar-only tokens and the calendar color functions removed, `titleBarHeight` added. `ThemeSpec` keeps the `[calendar]` section so theme files stay identical; Jot will use it for folder and tag colors |
 
+`.markdownlint-cli2.yaml` and `.prettierignore` also skip `tests/data/`, which holds sample notes
+here; Callie should take the same lines.
+
 Callie's `commitlint.config.mjs`, `Makefile`, `cliff.toml` and release scripts still use the older layout. Moving
 them to this one is the first step of extraction.
 

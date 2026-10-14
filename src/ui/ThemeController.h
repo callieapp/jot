@@ -107,6 +107,10 @@ class ThemeController : public QObject
     /// A lighter line for glyphs with several strokes, or beside text.
     Q_PROPERTY(qreal fineGlyphStroke READ fineGlyphStroke CONSTANT)
     Q_PROPERTY(int sidebarWidth READ sidebarWidth CONSTANT)
+    /// The middle column of notes, between the sidebar and the note.
+    Q_PROPERTY(int noteListWidth READ noteListWidth CONSTANT)
+    /// How far each notebook steps in from the one holding it.
+    Q_PROPERTY(int treeIndent READ treeIndent CONSTANT)
     /// A row in a list such as the sidebar's notebooks.
     Q_PROPERTY(int listRowHeight READ listRowHeight CONSTANT)
     /// The small line icons beside list text, and their stroke.
@@ -198,6 +202,8 @@ public:
     qreal fineGlyphStroke() const { return 1.6; }
     int logoLift() const { return 1; }
     int sidebarWidth() const { return 240; }
+    int noteListWidth() const { return 320; }
+    int treeIndent() const { return 14; }
     int listRowHeight() const { return 28; }
     int smallGlyphSize() const { return 10; }
     qreal smallGlyphStroke() const { return 1.6; }

@@ -8,14 +8,18 @@ GUI_TARGET := jot-gui
 CLI_TARGET := jot
 GALLERY_TARGET := jot-gallery
 LOG_CATEGORIES := jot.*
-# Fixed options, so the same commit always renders the same pictures.
+# Fixed options, so the same commit always renders the same pictures. The sample vault
+# is copied first, since opening a folder makes it a vault.
 SHOT_APP := --size 1280x840
+SHOT_VAULT := tests/data/sample-vault
+SHOT_NOTE := Ashfall/Characters/Mara Vey.md
 
 FEDORA_DEPS := gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtdeclarative-devel \
 	qt6-qtquickcontrols2-devel tomlplusplus-devel clang-tools-extra entr nodejs npm
 DEBIAN_DEPS := build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev \
 	qt6-declarative-dev-tools qml6-module-qtquick-controls qml6-module-qtquick-templates \
-	qml6-module-qtquick-effects libtomlplusplus-dev libqt6sql6-sqlite clang-format entr nodejs npm
+	qml6-module-qtquick-effects qml6-module-qtquick-dialogs libtomlplusplus-dev \
+	libqt6sql6-sqlite clang-format entr nodejs npm
 
 # --- Shared by every app in the suite below this line. ---
 
@@ -98,10 +102,10 @@ watch-gallery: $(PRESET_STAMP) ## Like watch, for the gallery; THEME=path option
 SHOTS := $(BUILD)/screenshots
 
 screenshots: build ## Render the app and gallery for every built-in theme
-	@mkdir -p $(SHOTS)
+	@rm -rf $(SHOTS) && mkdir -p $(SHOTS) && cp -r $(SHOT_VAULT) $(SHOTS)/vault
 	@for theme in $(basename $(notdir $(wildcard themes/*.toml))); do \
 		QT_QPA_PLATFORM=offscreen $(GUI) $(SHOT_APP) --theme $$theme \
-			--screenshot $(SHOTS)/app-$$theme.png && \
+			--vault $(SHOTS)/vault --note "$(SHOT_NOTE)" --screenshot $(SHOTS)/app-$$theme.png && \
 		QT_QPA_PLATFORM=offscreen $(GALLERY) --theme $$theme \
 			--screenshot $(SHOTS)/gallery-$$theme.png || exit 1; \
 	done

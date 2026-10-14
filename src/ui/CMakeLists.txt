@@ -16,6 +16,14 @@ qt_add_qml_module(jotui
         WindowButtons.cpp
         LiveQml.h
         LiveQml.cpp
+        NotebookModel.h
+        NotebookModel.cpp
+        NoteListModel.h
+        NoteListModel.cpp
+        SwitcherModel.h
+        SwitcherModel.cpp
+        VaultController.h
+        VaultController.cpp
     QML_FILES
         Main.qml
         DangerButton.qml
@@ -28,15 +36,20 @@ qt_add_qml_module(jotui
         Logo.qml
         MenuCard.qml
         MenuEntry.qml
+        NoteList.qml
+        NoteView.qml
         PickerButton.qml
         PillButton.qml
+        QuickSwitcher.qml
         ResizeFrame.qml
         Scrim.qml
+        Sidebar.qml
         SoftShadow.qml
         StickerButton.qml
         SuggestionPopup.qml
         Tip.qml
         Toggle.qml
+        Welcome.qml
         WindowControls.qml
 )
 
