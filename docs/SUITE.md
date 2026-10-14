@@ -29,6 +29,14 @@ all the apps use. These rules keep that move mechanical.
 | `Makefile`                                                                    | App block at the top; gallery, watch, screenshots and logs targets come with their code |
 | `CMakePresets.json`                                                           | Same presets, `JOT_` cache variables                                                    |
 | `.github/workflows/ci.yml`                                                    | Same jobs, Jot's dependencies, Ubuntu added                                             |
+| `.github/FUNDING.yml`, `.github/ISSUE_TEMPLATE/config.yml`                    | Identical                                                                               |
+| `.github/ISSUE_TEMPLATE/bug_report.yml`, `SECURITY.md`                        | Same text, Jot's names and scope                                                        |
+| `.github/workflows/code-review.yml`                                           | Identical                                                                               |
+| `.github/review-bot/REPO_NOTES.md`                                            | Same structure, Jot's stack and risks                                                   |
 
 Callie's `commitlint.config.mjs`, `Makefile` and `cliff.toml` still use the older layout. Moving
 them to this one is the first step of extraction.
+
+Repository settings match Callie's too: rebase merges only, auto-merge, branches deleted on
+merge, the "Protect main branch" ruleset (with `build (ubuntu)` added to its required checks),
+labels, Dependabot security updates and private vulnerability reporting.
