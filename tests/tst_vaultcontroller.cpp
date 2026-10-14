@@ -146,6 +146,11 @@ void TestVaultController::listsNotesByNotebookTagAndSearch()
     QCOMPARE(column(notes, "path"), QStringList{u"Recipes/Sourdough.md"_s});
     notes.setNotebook(u"Ashfall"_s);
     QCOMPARE(notes.rowCount(), 0);
+    // A quote left open neither swallows the notebook nor the words.
+    notes.setNotebook(u"Recipes"_s);
+    notes.setQuery(u"\"starter"_s);
+    QCOMPARE(column(notes, "path"), QStringList{u"Recipes/Sourdough.md"_s});
+    notes.setNotebook(u"Ashfall"_s);
     notes.setQuery(u"waxed ledger"_s);
     QCOMPARE(column(notes, "path"), QStringList{u"Ashfall/Characters/Mara Vey.md"_s});
     QVERIFY(column(notes, "snippet").first().contains(u"<mark>"_s));

@@ -2,6 +2,8 @@
 
 #include "jot/Vault.h"
 
+#include <QSet>
+
 #include <algorithm>
 
 using namespace Qt::StringLiterals;
@@ -16,15 +18,16 @@ QString notebookOf(const QString &path)
     return slash < 0 ? QString() : path.left(slash);
 }
 
-/// The search words, with the notebook or tag shown as a filter when it has none of its own.
+/// The search words, with the notebook or tag shown as a filter. The filter goes first,
+/// so a quote the user leaves open cannot swallow it.
 QString scopedQuery(const QString &query, const QString &notebook, const QString &tag)
 {
-    QString scoped = query;
+    QString scope;
     if (!tag.isEmpty())
-        scoped += u" tag:\"%1\""_s.arg(tag);
+        scope = u"tag:\"%1\" "_s.arg(tag);
     else if (!notebook.isEmpty())
-        scoped += u" in:\"%1\""_s.arg(notebook);
-    return scoped;
+        scope = u"in:\"%1\" "_s.arg(notebook);
+    return scope + query;
 }
 
 } // namespace
@@ -83,16 +86,16 @@ void NoteListModel::refill()
     m_rows.clear();
     if (m_index) {
         if (!m_query.trimmed().isEmpty()) {
-            for (const SearchHit &hit : m_index->search(scopedQuery(m_query, m_notebook, m_tag))) {
-                const std::optional<NoteInfo> info = m_index->note(hit.path);
-                m_rows.append({hit.path, hit.title, info ? info->modified : 0, hit.snippet});
-            }
+            for (const SearchHit &hit : m_index->search(scopedQuery(m_query, m_notebook, m_tag)))
+                m_rows.append({hit.path, hit.title, hit.modified, hit.snippet});
         } else {
             QList<NoteInfo> notes;
             if (!m_tag.isEmpty()) {
-                for (const QString &path : m_index->tagged(m_tag)) {
-                    if (const std::optional<NoteInfo> info = m_index->note(path))
-                        notes.append(*info);
+                const QStringList tagged = m_index->tagged(m_tag);
+                const QSet<QString> wanted(tagged.cbegin(), tagged.cend());
+                for (const NoteInfo &note : m_index->notesIn({})) {
+                    if (wanted.contains(note.path))
+                        notes.append(note);
                 }
             } else {
                 notes = m_index->notesIn(m_notebook);
