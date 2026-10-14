@@ -49,7 +49,8 @@ Shared code:
 | `ThemeController`                                                                               | Calendar-only tokens and the calendar color functions removed, `titleBarHeight` added. `ThemeSpec` keeps the `[calendar]` section so theme files stay identical; Jot will use it for folder and tag colors |
 
 `.markdownlint-cli2.yaml` and `.prettierignore` also skip `tests/data/`, which holds sample notes
-here; Callie should take the same lines.
+here; Callie should take the same lines. The Makefile's `screenshots` recipe now reads
+`SHOT_PREPARE` and `SHOT_APP` from the app block, which Callie's needs to adopt to stay shared.
 
 Callie's `commitlint.config.mjs`, `Makefile`, `cliff.toml` and release scripts still use the older layout. Moving
 them to this one is the first step of extraction.
