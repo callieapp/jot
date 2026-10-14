@@ -34,6 +34,14 @@ all the apps use. These rules keep that move mechanical.
 | `.github/workflows/code-review.yml`                                           | Identical                                                                               |
 | `.github/review-bot/REPO_NOTES.md`                                            | Same structure, Jot's stack and risks                                                   |
 
+Shared code:
+
+| Files                                                                                           | State                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `themes/*.toml`                                                                                 | Identical. The theme names and ids stay Callie's, so one theme file works in every app                                                                                             |
+| `Color`, `Base16`, `ThemeSpec`, `ThemeLoader`, `ThemeLibrary`, `Identity`, `Logging`, `LogFile` | Renamed only, apart from comments that name what the app shows                                                                                                                     |
+| `ThemeController`                                                                               | Calendar-only tokens and the calendar color functions removed. `ThemeSpec` keeps the `[calendar]` section so theme files stay identical; Jot will use it for folder and tag colors |
+
 Callie's `commitlint.config.mjs`, `Makefile` and `cliff.toml` still use the older layout. Moving
 them to this one is the first step of extraction.
 

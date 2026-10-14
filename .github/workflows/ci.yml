@@ -86,6 +86,7 @@ jobs:
           dnf install -y --setopt=install_weak_deps=False
           git gcc-c++ cmake ninja-build make
           qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtquickcontrols2-devel
+          tomlplusplus-devel
 
       - name: Install build dependencies (Debian and Ubuntu)
         if: matrix.name != 'fedora'
@@ -94,7 +95,8 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             git build-essential cmake ninja-build \
             qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools ca-certificates \
-            qml6-module-qtquick-controls qml6-module-qtquick-templates
+            qml6-module-qtquick-controls qml6-module-qtquick-templates \
+            libtomlplusplus-dev
 
       - uses: actions/checkout@v5
 

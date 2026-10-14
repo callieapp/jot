@@ -9,10 +9,10 @@ CLI_TARGET := jot
 LOG_CATEGORIES := jot.*
 
 FEDORA_DEPS := gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtdeclarative-devel \
-	qt6-qtquickcontrols2-devel clang-tools-extra nodejs npm
+	qt6-qtquickcontrols2-devel tomlplusplus-devel clang-tools-extra nodejs npm
 DEBIAN_DEPS := build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev \
 	qt6-declarative-dev-tools qml6-module-qtquick-controls qml6-module-qtquick-templates \
-	clang-format nodejs npm
+	libtomlplusplus-dev clang-format nodejs npm
 
 # --- Shared by every app in the suite below this line. ---
 

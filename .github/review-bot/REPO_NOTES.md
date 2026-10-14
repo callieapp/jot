@@ -44,8 +44,8 @@ Two rules worth checking on every diff because nothing automated catches them:
 ## This project is early, so calibrate
 
 Jot is pre-release and mostly scaffold. **Do not report missing features as findings.** The window
-is empty, the CLI only has `--help` and `--version`, and there is no theme, vault, editor or sync
-yet. Judge the code that is there. An absent subsystem is on the roadmap, not a defect.
+is empty, the CLI only has `--help` and `--version`, and there is no vault, editor or sync yet.
+Judge the code that is there. An absent subsystem is on the roadmap, not a defect.
 
 ## What CI already covers, so never mention it
 
@@ -80,8 +80,10 @@ Also yours: the C++ and QML boundary, model correctness, and credential handling
   `toMarkdown` is a blocking finding: that round trip rewrites the user's syntax.
 - **Layering.** `src/core/` must not gain a QML or QtQuick dependency: the CLI links it. QML types
   belong in `src/ui/`.
-- **Visual values.** Until the `Theme` singleton comes over from Callie, a literal colour, spacing
-  number, radius or animation duration in a `.qml` file is a finding.
+- **The `Theme` singleton is the only source of visual values.** A literal colour, spacing number,
+  radius or animation duration in a `.qml` file is a finding. Theme-driven values come from
+  `themes/*.toml`; spacing, type sizes and metrics are constants in `ThemeController`.
+- **Themes are data.** Theme files must never be able to run code or load QML.
 - **Text arithmetic belongs in C++.** Parsing, offsets and layout maths inside a `.qml` file is a
   finding; the model should expose it instead.
 - **Credentials.** OAuth clients and sync keys never land in a committed file, a compile definition,

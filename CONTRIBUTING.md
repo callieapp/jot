@@ -125,7 +125,9 @@ New logic in `src/core/` needs a test. Anything asserting on wall-clock values m
 
 Beyond formatting:
 
-- Every visual value in QML will read from a `Theme` singleton once the theme system comes over
-  from Callie. Until then, add no colors, spacing, radii, or durations to QML.
+- Every visual value in QML reads from the `Theme` singleton, whose values come from the theme
+  files in `themes/`. Do not hard-code colors, spacing, radii, or durations. Callie's
+  [DESIGN.md](https://github.com/callieapp/callie/blob/main/DESIGN.md) explains what each token is
+  for until Jot has its own.
 - Keep text and layout arithmetic in C++ models. QML positions things, it does not compute them.
 - Do not add Kirigami or any dependency that imports another desktop's visual language.
