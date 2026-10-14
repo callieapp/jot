@@ -59,6 +59,7 @@ struct SearchHit
     QString title;
     /// The matching text, with each match between <mark> and </mark>.
     QString snippet;
+    qint64 modified = 0;
 };
 
 /// What Jot knows about a vault's notes, kept in SQLite for search, links, tags and
