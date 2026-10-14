@@ -15,6 +15,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(GNUInstallDirs)
 
 set(JOT_APP_ID "org.callieapp.Jot" CACHE STRING "Reverse-DNS application id")
+# A development build runs beside an installed Jot, with its own app id,
+# folders and keyring entries, so the two never share a vault index or settings.
+option(JOT_DEVEL "Give this build its own identity, apart from an installed Jot" OFF)
 
 option(JOT_BUILD_TESTS "Build the unit tests" ON)
 option(JOT_WERROR "Treat compiler warnings as errors" OFF)
