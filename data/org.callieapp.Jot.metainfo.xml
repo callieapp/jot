@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.callieapp.Jot</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT AND OFL-1.1</project_license>
+
+  <name>Jot</name>
+  <summary>Plain-file notes for Linux</summary>
+
+  <description>
+    <p>
+      Jot is a Markdown notes app for Linux. Notes are plain files in a folder you choose, and
+      sync is optional: none, a folder another tool already syncs, S3, Dropbox or Google Drive.
+    </p>
+    <p>
+      Jot is at an early stage. It shares its look and its themes with Callie, the calendar from
+      the same makers.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">org.callieapp.Jot.desktop</launchable>
+
+  <url type="homepage">https://callieapp.org/jot</url>
+  <url type="bugtracker">https://github.com/callieapp/jot/issues</url>
+  <url type="donation">https://ko-fi.com/sayonara_lara</url>
+
+  <developer id="org.callieapp">
+    <name>Lara Kelley</name>
+  </developer>
+
+  <content_rating type="oars-1.1"/>
+
+  <categories>
+    <category>Office</category>
+  </categories>
+
+</component>

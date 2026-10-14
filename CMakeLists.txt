@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(jot
-    VERSION 0.0.1
+    VERSION 0.0.0
     DESCRIPTION "Plain-file notes for Linux"
     HOMEPAGE_URL "https://callieapp.org/jot"
     LANGUAGES CXX
@@ -43,6 +43,7 @@ add_subdirectory(src/ui)
 add_subdirectory(src/gui)
 add_subdirectory(src/cli)
 add_subdirectory(src/gallery)
+add_subdirectory(data)
 
 # Built-in themes are compiled in; installed copies are a starting point for
 # people writing their own.
