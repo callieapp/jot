@@ -20,7 +20,6 @@ Plain-file Markdown notes for Linux. Qt6 + QML for the UI, C++ for the core. MIT
 | `packaging/`   | Hand-written `rpm/jot.spec` and `debian/`, at distro-review quality.              |
 | `docs/`        | The roadmap, the suite rules and background research.                             |
 | `themes/`      | Built-in themes, shared with Callie. `callie.toml` is the default.                |
-| `data/`        | Bundled fonts.                                                                    |
 
 ## Conventions
 
