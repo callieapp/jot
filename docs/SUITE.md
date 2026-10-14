@@ -18,29 +18,29 @@ all the apps use. These rules keep that move mechanical.
 
 ## Shared files
 
-| File                                                                          | State                                                                                   |
-| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `.clang-format`, `.qmlformat.ini`, `.qmllint.ini`, `.editorconfig`, `.clangd` | Identical                                                                               |
-| `.prettierrc`, `.prettierignore`, `.markdownlint-cli2.yaml`                   | Identical                                                                               |
-| `.githooks/commit-msg`, `scripts/format.sh`                                   | Identical                                                                               |
-| `cliff.toml`                                                                  | Identical apart from "the app" in one comment                                           |
-| `package.json`, `package-lock.json`                                           | Identical apart from the name and description                                           |
-| `commitlint.config.mjs`                                                       | Shared rules, app scopes at the top                                                     |
-| `Makefile`                                                                    | App block at the top; gallery, watch, screenshots and logs targets come with their code |
-| `CMakePresets.json`                                                           | Same presets, `JOT_` cache variables                                                    |
-| `.github/workflows/ci.yml`                                                    | Same jobs, Jot's dependencies, Ubuntu added                                             |
-| `.github/FUNDING.yml`, `.github/ISSUE_TEMPLATE/config.yml`                    | Identical                                                                               |
-| `.github/ISSUE_TEMPLATE/bug_report.yml`, `SECURITY.md`                        | Same text, Jot's names and scope                                                        |
-| `.github/workflows/code-review.yml`                                           | Identical                                                                               |
-| `.github/review-bot/REPO_NOTES.md`                                            | Same structure, Jot's stack and risks                                                   |
+| File                                                                          | State                                                                           |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `.clang-format`, `.qmlformat.ini`, `.qmllint.ini`, `.editorconfig`, `.clangd` | Identical                                                                       |
+| `.prettierrc`, `.prettierignore`, `.markdownlint-cli2.yaml`                   | Identical                                                                       |
+| `.githooks/commit-msg`, `scripts/format.sh`                                   | Identical                                                                       |
+| `cliff.toml`                                                                  | Identical apart from "the app" in one comment                                   |
+| `package.json`, `package-lock.json`                                           | Identical apart from the name and description                                   |
+| `commitlint.config.mjs`                                                       | Shared rules, app scopes at the top                                             |
+| `Makefile`                                                                    | Shared targets, app block at the top. No `logs` target until the CLI has `logs` |
+| `CMakePresets.json`                                                           | Same presets, `JOT_` cache variables                                            |
+| `.github/workflows/ci.yml`                                                    | Same jobs, Jot's dependencies, Ubuntu added                                     |
+| `.github/FUNDING.yml`, `.github/ISSUE_TEMPLATE/config.yml`                    | Identical                                                                       |
+| `.github/ISSUE_TEMPLATE/bug_report.yml`, `SECURITY.md`                        | Same text, Jot's names and scope                                                |
+| `.github/workflows/code-review.yml`                                           | Identical                                                                       |
+| `.github/review-bot/REPO_NOTES.md`                                            | Same structure, Jot's stack and risks                                           |
 
 Shared code:
 
-| Files                                                                                           | State                                                                                                                                                                              |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `themes/*.toml`                                                                                 | Identical. The theme names and ids stay Callie's, so one theme file works in every app                                                                                             |
-| `Color`, `Base16`, `ThemeSpec`, `ThemeLoader`, `ThemeLibrary`, `Identity`, `Logging`, `LogFile` | Renamed only, apart from comments that name what the app shows                                                                                                                     |
-| `ThemeController`                                                                               | Calendar-only tokens and the calendar color functions removed. `ThemeSpec` keeps the `[calendar]` section so theme files stay identical; Jot will use it for folder and tag colors |
+| Files                                                                                           | State                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `themes/*.toml`                                                                                 | Identical. The theme names and ids stay Callie's, so one theme file works in every app                                                                                                                     |
+| `Color`, `Base16`, `ThemeSpec`, `ThemeLoader`, `ThemeLibrary`, `Identity`, `Logging`, `LogFile` | Renamed only, apart from comments that name what the app shows                                                                                                                                             |
+| `ThemeController`                                                                               | Calendar-only tokens and the calendar color functions removed, `titleBarHeight` added. `ThemeSpec` keeps the `[calendar]` section so theme files stay identical; Jot will use it for folder and tag colors |
 
 Callie's `commitlint.config.mjs`, `Makefile` and `cliff.toml` still use the older layout. Moving
 them to this one is the first step of extraction.

@@ -1,3 +1,4 @@
+#include "LiveQml.h"
 #include "ThemeController.h"
 
 #include "jot/Identity.h"
@@ -7,7 +8,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <QTextStream>
+#include <QTimer>
 
 using namespace Qt::StringLiterals;
 
@@ -29,7 +32,27 @@ int main(int argc, char *argv[])
         u"theme"_s, u"Built-in theme id or path to a theme file. Defaults to $JOT_THEME."_s,
         u"theme"_s, qEnvironmentVariable("JOT_THEME"));
     parser.addOption(themeOption);
+    QCommandLineOption screenshotOption(
+        u"screenshot"_s, u"Save the window to a PNG once it has rendered, then exit."_s, u"file"_s);
+    parser.addOption(screenshotOption);
+    QCommandLineOption sizeOption(u"size"_s, u"Window size in pixels, e.g. 1280x840."_s, u"size"_s);
+    parser.addOption(sizeOption);
+#ifdef JOT_LIVE_QML
+    QCommandLineOption liveOption(
+        u"live-qml"_s,
+        u"Load QML from the source tree and reload it on save. Development builds only."_s);
+    parser.addOption(liveOption);
+#endif
     parser.process(app);
+    QSize windowSize;
+    if (parser.isSet(sizeOption)) {
+        const QStringList parts = parser.value(sizeOption).split(u'x');
+        windowSize = QSize(parts.value(0).toInt(), parts.value(1).toInt());
+        if (parts.size() != 2 || windowSize.isEmpty()) {
+            QTextStream(stderr) << "jot-gui: --size wants a size like 1280x840\n";
+            return 2;
+        }
+    }
     jot::logfile::install(u"jot-gui"_s);
 
     QTextStream err(stderr);
@@ -47,11 +70,39 @@ int main(int argc, char *argv[])
     // Basic style: everything visual comes from the theme, not a platform style.
     QQuickStyle::setStyle(u"Basic"_s);
     QQmlApplicationEngine engine;
-    QObject::connect(
-        &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
-        [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     // "Jot Devel" for a development build, so the two windows are told apart.
     engine.setInitialProperties({{u"title"_s, jot::identity::displayName()}});
+    bool live = false;
+#ifdef JOT_LIVE_QML
+    // A QML mistake while editing should wait for the fix, not end the session.
+    jot::LiveQml liveQml(engine,
+                         {{u"Jot.Ui"_s, QStringLiteral(JOT_SOURCE_DIR "/src/ui"),
+                           QStringLiteral(JOT_BINARY_DIR "/Jot/Ui")}},
+                         [&engine] { engine.loadFromModule("Jot.Ui", "Main"); });
+    if (parser.isSet(liveOption)) {
+        live = liveQml.start();
+        if (!live)
+            err << "jot-gui: live QML: " << liveQml.errorString() << "\n" << Qt::flush;
+    }
+#endif
+    if (!live)
+        QObject::connect(
+            &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
+            [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.loadFromModule("Jot.Ui", "Main");
+
+    auto *window = engine.rootObjects().isEmpty()
+                       ? nullptr
+                       : qobject_cast<QQuickWindow *>(engine.rootObjects().first());
+    if (windowSize.isValid() && window)
+        window->resize(windowSize);
+
+    if (const QString screenshot = parser.value(screenshotOption); !screenshot.isEmpty()) {
+        if (!window)
+            return 1;
+        QTimer::singleShot(1000, window, [window, screenshot] {
+            QCoreApplication::exit(window->grabWindow().save(screenshot) ? 0 : 1);
+        });
+    }
     return app.exec();
 }

@@ -104,3 +104,16 @@ jobs:
       # turns compiler warnings into errors.
       - name: Configure, build, lint and test
         run: cmake --workflow --preset ci
+
+      # Reviewers can see what a change looks like without building it.
+      - name: Render screenshots
+        if: matrix.name == 'fedora'
+        run: make screenshots PRESET=ci
+
+      - name: Upload screenshots
+        if: matrix.name == 'fedora'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: build/ci/screenshots/
+          if-no-files-found: error

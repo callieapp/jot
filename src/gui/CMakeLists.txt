@@ -14,4 +14,12 @@ target_link_libraries(jot-gui PRIVATE
     jotcore
 )
 
+if(JOT_LIVE_QML)
+    target_compile_definitions(jot-gui PRIVATE
+        JOT_LIVE_QML
+        JOT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
+        JOT_BINARY_DIR="${CMAKE_BINARY_DIR}"
+    )
+endif()
+
 install(TARGETS jot-gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

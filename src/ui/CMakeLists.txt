@@ -14,6 +14,8 @@ qt_add_qml_module(jotui
         ThemeController.cpp
         WindowButtons.h
         WindowButtons.cpp
+        LiveQml.h
+        LiveQml.cpp
     QML_FILES
         Main.qml
         DangerButton.qml

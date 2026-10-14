@@ -129,5 +129,8 @@ Beyond formatting:
   files in `themes/`. Do not hard-code colors, spacing, radii, or durations. Callie's
   [DESIGN.md](https://github.com/callieapp/callie/blob/main/DESIGN.md) explains what each token is
   for until Jot has its own.
+- To work on a theme, run `make gallery THEME=path/to/theme.toml`. It shows every token and
+  component, and updates as you save the file. `make watch` reloads the app's QML on save, and
+  `make screenshots` renders the app and the gallery in every built-in theme, as CI does.
 - Keep text and layout arithmetic in C++ models. QML positions things, it does not compute them.
 - Do not add Kirigami or any dependency that imports another desktop's visual language.

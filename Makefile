@@ -6,13 +6,16 @@
 APP := jot
 GUI_TARGET := jot-gui
 CLI_TARGET := jot
+GALLERY_TARGET := jot-gallery
 LOG_CATEGORIES := jot.*
+# Fixed options, so the same commit always renders the same pictures.
+SHOT_APP := --size 1280x840
 
 FEDORA_DEPS := gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtdeclarative-devel \
-	qt6-qtquickcontrols2-devel tomlplusplus-devel clang-tools-extra nodejs npm
+	qt6-qtquickcontrols2-devel tomlplusplus-devel clang-tools-extra entr nodejs npm
 DEBIAN_DEPS := build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev \
 	qt6-declarative-dev-tools qml6-module-qtquick-controls qml6-module-qtquick-templates \
-	qml6-module-qtquick-effects libtomlplusplus-dev clang-format nodejs npm
+	qml6-module-qtquick-effects libtomlplusplus-dev clang-format entr nodejs npm
 
 # --- Shared by every app in the suite below this line. ---
 
@@ -20,6 +23,7 @@ PRESET ?= dev
 BUILD := build/$(PRESET)
 GUI := $(BUILD)/src/gui/$(GUI_TARGET)
 CLI := $(BUILD)/src/cli/$(CLI_TARGET)
+GALLERY := $(BUILD)/src/gallery/$(GALLERY_TARGET)
 
 # Fedora's Qt sends logs to the journal when stderr is not a terminal, and its
 # qtlogging.ini turns debug output off. This puts everything back on stderr,
@@ -28,8 +32,24 @@ DEV_ENV := QT_FORCE_STDERR_LOGGING=1 \
 	QT_LOGGING_RULES="qml.debug=true;$(LOG_CATEGORIES)=true" \
 	QT_MESSAGE_PATTERN="%{time hh:mm:ss.zzz} %{if-category}%{category} %{endif}%{type}: %{message}"
 
+# Files whose change should rebuild and restart the app under `make watch`. QML is left
+# out because --live-qml reloads it in place.
+WATCHED := git ls-files --cached --others --exclude-standard -- src themes CMakeLists.txt ':!:*.qml'
+
+# Rebuilds target $(1) and restarts $(2) on every save. Quitting the app or Ctrl-C
+# ends the watch; a failed build or a crash waits for the next save instead. entr -d
+# exits with status 2 when a file is added, so the loop re-lists and picks it up.
+define watch
+	@command -v entr >/dev/null || { echo "make $@ needs entr: run make deps" >&2; exit 1; }
+	@status=2; while [ $$status -eq 2 ]; do \
+		$(WATCHED) | entr -d -r -z -s 'cmake --build --preset $(PRESET) --target $(1) || exec sleep infinity; \
+			env $(DEV_ENV) $(2) || { echo "$(1) exited with status $$?, waiting for a change" >&2; exec sleep infinity; }'; \
+		status=$$?; \
+	done
+endef
+
 .DEFAULT_GOAL := help
-.PHONY: help deps setup configure build run cli test lint format check clean
+.PHONY: help deps setup configure build run cli gallery watch watch-gallery screenshots test lint format check clean
 
 help: ## List commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -65,6 +85,27 @@ run: build ## Run the app with logging on; ARGS="..." passes options
 
 cli: build ## Run the CLI, e.g. make cli ARGS="--help"
 	@$(DEV_ENV) $(CLI) $(ARGS)
+
+gallery: build ## Open the theme gallery; THEME=path shows a theme file live
+	@$(DEV_ENV) $(GALLERY) $(if $(THEME),--theme $(THEME))
+
+watch: $(PRESET_STAMP) ## Reload QML on save; rebuild and restart on C++ changes
+	$(call watch,$(GUI_TARGET),$(GUI) --live-qml $(ARGS))
+
+watch-gallery: $(PRESET_STAMP) ## Like watch, for the gallery; THEME=path optional
+	$(call watch,$(GALLERY_TARGET),$(GALLERY) --live-qml $(if $(THEME),--theme $(THEME)))
+
+SHOTS := $(BUILD)/screenshots
+
+screenshots: build ## Render the app and gallery for every built-in theme
+	@mkdir -p $(SHOTS)
+	@for theme in $(basename $(notdir $(wildcard themes/*.toml))); do \
+		QT_QPA_PLATFORM=offscreen $(GUI) $(SHOT_APP) --theme $$theme \
+			--screenshot $(SHOTS)/app-$$theme.png && \
+		QT_QPA_PLATFORM=offscreen $(GALLERY) --theme $$theme \
+			--screenshot $(SHOTS)/gallery-$$theme.png || exit 1; \
+	done
+	@echo "Screenshots are in $(SHOTS)"
 
 test: build ## Run the tests
 	@ctest --preset $(PRESET)
