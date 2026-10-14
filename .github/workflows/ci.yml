@@ -96,7 +96,7 @@ jobs:
             git build-essential cmake ninja-build \
             qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools ca-certificates \
             qml6-module-qtquick-controls qml6-module-qtquick-templates \
-            libtomlplusplus-dev
+            qml6-module-qtquick-effects libtomlplusplus-dev
 
       - uses: actions/checkout@v5
 

@@ -12,7 +12,7 @@ FEDORA_DEPS := gcc-c++ cmake ninja-build qt6-qtbase-devel qt6-qtdeclarative-deve
 	qt6-qtquickcontrols2-devel tomlplusplus-devel clang-tools-extra nodejs npm
 DEBIAN_DEPS := build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev \
 	qt6-declarative-dev-tools qml6-module-qtquick-controls qml6-module-qtquick-templates \
-	libtomlplusplus-dev clang-format nodejs npm
+	qml6-module-qtquick-effects libtomlplusplus-dev clang-format nodejs npm
 
 # --- Shared by every app in the suite below this line. ---
 
