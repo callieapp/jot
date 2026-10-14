@@ -19,6 +19,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "QT_QML_GENERATE_QMLLS_INI": "ON",
+        "JOT_LIVE_QML": "ON",
         "JOT_DEVEL": "ON"
       }
     },
@@ -34,7 +35,8 @@
       "displayName": "CI (warnings are errors)",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "JOT_WERROR": "ON"
+        "JOT_WERROR": "ON",
+        "JOT_LIVE_QML": "ON"
       }
     }
   ],

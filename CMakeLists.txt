@@ -21,6 +21,8 @@ option(JOT_DEVEL "Give this build its own identity, apart from an installed Jot"
 
 option(JOT_BUILD_TESTS "Build the unit tests" ON)
 option(JOT_WERROR "Treat compiler warnings as errors" OFF)
+# Builds in the source tree's path, so it is for development builds only.
+option(JOT_LIVE_QML "Add --live-qml to the app and gallery to reload QML from src/" OFF)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
@@ -40,6 +42,7 @@ add_subdirectory(src/core)
 add_subdirectory(src/ui)
 add_subdirectory(src/gui)
 add_subdirectory(src/cli)
+add_subdirectory(src/gallery)
 
 # Built-in themes are compiled in; installed copies are a starting point for
 # people writing their own.
