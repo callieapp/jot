@@ -96,6 +96,8 @@ class ThemeController : public QObject
     Q_PROPERTY(int whichKeyDelay READ whichKeyDelay CONSTANT)
     /// The widest a search box opens, on a large window.
     Q_PROPERTY(int searchWidth READ searchWidth CONSTANT)
+    /// The title bar, which is also the toolbar.
+    Q_PROPERTY(int titleBarHeight READ titleBarHeight CONSTANT)
     /// The grab strip along a frameless window's edges. Anything scrollable at
     /// an edge keeps its handle clear of it.
     Q_PROPERTY(int resizeBorder READ resizeBorder CONSTANT)
@@ -191,6 +193,7 @@ public:
 
     int whichKeyDelay() const { return 300; }
     int searchWidth() const { return 560; }
+    int titleBarHeight() const { return 58; }
     int resizeBorder() const { return 6; }
     qreal fineGlyphStroke() const { return 1.6; }
     int logoLift() const { return 1; }

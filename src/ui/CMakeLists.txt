@@ -12,8 +12,36 @@ qt_add_qml_module(jotui
     SOURCES
         ThemeController.h
         ThemeController.cpp
+        WindowButtons.h
+        WindowButtons.cpp
     QML_FILES
         Main.qml
+        DangerButton.qml
+        Dropdown.qml
+        Field.qml
+        FormRow.qml
+        Glyph.qml
+        KeyCap.qml
+        LazyPopup.qml
+        Logo.qml
+        MenuCard.qml
+        MenuEntry.qml
+        PickerButton.qml
+        PillButton.qml
+        ResizeFrame.qml
+        Scrim.qml
+        SoftShadow.qml
+        StickerButton.qml
+        SuggestionPopup.qml
+        Tip.qml
+        Toggle.qml
+        WindowControls.qml
+)
+
+qt_add_resources(jotui "jot_logo"
+    PREFIX "/jot"
+    BASE "${PROJECT_SOURCE_DIR}"
+    FILES "${PROJECT_SOURCE_DIR}/assets/logo.png"
 )
 
 target_include_directories(jotui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
