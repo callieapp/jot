@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <tuple>
 
 using namespace Qt::StringLiterals;
 
@@ -481,10 +482,33 @@ QList<NoteInfo> VaultIndex::notesIn(const QString &folder) const
                       u"WHERE path LIKE ? ESCAPE '\\'"_s);
         query.addBindValue(likeEscaped(folder) + u"/%"_s);
     }
+    // Tags and aliases come in one query each, not two for every note.
+    QHash<QString, QStringList> tags;
+    QHash<QString, QStringList> aliases;
+    QSqlDatabase db = QSqlDatabase::database(m_connection);
+    for (auto [table, column, into] :
+         {std::tuple{"tags", "tag", &tags}, std::tuple{"aliases", "alias", &aliases}}) {
+        QSqlQuery list(u"SELECT path, %1 FROM %2 ORDER BY rowid"_s.arg(QLatin1String(column),
+                                                                       QLatin1String(table)),
+                       db);
+        while (list.next())
+            (*into)[list.value(0).toString()].append(list.value(1).toString());
+    }
     QList<NoteInfo> notes;
     if (exec(query, "notes in folder")) {
-        while (query.next())
-            notes.append(infoFrom(query));
+        while (query.next()) {
+            NoteInfo info;
+            info.path = query.value(0).toString();
+            info.title = query.value(1).toString();
+            info.todo = query.value(2).toString();
+            info.due = query.value(3).toString();
+            info.created = query.value(4).toString();
+            info.type = query.value(5).toString();
+            info.modified = query.value(6).toLongLong();
+            info.tags = tags.value(info.path);
+            info.aliases = aliases.value(info.path);
+            notes.append(info);
+        }
     }
     return notes;
 }
@@ -546,12 +570,14 @@ QList<SearchHit> VaultIndex::search(const QString &query, int limit) const
 
     QString sql;
     if (terms.isEmpty()) {
-        sql = u"SELECT n.path, n.title, '' FROM notes n WHERE %1 ORDER BY n.title COLLATE NOCASE "
+        sql = u"SELECT n.path, n.title, '', n.modified FROM notes n WHERE %1 ORDER BY n.title "
+              u"COLLATE NOCASE "
               u"LIMIT ?"_s.arg(where.join(u" AND "_s));
     } else {
         where.prepend(u"notes_fts MATCH ?"_s);
         values.prepend(terms.join(u' '));
-        sql = u"SELECT n.path, n.title, snippet(notes_fts, 4, '<mark>', '</mark>', '...', 12) "
+        sql = u"SELECT n.path, n.title, snippet(notes_fts, 4, '<mark>', '</mark>', '...', 12), "
+              u"n.modified "
               u"FROM notes_fts JOIN notes n ON n.path = notes_fts.path WHERE %1 "
               u"ORDER BY bm25(notes_fts, 0.0, 10.0, 5.0, 3.0, 1.0) LIMIT ?"_s.arg(
                   where.join(u" AND "_s));
