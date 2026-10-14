@@ -7,6 +7,8 @@ add_library(jotcore STATIC
     FrontMatter.cpp
     jot/NoteScan.h
     NoteScan.cpp
+    jot/Settings.h
+    Settings.cpp
     jot/Vault.h
     Vault.cpp
     jot/VaultWatcher.h
