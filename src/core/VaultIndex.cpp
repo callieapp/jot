@@ -442,6 +442,7 @@ NoteInfo VaultIndex::infoFrom(const QSqlQuery &query) const
     info.due = query.value(3).toString();
     info.created = query.value(4).toString();
     info.type = query.value(5).toString();
+    info.modified = query.value(6).toLongLong();
     QSqlDatabase db = QSqlDatabase::database(m_connection);
     const auto listFor = [&db, &info](const QString &statement) {
         QStringList values;
@@ -462,11 +463,44 @@ NoteInfo VaultIndex::infoFrom(const QSqlQuery &query) const
 std::optional<NoteInfo> VaultIndex::note(const QString &path) const
 {
     QSqlQuery query(QSqlDatabase::database(m_connection));
-    query.prepare(u"SELECT path, title, todo, due, created, type FROM notes WHERE path = ?"_s);
+    query.prepare(
+        u"SELECT path, title, todo, due, created, type, modified FROM notes WHERE path = ?"_s);
     query.addBindValue(path);
     if (!query.exec() || !query.next())
         return std::nullopt;
     return infoFrom(query);
+}
+
+QList<NoteInfo> VaultIndex::notesIn(const QString &folder) const
+{
+    QSqlQuery query(QSqlDatabase::database(m_connection));
+    if (folder.isEmpty()) {
+        query.prepare(u"SELECT path, title, todo, due, created, type, modified FROM notes"_s);
+    } else {
+        query.prepare(u"SELECT path, title, todo, due, created, type, modified FROM notes "
+                      u"WHERE path LIKE ? ESCAPE '\\'"_s);
+        query.addBindValue(likeEscaped(folder) + u"/%"_s);
+    }
+    QList<NoteInfo> notes;
+    if (exec(query, "notes in folder")) {
+        while (query.next())
+            notes.append(infoFrom(query));
+    }
+    return notes;
+}
+
+QHash<QString, int> VaultIndex::noteCounts() const
+{
+    QSqlQuery query(u"SELECT path FROM notes"_s, QSqlDatabase::database(m_connection));
+    QHash<QString, int> counts;
+    while (query.next()) {
+        QString folder = folderOf(query.value(0).toString());
+        while (!folder.isEmpty()) {
+            ++counts[folder];
+            folder = folderOf(folder);
+        }
+    }
+    return counts;
 }
 
 int VaultIndex::noteCount() const
@@ -619,9 +653,10 @@ QList<NoteTask> VaultIndex::openTasks() const
 QList<NoteInfo> VaultIndex::openTodoNotes() const
 {
     // Those with a due date first, soonest first; then the rest by title.
-    QSqlQuery query(u"SELECT path, title, todo, due, created, type FROM notes WHERE todo = 'open' "
-                    u"ORDER BY coalesce(due, '') = '', due, title COLLATE NOCASE"_s,
-                    QSqlDatabase::database(m_connection));
+    QSqlQuery query(
+        u"SELECT path, title, todo, due, created, type, modified FROM notes WHERE todo = 'open' "
+        u"ORDER BY coalesce(due, '') = '', due, title COLLATE NOCASE"_s,
+        QSqlDatabase::database(m_connection));
     QList<NoteInfo> notes;
     while (query.next())
         notes.append(infoFrom(query));

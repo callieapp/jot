@@ -93,6 +93,11 @@ void TestVaultIndex::readsTitlesTagsAndTodos()
     QCOMPARE(errand.todo, u"open"_s);
     QCOMPARE(errand.due, u"2026-10-20"_s);
     QCOMPARE(m_index->note(u"Plain.md"_s)->title, u"Plain"_s);
+    QVERIFY(m_index->note(u"Plain.md"_s)->modified > 0);
+    QCOMPARE(m_index->notesIn(u"Cast"_s).size(), 1);
+    QCOMPARE(m_index->notesIn(u"Ca"_s).size(), 0);
+    QCOMPARE(m_index->notesIn({}).size(), 3);
+    QCOMPARE(m_index->noteCounts().value(u"Cast"_s), 1);
     QVERIFY(!m_index->note(u"Missing.md"_s));
 }
 

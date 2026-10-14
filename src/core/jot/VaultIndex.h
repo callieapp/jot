@@ -2,6 +2,7 @@
 
 #include "jot/Vault.h"
 
+#include <QHash>
 #include <QSqlDatabase>
 #include <QString>
 #include <QStringList>
@@ -22,6 +23,8 @@ struct NoteInfo
     QString due;
     QString created;
     QString type;
+    /// When the file last changed, in nanoseconds since 1970.
+    qint64 modified = 0;
 };
 
 /// A link in a note: to another note, an attachment, or something not there.
@@ -84,6 +87,10 @@ public:
 
     [[nodiscard]] std::optional<NoteInfo> note(const QString &path) const;
     [[nodiscard]] int noteCount() const;
+    /// The notes in `folder` and the folders inside it; every note for an empty folder.
+    [[nodiscard]] QList<NoteInfo> notesIn(const QString &folder) const;
+    /// How many notes each folder holds, counting those in its own folders, by folder path.
+    [[nodiscard]] QHash<QString, int> noteCounts() const;
 
     /// Notes matching `query`: words, each matched at the start of a word, plus any of
     /// `tag:name` (with its nested tags), `in:folder`, `todo:open`, `todo:done` and
