@@ -11,6 +11,7 @@ Build-Depends: debhelper-compat (= 13),
                libqt6sql6-sqlite,
                qml6-module-qtquick-controls,
                qml6-module-qtquick-effects,
+               qml6-module-qtquick-dialogs,
                qml6-module-qtquick-templates,
                desktop-file-utils,
                appstream-util
@@ -24,6 +25,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends},
          libqt6sql6-sqlite,
          qml6-module-qtquick-controls,
          qml6-module-qtquick-effects,
+         qml6-module-qtquick-dialogs,
          qml6-module-qtquick-templates
 Description: plain-file notes for Linux
  Jot is a Markdown notes app for Linux. Notes are plain files in a folder

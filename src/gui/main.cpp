@@ -1,14 +1,17 @@
 #include "LiveQml.h"
 #include "ThemeController.h"
+#include "VaultController.h"
 
 #include "jot/Identity.h"
 #include "jot/LogFile.h"
+#include "jot/Settings.h"
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QTemporaryDir>
 #include <QTextStream>
 #include <QTimer>
 
@@ -37,6 +40,12 @@ int main(int argc, char *argv[])
     parser.addOption(screenshotOption);
     QCommandLineOption sizeOption(u"size"_s, u"Window size in pixels, e.g. 1280x840."_s, u"size"_s);
     parser.addOption(sizeOption);
+    QCommandLineOption vaultOption(u"vault"_s, u"Open this folder of notes, just this once."_s,
+                                   u"folder"_s);
+    parser.addOption(vaultOption);
+    QCommandLineOption noteOption(
+        u"note"_s, u"With --vault: show this note, by its path in the vault."_s, u"path"_s);
+    parser.addOption(noteOption);
 #ifdef JOT_LIVE_QML
     QCommandLineOption liveOption(
         u"live-qml"_s,
@@ -55,8 +64,17 @@ int main(int argc, char *argv[])
     }
     jot::logfile::install(u"jot-gui"_s);
 
+    // A vault given for one run, as for screenshots, leaves the user's settings alone.
+    QTemporaryDir scratch;
+    jot::Settings settings(parser.isSet(vaultOption) ? scratch.filePath(u"settings.ini"_s)
+                                                     : jot::Settings::defaultPath());
+    jot::VaultController vault(settings);
+    jot::VaultController::setInstance(&vault);
+
     QTextStream err(stderr);
-    if (const QString theme = parser.value(themeOption); !theme.isEmpty()) {
+    if (const QString theme =
+            parser.isSet(themeOption) ? parser.value(themeOption) : settings.theme();
+        !theme.isEmpty()) {
         const QStringList errors = jot::ThemeController::instance()->load(theme);
         for (const QString &error : errors)
             err << "jot-gui: " << theme << ": " << error << "\n";
@@ -66,6 +84,16 @@ int main(int argc, char *argv[])
     for (const QString &warning : jot::ThemeController::instance()->warnings())
         err << "jot-gui: theme: " << warning << "\n";
     err.flush();
+
+    if (parser.isSet(vaultOption)) {
+        if (!vault.openPath(parser.value(vaultOption))) {
+            err << "jot-gui: " << vault.error() << "\n";
+            return 1;
+        }
+        vault.setCurrent(parser.value(noteOption));
+    } else {
+        vault.openLast();
+    }
 
     // Basic style: everything visual comes from the theme, not a platform style.
     QQuickStyle::setStyle(u"Basic"_s);

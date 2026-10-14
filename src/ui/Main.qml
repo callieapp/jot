@@ -78,6 +78,8 @@ ApplicationWindow {
             }
 
             Row {
+                id: leading
+
                 anchors {
                     left: parent.left
                     verticalCenter: parent.verticalCenter
@@ -102,9 +104,33 @@ ApplicationWindow {
                     font.pixelSize: Theme.textDisplay
                     font.weight: Theme.weightBold
                 }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: Vault.isOpen
+                    text: Vault.name
+                    color: Theme.textMuted
+                    font.family: Theme.displayFontFamily
+                    font.pixelSize: Theme.textDisplay
+                    font.weight: Theme.weightStrong
+                }
+            }
+
+            StickerButton {
+                anchors {
+                    right: rightControls.left
+                    rightMargin: Theme.space4
+                    verticalCenter: parent.verticalCenter
+                }
+                visible: Vault.isOpen
+                glyph: "search"
+                Accessible.name: qsTr("Go to a note")
+                tip: qsTr("Go to a note (Ctrl+P)")
+                onClicked: switcher.open()
             }
 
             WindowControls {
+                id: rightControls
+
                 anchors {
                     right: parent.right
                     verticalCenter: parent.verticalCenter
@@ -114,6 +140,67 @@ ApplicationWindow {
                 buttons: WindowButtons.right
             }
         }
+
+        Item {
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: titleBar.bottom
+                bottom: parent.bottom
+            }
+
+            Welcome {
+                anchors.fill: parent
+                visible: !Vault.isOpen
+            }
+
+            Sidebar {
+                id: sidebar
+
+                visible: Vault.isOpen
+                anchors {
+                    left: parent.left
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                width: Theme.sidebarWidth
+            }
+            NoteList {
+                id: noteList
+
+                visible: Vault.isOpen
+                anchors {
+                    left: sidebar.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                width: Theme.noteListWidth
+            }
+            NoteView {
+                visible: Vault.isOpen
+                anchors {
+                    left: noteList.right
+                    right: parent.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+            }
+        }
+    }
+
+    QuickSwitcher {
+        id: switcher
+    }
+
+    Shortcut {
+        sequence: "Ctrl+P"
+        enabled: Vault.isOpen
+        onActivated: switcher.open()
+    }
+    Shortcut {
+        sequences: [StandardKey.Find]
+        enabled: Vault.isOpen
+        onActivated: noteList.focusSearch()
     }
 
     Rectangle {
