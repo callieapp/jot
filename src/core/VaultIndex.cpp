@@ -275,6 +275,8 @@ void VaultIndex::read(const QString &path)
           QVariant(todo), meta.value(u"due"_s), meta.value(u"created"_s), meta.value(u"type"_s)})
         note.addBindValue(value.isValid() ? value.toString() : QString());
     exec(note, "note");
+    // Read now: SQLite reports the connection's latest insert, which the lists below change.
+    const QVariant row = note.lastInsertId();
 
     const auto insertAll = [&db, &path](const QString &statement, const QStringList &values) {
         for (const QString &value : values) {
@@ -311,7 +313,7 @@ void VaultIndex::read(const QString &path)
     fts.prepare(
         u"INSERT INTO notes_fts (rowid, path, title, aliases, tags, body) VALUES (?, ?, ?, ?, "
         u"?, ?)"_s);
-    fts.addBindValue(note.lastInsertId());
+    fts.addBindValue(row);
     fts.addBindValue(path);
     fts.addBindValue(title);
     fts.addBindValue(aliases.join(u' '));
