@@ -4,8 +4,8 @@ import QtQuick
 import QtQuick.Controls
 
 /// The note shown, to read and to write. Its title renames the file; its body is the
-/// Markdown itself, styled as it is typed. Ctrl+click follows a link, and a click on a
-/// task's box ticks it.
+/// Markdown itself, styled as it is typed, with a row of formatting over it. Ctrl+click
+/// follows a link, and a click on a task's box ticks it.
 Rectangle {
     id: root
 
@@ -19,6 +19,19 @@ Rectangle {
     function editBody() {
         body.forceActiveFocus()
         body.cursorPosition = body.length
+    }
+
+    /// Formats the selection, or the word or line at the cursor, and keeps the cursor in
+    /// the note.
+    function format(action, argument) {
+        if (body.readOnly)
+            return
+        const from = body.selectionStart
+        const to = body.selectionEnd
+        const after = styler.format(action, from, to, argument)
+        body.forceActiveFocus()
+        if (after.start !== undefined)
+            body.select(after.start, after.end)
     }
 
     color: Theme.bg
@@ -53,6 +66,37 @@ Rectangle {
     }
     Component.onCompleted: load()
 
+    /// The formatting a key press asks for, or "". Letters and digits only, so the keys are
+    /// the same on every keyboard layout.
+    function formatKey(event) {
+        const ctrl = (event.modifiers & Qt.ControlModifier) !== 0
+        const shift = (event.modifiers & Qt.ShiftModifier) !== 0
+        if (!ctrl || (event.modifiers & Qt.AltModifier) !== 0)
+            return ""
+        if (shift)
+            return event.key === Qt.Key_X ? "strike" : ""
+        switch (event.key) {
+        case Qt.Key_B:
+            return "bold"
+        case Qt.Key_I:
+            return "italic"
+        case Qt.Key_E:
+            return "code"
+        case Qt.Key_K:
+            return "link"
+        case Qt.Key_1:
+            return "h1"
+        case Qt.Key_2:
+            return "h2"
+        case Qt.Key_3:
+            return "h3"
+        case Qt.Key_Return:
+        case Qt.Key_Enter:
+            return "task"
+        }
+        return ""
+    }
+
     Text {
         anchors.centerIn: parent
         visible: Vault.current === ""
@@ -65,10 +109,28 @@ Rectangle {
         font.pixelSize: Theme.textBase
     }
 
+    FormatBar {
+        id: formatBar
+
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: parent.top
+        }
+        visible: Vault.current !== "" && Vault.writable
+        frontMatter: styler.frontMatter
+        onFormatRequested: action => root.format(action, "")
+    }
+
     Flickable {
         id: flick
 
-        anchors.fill: parent
+        anchors {
+            left: parent.left
+            right: parent.right
+            top: formatBar.visible ? formatBar.bottom : parent.top
+            bottom: parent.bottom
+        }
         visible: Vault.current !== ""
         contentWidth: width
         contentHeight: page.height
@@ -135,6 +197,12 @@ Rectangle {
                 }
             }
 
+            TodoDetails {
+                visible: Vault.writable && styler.frontMatter.todo !== undefined
+                frontMatter: styler.frontMatter
+                onFormatRequested: (action, argument) => root.format(action, argument)
+            }
+
             Text {
                 width: parent.width - 2 * parent.padding
                 visible: Vault.problem !== ""
@@ -183,6 +251,12 @@ Rectangle {
                 }
 
                 Keys.onPressed: event => {
+                    const action = root.formatKey(event)
+                    if (action !== "") {
+                        root.format(action, "")
+                        event.accepted = true
+                        return
+                    }
                     if (!event.matches(StandardKey.Paste))
                         return
                     // An image on the clipboard becomes an attachment; anything else pastes as text.

@@ -10,6 +10,7 @@
 #include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QtQml/qqmlextensionplugin.h>
@@ -34,6 +35,9 @@ private Q_SLOTS:
     void typingIsDrawnAndSaved();
     void typingKeepsWindowsLineEndings();
     void showsImagesInPlaceOfTheirLinks();
+    void formatsAndUndoesInOneStep();
+    void formatsFromTheKeyboard();
+    void makesTheNoteATodoWithADueDate();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -51,6 +55,8 @@ private:
 
 void TestNoteEditor::init()
 {
+    // A binding that breaks in the editor or its bars prints a warning naming the QML file.
+    QTest::failOnWarning(QRegularExpression(u"\\.qml:"_s));
     m_dir = std::make_unique<QTemporaryDir>();
     m_root = m_dir->filePath(u"Notes"_s);
     const QString sample = QStringLiteral(JOT_SAMPLE_VAULT);
@@ -188,6 +194,66 @@ void TestNoteEditor::showsImagesInPlaceOfTheirLinks()
         return count;
     };
     QTRY_VERIFY_WITH_TIMEOUT(blue() > 1000, 3000);
+}
+
+void TestNoteEditor::formatsAndUndoesInOneStep()
+{
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    const QString before = body->property("text").toString();
+    const int word = int(before.indexOf(u"plain"_s));
+    QVERIFY(word >= 0);
+    QMetaObject::invokeMethod(body, "select", Q_ARG(int, word), Q_ARG(int, word + 5));
+
+    QMetaObject::invokeMethod(m_editor.get(), "format", Q_ARG(QVariant, u"bold"_s),
+                              Q_ARG(QVariant, QString()));
+
+    QCOMPARE(body->property("text").toString().mid(word, 9), u"**plain**"_s);
+    QCOMPARE(body->property("selectedText").toString(), u"plain"_s);
+    QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
+    QString error;
+    QVERIFY(notefile::read(m_root + u"/Welcome.md"_s, &error)->contains(u"**plain**"_s));
+
+    QMetaObject::invokeMethod(body, "undo");
+    QCOMPARE(body->property("text").toString(), before);
+}
+
+void TestNoteEditor::formatsFromTheKeyboard()
+{
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    body->forceActiveFocus();
+    const QString before = body->property("text").toString();
+    const int word = int(before.indexOf(u"plain"_s));
+    body->setProperty("cursorPosition", word + 1);
+
+    QTest::keyClick(m_window.get(), Qt::Key_I, Qt::ControlModifier);
+    QCOMPARE(body->property("text").toString().mid(word, 7), u"*plain*"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return, Qt::ControlModifier);
+    QVERIFY(body->property("text").toString().contains(u"- [ ] "_s));
+}
+
+void TestNoteEditor::makesTheNoteATodoWithADueDate()
+{
+    m_vault->setCurrent(u"Recipes/Pancakes.md"_s);
+    QMetaObject::invokeMethod(m_editor.get(), "format", Q_ARG(QVariant, u"todo"_s),
+                              Q_ARG(QVariant, QString()));
+    QMetaObject::invokeMethod(m_editor.get(), "format", Q_ARG(QVariant, u"due"_s),
+                              Q_ARG(QVariant, u"2026-11-02"_s));
+    QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
+
+    QString error;
+    const QString saved = *notefile::read(m_root + u"/Recipes/Pancakes.md"_s, &error);
+    QVERIFY2(saved.contains(u"todo: open\n"_s), qPrintable(saved));
+    QVERIFY(saved.contains(u"due: 2026-11-02\n"_s));
+    QTRY_VERIFY_WITH_TIMEOUT(m_vault->index()->openTodoNotes().size() == 2, 3000);
+
+    QMetaObject::invokeMethod(m_editor.get(), "format", Q_ARG(QVariant, u"todo"_s),
+                              Q_ARG(QVariant, QString()));
+    QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
+    const QString undone = *notefile::read(m_root + u"/Recipes/Pancakes.md"_s, &error);
+    QVERIFY(!undone.contains(u"todo:"_s));
+    QVERIFY(!undone.contains(u"due:"_s));
 }
 
 QTEST_MAIN(TestNoteEditor)
