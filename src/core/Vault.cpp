@@ -290,6 +290,13 @@ std::optional<QString> Vault::createNote(const QString &folder, const QString &t
         *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
         return std::nullopt;
     }
+    const QString clean = QDir::cleanPath(folder);
+    if (!folder.isEmpty() &&
+        (clean == u".." || clean.startsWith(u"../"_s) || QDir::isAbsolutePath(clean) ||
+         clean.section(u'/', 0, 0).startsWith(u'.'))) {
+        *error = QObject::tr("%1 is not a notebook in this vault").arg(folder);
+        return std::nullopt;
+    }
     if (!QDir().mkpath(absolute(folder))) {
         *error = QObject::tr("could not create %1").arg(absolute(folder));
         return std::nullopt;

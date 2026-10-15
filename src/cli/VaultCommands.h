@@ -8,6 +8,8 @@
 #include <QCoreApplication>
 #include <QTextStream>
 
+#include <functional>
+
 namespace jot::cli {
 
 /// The commands that work on a vault: status, ls, search, new, show and todo. Each
@@ -32,6 +34,10 @@ public:
     /// Prints the note `name` names: a path, a title or an alias.
     int show(const QString &name);
     int todo(bool json);
+    /// Starts `program`, as the app, with these arguments; says whether it started.
+    using Launcher = std::function<bool(const QString &program, const QStringList &arguments)>;
+    /// Opens the note `name` names in the app at `program`, through `launch`.
+    int open(const QString &name, const QString &program, const Launcher &launch);
 
     /// The note `name` names, by path, title or alias, or empty.
     [[nodiscard]] QString find(const QString &name) const;
