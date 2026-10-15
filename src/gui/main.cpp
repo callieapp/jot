@@ -1,10 +1,14 @@
 #include "LiveQml.h"
+#include "ReleaseInfo.h"
+#include "SettingsForeign.h"
 #include "ThemeController.h"
+#include "ThemesController.h"
 #include "VaultController.h"
 
 #include "jot/Identity.h"
 #include "jot/LogFile.h"
 #include "jot/Settings.h"
+#include "jot/UpdateCheck.h"
 
 #include <QCommandLineParser>
 #include <QGuiApplication>
@@ -70,18 +74,19 @@ int main(int argc, char *argv[])
     QTemporaryDir scratch;
     jot::Settings settings(parser.isSet(vaultOption) ? scratch.filePath(u"settings.ini"_s)
                                                      : jot::Settings::defaultPath());
+    jot::SettingsForeign::s_instance = &settings;
     jot::VaultController vault(settings);
     jot::VaultController::setInstance(&vault);
 
     QTextStream err(stderr);
-    if (const QString theme =
-            parser.isSet(themeOption) ? parser.value(themeOption) : settings.theme();
-        !theme.isEmpty()) {
-        const QStringList errors = jot::ThemeController::instance()->load(theme);
+    if (const QString theme = parser.value(themeOption); !theme.isEmpty()) {
+        const QStringList errors = jot::ThemesController::instance()->applyForThisRun(theme);
         for (const QString &error : errors)
             err << "jot-gui: " << theme << ": " << error << "\n";
         if (!errors.isEmpty())
             return 1;
+    } else {
+        jot::ThemesController::instance()->restore();
     }
     for (const QString &warning : jot::ThemeController::instance()->warnings())
         err << "jot-gui: theme: " << warning << "\n";
@@ -100,6 +105,7 @@ int main(int argc, char *argv[])
 
     // Basic style: everything visual comes from the theme, not a platform style.
     QQuickStyle::setStyle(u"Basic"_s);
+    jot::UpdateCheck updates;
     QQmlApplicationEngine engine;
     // "Jot Devel" for a development build, so the two windows are told apart.
     engine.setInitialProperties({{u"title"_s, jot::identity::displayName()}});
@@ -121,6 +127,12 @@ int main(int argc, char *argv[])
             &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
             [] { QCoreApplication::exit(1); }, Qt::QueuedConnection);
     engine.loadFromModule("Jot.Ui", "Main");
+
+    // A vault given for one run, as for screenshots, never asks GitHub about releases.
+    if (!parser.isSet(vaultOption)) {
+        if (auto *release = engine.singletonInstance<jot::ReleaseInfo *>("Jot.Ui", "Release"))
+            release->watchForUpdates(&settings, &updates);
+    }
 
     auto *window = engine.rootObjects().isEmpty()
                        ? nullptr

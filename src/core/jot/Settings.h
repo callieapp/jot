@@ -24,6 +24,9 @@ class Settings : public QObject
     /// Looks for newer releases once a day.
     Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY
                    checkForUpdatesChanged)
+    /// The version that ran last, so a new one can say what changed.
+    Q_PROPERTY(QString lastSeenVersion READ lastSeenVersion WRITE setLastSeenVersion NOTIFY
+                   lastSeenVersionChanged)
 
 public:
     explicit Settings(const QString &path, QObject *parent = nullptr);
@@ -42,6 +45,12 @@ public:
     void setCollapsedNotebooks(const QStringList &paths);
     [[nodiscard]] bool checkForUpdates() const { return m_checkForUpdates; }
     void setCheckForUpdates(bool check);
+    [[nodiscard]] QString lastSeenVersion() const { return m_lastSeenVersion; }
+    void setLastSeenVersion(const QString &version);
+
+    /// Puts every choice back to its default. The vault stays open, and which
+    /// notebooks are folded is kept, since neither is a preference.
+    Q_INVOKABLE void reset();
 
 Q_SIGNALS:
     void vaultPathChanged();
@@ -49,6 +58,7 @@ Q_SIGNALS:
     void noteSortChanged();
     void collapsedNotebooksChanged();
     void checkForUpdatesChanged();
+    void lastSeenVersionChanged();
 
 private:
     QSettings m_store;
@@ -57,6 +67,7 @@ private:
     QString m_noteSort;
     QStringList m_collapsedNotebooks;
     bool m_checkForUpdates = true;
+    QString m_lastSeenVersion;
 };
 
 } // namespace jot

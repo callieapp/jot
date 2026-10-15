@@ -27,9 +27,11 @@ private Q_SLOTS:
     void startsClosed();
     void opensAFolderAndRemembersIt();
     void refusesWhatIsNotAFolder();
+    void switchesToAnotherFolder();
     void listsNotebooksThatFold();
     void listsNotesByNotebookTagAndSearch();
     void ordersNotesAsAsked();
+    void followsTheOrderInSettings();
     void switcherFindsByTitleAliasAndPath();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
@@ -125,6 +127,32 @@ void TestVaultController::refusesWhatIsNotAFolder()
     QVERIFY(!m_vault->error().isEmpty());
 }
 
+void TestVaultController::switchesToAnotherFolder()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Welcome.md"_s);
+    m_vault->edit(m_vault->currentText() + u"Typed just before switching.\n"_s);
+    const QString other = m_dir->filePath(u"Other"_s);
+    QVERIFY(QDir().mkpath(other));
+    QFile note(other + u"/Only.md"_s);
+    QVERIFY(note.open(QIODevice::WriteOnly));
+    note.write("Just one note.\n");
+    note.close();
+    QSignalSpy current(m_vault.get(), &VaultController::currentChanged);
+
+    m_vault->setIndexPath(m_dir->filePath(u"other.sqlite"_s));
+    QVERIFY(m_vault->openPath(other));
+
+    QCOMPARE(m_vault->name(), u"Other"_s);
+    QCOMPARE(m_vault->noteCount(), 1);
+    QCOMPARE(m_settings->vaultPath(), other);
+    QVERIFY(m_vault->current().isEmpty());
+    QVERIFY(!current.isEmpty());
+    QString error;
+    QVERIFY(notefile::read(m_root + u"/Welcome.md"_s, &error)
+                ->endsWith(u"Typed just before switching.\n"_s));
+}
+
 void TestVaultController::listsNotebooksThatFold()
 {
     QVERIFY(m_vault->openPath(m_root));
@@ -192,6 +220,15 @@ void TestVaultController::ordersNotesAsAsked()
     QSignalSpy changed(m_vault.get(), &VaultController::notesChanged);
     QVERIFY(changed.wait(3000));
     QCOMPARE(column(notes, "title").first(), u"Pancakes"_s);
+}
+
+void TestVaultController::followsTheOrderInSettings()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->notes()->setOrder(u"title"_s);
+    QCOMPARE(m_settings->noteSort(), u"title"_s);
+    m_settings->reset();
+    QCOMPARE(m_vault->notes()->order(), u"updated"_s);
 }
 
 void TestVaultController::switcherFindsByTitleAliasAndPath()

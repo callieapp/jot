@@ -16,6 +16,7 @@ private Q_SLOTS:
     void savesAtOnceAndReadsBack();
     void signalsOnlyOnAChange();
     void refusesAnUnknownSort();
+    void resetKeepsTheVault();
 };
 
 void TestSettings::startsWithDefaults()
@@ -65,6 +66,28 @@ void TestSettings::refusesAnUnknownSort()
     Settings settings(dir.filePath(u"settings.ini"_s));
     settings.setNoteSort(u"sideways"_s);
     QCOMPARE(settings.noteSort(), u"updated"_s);
+}
+
+void TestSettings::resetKeepsTheVault()
+{
+    QTemporaryDir dir;
+    Settings settings(dir.filePath(u"settings.ini"_s));
+    settings.setVaultPath(u"/home/me/Notes"_s);
+    settings.setTheme(u"paper"_s);
+    settings.setNoteSort(u"title"_s);
+    settings.setCheckForUpdates(false);
+    settings.setCollapsedNotebooks({u"Work"_s});
+    QSignalSpy themeChanged(&settings, &Settings::themeChanged);
+
+    settings.reset();
+
+    QCOMPARE(themeChanged.count(), 1);
+    QCOMPARE(settings.theme(), QString());
+    QCOMPARE(settings.noteSort(), u"updated"_s);
+    QVERIFY(settings.checkForUpdates());
+    QCOMPARE(settings.vaultPath(), u"/home/me/Notes"_s);
+    QCOMPARE(settings.collapsedNotebooks(), QStringList{u"Work"_s});
+    QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteSort(), u"updated"_s);
 }
 
 QTEST_GUILESS_MAIN(TestSettings)
