@@ -56,8 +56,9 @@ public:
     /// Formats the text from `from` to `to` as one step to undo, and gives the selection
     /// after as `{start, end}`. `action` is bold, italic, strike, code, link, codeblock,
     /// bullet, numbered, task, quote, h1, h2 or h3, or for the note as a whole todo, done,
-    /// or due with `argument` a date or empty. In lists, newline, indent and outdent do what
-    /// Return, Tab and Shift+Tab do there, and give nothing elsewhere so the key does its usual.
+    /// or due with `argument` a date or empty. In tables and lists, newline, indent and
+    /// outdent do what Return, Tab and Shift+Tab do there, and give nothing elsewhere so the
+    /// key does its usual. table inserts a table, or lines up the one at the cursor.
     Q_INVOKABLE QVariantMap format(const QString &action, int from, int to,
                                    const QString &argument = {});
 

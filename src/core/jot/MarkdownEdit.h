@@ -53,6 +53,21 @@ enum class LineStyle { Bullet, Numbered, Task, Quote, Heading1, Heading2, Headin
 [[nodiscard]] std::optional<Edit> indentList(const QString &text, qsizetype from, qsizetype to,
                                              bool outdent);
 
+/// Lines up the table the cursor is in, padding cells so the pipes align, keeping the
+/// cursor in its cell. Nothing outside a table.
+[[nodiscard]] std::optional<Edit> formatTable(const QString &text, qsizetype from, qsizetype to);
+
+/// Tab and Shift+Tab in a table: lines it up and selects the next or previous cell, adding
+/// a row after the last cell. Nothing outside a table.
+[[nodiscard]] std::optional<Edit> moveInTable(const QString &text, qsizetype from, bool backwards);
+
+/// Return in a table: lines it up and starts a row under the cursor's, or ends the table
+/// when the cursor's row is empty. Nothing outside a table.
+[[nodiscard]] std::optional<Edit> newTableRow(const QString &text, qsizetype from);
+
+/// A two-column table on lines of its own at the cursor, with its first heading selected.
+[[nodiscard]] Edit insertTable(const QString &text, qsizetype from, qsizetype to);
+
 /// Sets front matter `key` to `value`, or removes it when `value` is null, keeping the
 /// selection on the same text.
 [[nodiscard]] Edit setKey(const QString &text, qsizetype from, qsizetype to, const QString &key,

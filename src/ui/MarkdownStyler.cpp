@@ -101,12 +101,19 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
     } else if (styles.contains(action)) {
         step(styleLines(working, from, to, styles.value(action)));
     } else if (action == u"newline" || action == u"indent" || action == u"outdent") {
-        const std::optional<Edit> edit = action == u"newline"
-                                             ? continueList(working, from, to)
-                                             : indentList(working, from, to, action == u"outdent");
+        // A table takes the key first, then a list.
+        const bool outdent = action == u"outdent";
+        std::optional<Edit> edit =
+            action == u"newline" ? newTableRow(working, from) : moveInTable(working, from, outdent);
+        if (!edit)
+            edit = action == u"newline" ? continueList(working, from, to)
+                                        : indentList(working, from, to, outdent);
         if (!edit)
             return {};
         step(*edit);
+    } else if (action == u"table") {
+        const std::optional<Edit> lined = formatTable(working, from, to);
+        step(lined ? *lined : insertTable(working, from, to));
     } else if (action == u"link") {
         step(link(working, from, to));
     } else if (action == u"codeblock") {
