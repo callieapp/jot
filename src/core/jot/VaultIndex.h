@@ -2,6 +2,7 @@
 
 #include "jot/Vault.h"
 
+#include <QDate>
 #include <QHash>
 #include <QSqlDatabase>
 #include <QString>
@@ -61,6 +62,10 @@ struct SearchHit
     QString snippet;
     qint64 modified = 0;
 };
+
+/// Whether a to-do due on `due`, as front matter writes it (a date, or a date and time), is
+/// past due on `today`. A due that is not a date never is.
+[[nodiscard]] bool isOverdue(const QString &due, const QDate &today);
 
 /// What Jot knows about a vault's notes, kept in SQLite for search, links, tags and
 /// to-dos. It is a cache: deleting it loses nothing, and refresh() rebuilds it from the

@@ -143,14 +143,19 @@ struct OpenVault
     std::unique_ptr<VaultIndex> index;
 };
 
-std::optional<OpenVault> openVault(const QString &given)
+/// For completion: no messages, since they would land in the user's shell, and no full
+/// look over the vault on every Tab.
+enum class Quiet { No, Yes };
+
+std::optional<OpenVault> openVault(const QString &given, Quiet quiet = Quiet::No)
 {
     const QString path = given.isEmpty() ? Settings(Settings::defaultPath()).vaultPath() : given;
     if (path.isEmpty() || !QFileInfo(path).isDir()) {
-        err << (path.isEmpty() ? QObject::tr("jot: no vault yet; open one in the app, or give "
-                                             "--vault <folder>")
-                               : QObject::tr("jot: %1 is not a folder").arg(path))
-            << "\n";
+        if (quiet == Quiet::No)
+            err << (path.isEmpty() ? QObject::tr("jot: no vault yet; open one in the app, or give "
+                                                 "--vault <folder>")
+                                   : QObject::tr("jot: %1 is not a folder").arg(path))
+                << "\n";
         return std::nullopt;
     }
     OpenVault open;
@@ -158,10 +163,13 @@ std::optional<OpenVault> openVault(const QString &given)
     open.index = std::make_unique<VaultIndex>(*open.vault);
     QString error;
     if (!open.index->open(&error)) {
-        err << QObject::tr("jot: could not open the index: %1").arg(error) << "\n";
+        if (quiet == Quiet::No)
+            err << QObject::tr("jot: could not open the index: %1").arg(error) << "\n";
         return std::nullopt;
     }
-    open.index->refresh();
+    // Completion trusts the index, but a vault never read yet has to be read once.
+    if (quiet == Quiet::No || open.index->noteCount() == 0)
+        open.index->refresh();
     return open;
 }
 
@@ -257,10 +265,19 @@ int main(int argc, char *argv[])
         }
         // Notebooks and notes come from the vault, read only when a command wants them.
         std::optional<OpenVault> vault;
+        bool tried = false;
         const auto opened = [&]() -> OpenVault * {
-            if (!vault) {
-                const qsizetype at = words.indexOf(u"--vault"_s);
-                vault = openVault(at >= 0 ? words.value(at + 1) : QString());
+            if (!tried) {
+                tried = true;
+                // --vault folder, or --vault=folder, as the parser would read them.
+                QString given;
+                for (qsizetype i = 0; i < words.size(); ++i) {
+                    if (words.at(i) == u"--vault")
+                        given = words.value(i + 1);
+                    else if (words.at(i).startsWith(u"--vault="_s))
+                        given = words.at(i).mid(8);
+                }
+                vault = openVault(given, Quiet::Yes);
             }
             return vault ? &*vault : nullptr;
         };
@@ -361,20 +378,10 @@ int main(int argc, char *argv[])
             }
             return commands.create(rest, parser.value(notebookOption), body, json);
         }
-        // open
-        const QString path = commands.find(rest);
-        if (path.isEmpty()) {
-            err << QObject::tr("jot: no note called %1").arg(rest) << "\n";
-            return 1;
-        }
-        const QString gui = guiProgram();
-        if (gui.isEmpty()) {
-            err << QObject::tr("jot: jot-gui is not installed") << "\n";
-            return 1;
-        }
-        return QProcess::startDetached(gui, {u"--vault"_s, open->vault->root(), u"--note"_s, path})
-                   ? 0
-                   : 1;
+        return commands.open(rest, guiProgram(),
+                             [](const QString &program, const QStringList &arguments) {
+                                 return QProcess::startDetached(program, arguments);
+                             });
     }
     if (command == u"doctor" && args.size() == 1)
         return runDoctor(parser.isSet(reportOption));

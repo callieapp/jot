@@ -25,6 +25,7 @@ private Q_SLOTS:
     void makesNotesWithAPipedBody();
     void showsANoteByTitleAliasOrPath();
     void listsWhatIsLeftToDo();
+    void opensANoteInTheApp();
 
 private:
     int run(const std::function<int(cli::VaultCommands &)> &command);
@@ -101,6 +102,8 @@ void TestVaultCommands::listsNotesNewestOrByTitle()
     QCOMPARE(m_out.count(u'\n'), 8);
     QCOMPARE(run([](auto &c) { return c.list(u"Nowhere"_s, {}, false); }), 1);
     QVERIFY(m_err.contains(u"no notebook called Nowhere"_s));
+    QCOMPARE(run([](auto &c) { return c.list({}, u"titel"_s, false); }), 2);
+    QCOMPARE(run([](auto &c) { return c.list(u"../.."_s, {}, false); }), 2);
 }
 
 void TestVaultCommands::searchesWithFilters()
@@ -131,6 +134,10 @@ void TestVaultCommands::makesNotesWithAPipedBody()
     QVERIFY(text.endsWith(u"---\nBring a lantern.\n"_s));
     QCOMPARE(m_index->search(u"lantern"_s).size(), 1);
     QCOMPARE(run([](auto &c) { return c.create(u"  "_s, {}, {}, false); }), 2);
+    // A notebook outside the vault is refused before anything is written.
+    QCOMPARE(run([](auto &c) { return c.create(u"Escape"_s, u"../../elsewhere"_s, {}, false); }),
+             2);
+    QVERIFY(!QFileInfo::exists(m_dir->filePath(u"elsewhere"_s)));
 }
 
 void TestVaultCommands::showsANoteByTitleAliasOrPath()
@@ -151,6 +158,43 @@ void TestVaultCommands::listsWhatIsLeftToDo()
     QCOMPARE(todos.first().toObject().value(u"kind"_s).toString(), u"note"_s);
     QCOMPARE(todos.last().toObject().value(u"text"_s).toString(), u"oat milk"_s);
     QCOMPARE(todos.last().toObject().value(u"line"_s).toInt(), 6);
+
+    // A due that is not a date is never overdue.
+    QString error;
+    QVERIFY(notefile::write(m_vault->absolute(u"Someday.md"_s),
+                            u"---\ntodo: open\ndue: someday\n---\n"_s, &error));
+    m_index->update({u"Someday.md"_s});
+    m_index->update({u"Inbox/Groceries.md"_s});
+    QCOMPARE(run([](auto &c) { return c.todo(false); }), 0);
+    QVERIFY(m_out.contains(u"[ ] Someday  someday"_s));
+    QVERIFY(!isOverdue(u"someday"_s, QDate(2026, 10, 15)));
+    QVERIFY(isOverdue(u"2026-10-14T09:00:00Z"_s, QDate(2026, 10, 15)));
+    QVERIFY(!isOverdue(u"2026-10-15"_s, QDate(2026, 10, 15)));
+}
+
+void TestVaultCommands::opensANoteInTheApp()
+{
+    QString program;
+    QStringList arguments;
+    const auto launch = [&](const QString &p, const QStringList &a) {
+        program = p;
+        arguments = a;
+        return true;
+    };
+    QCOMPARE(run([&](auto &c) { return c.open(u"ferrywoman"_s, u"/usr/bin/jot-gui"_s, launch); }),
+             0);
+    QCOMPARE(program, u"/usr/bin/jot-gui"_s);
+    QCOMPARE(arguments, (QStringList{u"--vault"_s, m_vault->root(), u"--note"_s,
+                                     u"Ashfall/Characters/Mara Vey.md"_s}));
+    QCOMPARE(run([&](auto &c) { return c.open(u"qqqq"_s, u"/usr/bin/jot-gui"_s, launch); }), 1);
+    QCOMPARE(run([&](auto &c) { return c.open(u"mara"_s, {}, launch); }), 1);
+    QVERIFY(m_err.contains(u"not installed"_s));
+    QCOMPARE(run([](auto &c) {
+                 return c.open(u"mara"_s, u"/x"_s,
+                               [](const QString &, const QStringList &) { return false; });
+             }),
+             1);
+    QVERIFY(m_err.contains(u"could not start /x"_s));
 }
 
 QTEST_GUILESS_MAIN(TestVaultCommands)

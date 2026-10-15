@@ -3,6 +3,7 @@
 #include "jot/Fuzzy.h"
 
 #include <QDateTime>
+#include <QDir>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -26,6 +27,14 @@ void print(QTextStream &out, const QJsonValue &value)
 {
     out << (value.isArray() ? QJsonDocument(value.toArray()) : QJsonDocument(value.toObject()))
                .toJson(QJsonDocument::Indented);
+}
+
+/// A notebook named on the command line, if it is one inside the vault.
+bool insideVault(const QString &notebook)
+{
+    const QString clean = QDir::cleanPath(notebook);
+    return notebook.isEmpty() ||
+           (clean != u".." && !clean.startsWith(u"../"_s) && !QDir::isAbsolutePath(clean));
 }
 
 } // namespace
@@ -68,6 +77,14 @@ int VaultCommands::status(const QString &indexPath, bool json)
 
 int VaultCommands::list(const QString &notebook, const QString &order, bool json)
 {
+    if (!order.isEmpty() && order != u"updated" && order != u"title") {
+        m_err << tr("usage: jot ls [notebook] [--order updated|title]") << "\n";
+        return 2;
+    }
+    if (!insideVault(notebook)) {
+        m_err << tr("jot: %1 is not a notebook in this vault").arg(notebook) << "\n";
+        return 2;
+    }
     if (!notebook.isEmpty() && !QFileInfo(m_vault.absolute(notebook)).isDir()) {
         m_err << tr("jot: no notebook called %1").arg(notebook) << "\n";
         return 1;
@@ -140,6 +157,10 @@ int VaultCommands::create(const QString &title, const QString &notebook, const Q
         m_err << tr("usage: jot new <title> [--notebook name]") << "\n";
         return 2;
     }
+    if (!insideVault(notebook)) {
+        m_err << tr("jot: %1 is not a notebook in this vault").arg(notebook) << "\n";
+        return 2;
+    }
     QString error;
     const std::optional<QString> path =
         m_vault.createNote(notebook, title.trimmed(), QDateTime::currentDateTimeUtc(), &error);
@@ -148,8 +169,13 @@ int VaultCommands::create(const QString &title, const QString &notebook, const Q
         return 1;
     }
     if (!body.isEmpty()) {
-        QString text = notefile::read(m_vault.absolute(*path), &error).value_or(QString());
-        text += body.endsWith(u'\n') ? body : body + u'\n';
+        // Read back, so the front matter it was made with stays above the body.
+        const std::optional<QString> made = notefile::read(m_vault.absolute(*path), &error);
+        if (!made) {
+            m_err << tr("jot: could not read the note: %1").arg(error) << "\n";
+            return 1;
+        }
+        const QString text = *made + (body.endsWith(u'\n') ? body : body + u'\n');
         if (!notefile::write(m_vault.absolute(*path), text, &error)) {
             m_err << tr("jot: could not write the note: %1").arg(error) << "\n";
             return 1;
@@ -222,9 +248,7 @@ int VaultCommands::todo(bool json)
         return 0;
     }
     for (const NoteInfo &note : notes) {
-        const bool overdue =
-            !note.due.isEmpty() &&
-            QDate::fromString(note.due.left(10), Qt::ISODate) < QDate::currentDate();
+        const bool overdue = isOverdue(note.due, QDate::currentDate());
         m_out << "[ ] " << m_paint.bold(note.title)
               << (note.due.isEmpty() ? QString()
                                      : u"  "_s + (overdue ? m_paint.danger(note.due.left(10))
@@ -241,6 +265,24 @@ int VaultCommands::todo(bool json)
     }
     if (notes.isEmpty() && tasks.isEmpty())
         m_err << tr("Nothing left to do.") << "\n";
+    return 0;
+}
+
+int VaultCommands::open(const QString &name, const QString &program, const Launcher &launch)
+{
+    const QString path = find(name);
+    if (path.isEmpty()) {
+        m_err << tr("jot: no note called %1").arg(name) << "\n";
+        return 1;
+    }
+    if (program.isEmpty()) {
+        m_err << tr("jot: jot-gui is not installed") << "\n";
+        return 1;
+    }
+    if (!launch(program, {u"--vault"_s, m_vault.root(), u"--note"_s, path})) {
+        m_err << tr("jot: could not start %1").arg(program) << "\n";
+        return 1;
+    }
     return 0;
 }
 

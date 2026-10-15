@@ -97,6 +97,12 @@ bool exec(QSqlQuery &query, const char *what)
 
 } // namespace
 
+bool isOverdue(const QString &due, const QDate &today)
+{
+    const QDate date = QDate::fromString(due.trimmed().left(10), Qt::ISODate);
+    return date.isValid() && date < today;
+}
+
 VaultIndex::VaultIndex(Vault vault, QString databasePath)
     : m_vault(std::move(vault)),
       m_path(databasePath.isEmpty() ? defaultPath(m_vault) : std::move(databasePath)),

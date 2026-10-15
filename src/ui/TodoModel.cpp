@@ -50,11 +50,7 @@ QVariant TodoModel::data(const QModelIndex &index, int role) const
     case LineRole: return row.line;
     case DueRole: return row.due;
     case GroupRole: return row.kind == u"note" ? tr("To-do notes") : row.title;
-    case OverdueRole: {
-        // A date, or the date part of a time, as front matter writes them.
-        const QDate due = QDate::fromString(row.due.left(10), Qt::ISODate);
-        return due.isValid() && due < QDate::currentDate();
-    }
+    case OverdueRole: return isOverdue(row.due, QDate::currentDate());
     }
     return {};
 }
