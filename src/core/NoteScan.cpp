@@ -3,6 +3,7 @@
 #include <QRegularExpression>
 
 #include <algorithm>
+#include <functional>
 
 using namespace Qt::StringLiterals;
 
@@ -40,24 +41,36 @@ bool isUrl(const QString &target)
     return scheme.match(target).hasMatch();
 }
 
-} // namespace
-
-NoteScan scanNote(QStringView body, int firstLine)
+const QRegularExpression &wikiPattern()
 {
     static const QRegularExpression wiki(uR"((!?)\[\[([^\[\]|]*?)(?:\|[^\[\]]*)?\]\])"_s);
+    return wiki;
+}
+
+const QRegularExpression &markdownPattern()
+{
     static const QRegularExpression markdown(
         uR"((!?)\[(?:[^\[\]]|\[[^\[\]]*\])*\]\(\s*(<[^>]*>|[^\s)]+)(?:\s+(?:"[^"]*"|'[^']*'))?\s*\))"_s);
-    static const QRegularExpression tag(
-        uR"((?:^|(?<=[\s(,]))#([\p{L}\p{N}_/-]*[\p{L}_/-][\p{L}\p{N}_/-]*))"_s);
-    static const QRegularExpression task(uR"(^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]\s+(.*)$)"_s);
-    static const QRegularExpression fence(uR"(^\s{0,3}(```+|~~~+))"_s);
+    return markdown;
+}
 
-    NoteScan scan;
+/// Calls `visit` with each line of `body` that is prose rather than code: its number in the
+/// file, where it starts in `body`, and its text with code spans blanked out.
+void forEachProseLine(QStringView body, int firstLine,
+                      const std::function<void(int, qsizetype, const QString &)> &visit)
+{
+    static const QRegularExpression fence(uR"(^\s{0,3}(```+|~~~+))"_s);
     QString openFence;
     int number = firstLine - 1;
-    for (const QStringView raw : body.tokenize(u'\n')) {
+    qsizetype offset = 0;
+    while (offset <= body.size()) {
+        qsizetype end = body.indexOf(u'\n', offset);
+        if (end < 0)
+            end = body.size();
         ++number;
-        QString line = raw.toString();
+        QString line = body.sliced(offset, end - offset).toString();
+        const qsizetype start = offset;
+        offset = end + 1;
         if (line.endsWith(u'\r'))
             line.chop(1);
 
@@ -77,7 +90,20 @@ NoteScan scanNote(QStringView body, int firstLine)
             !QStringView(line).trimmed().startsWith(u'-') &&
             !QStringView(line).trimmed().startsWith(u'*'))
             continue;
+        visit(number, start, line);
+    }
+}
 
+} // namespace
+
+NoteScan scanNote(QStringView body, int firstLine)
+{
+    static const QRegularExpression tag(
+        uR"((?:^|(?<=[\s(,]))#([\p{L}\p{N}_/-]*[\p{L}_/-][\p{L}\p{N}_/-]*))"_s);
+    static const QRegularExpression task(uR"(^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]\s+(.*)$)"_s);
+
+    NoteScan scan;
+    forEachProseLine(body, firstLine, [&](int number, qsizetype, const QString &line) {
         if (const QRegularExpressionMatch m = task.match(line); m.hasMatch())
             scan.tasks.append({number, m.captured(1) != u" ", m.captured(2).trimmed()});
 
@@ -85,14 +111,14 @@ NoteScan scanNote(QStringView body, int firstLine)
         QString rest = text;
         // Each with where it starts, so the line's links keep the order they are written in.
         QList<std::pair<qsizetype, NoteScan::Link>> found;
-        for (const QRegularExpressionMatch &m : wiki.globalMatch(text)) {
+        for (const QRegularExpressionMatch &m : wikiPattern().globalMatch(text)) {
             found.append({m.capturedStart(),
                           {m.captured(2).trimmed(),
                            m.captured(1).isEmpty() ? u"wiki"_s : u"embed"_s, number}});
             // Blanked so the tag search does not read "[[#Heading]]" as a tag.
             rest.replace(m.capturedStart(), m.capturedLength(), QString(m.capturedLength(), u' '));
         }
-        for (const QRegularExpressionMatch &m : markdown.globalMatch(rest)) {
+        for (const QRegularExpressionMatch &m : markdownPattern().globalMatch(rest)) {
             QString target = m.captured(2);
             if (target.startsWith(u'<'))
                 target = target.mid(1, target.size() - 2);
@@ -111,8 +137,52 @@ NoteScan scanNote(QStringView body, int firstLine)
             if (!name.isEmpty() && !scan.tags.contains(name, Qt::CaseInsensitive))
                 scan.tags.append(name);
         }
-    }
+    });
     return scan;
+}
+
+QString
+rewriteLinks(QStringView body,
+             const std::function<std::optional<QString>(const QString &raw, bool wiki)> &replace)
+{
+    struct Edit
+    {
+        qsizetype start;
+        qsizetype length;
+        QString text;
+    };
+    QList<Edit> edits;
+    forEachProseLine(body, 1, [&](int, qsizetype lineStart, const QString &line) {
+        const QString text = withoutCodeSpans(line);
+        QString rest = text;
+        for (const QRegularExpressionMatch &m : wikiPattern().globalMatch(text)) {
+            const QString raw = m.captured(2).trimmed();
+            if (const std::optional<QString> with = replace(raw, true))
+                edits.append({lineStart + m.capturedStart(2), m.capturedLength(2), *with});
+            rest.replace(m.capturedStart(), m.capturedLength(), QString(m.capturedLength(), u' '));
+        }
+        for (const QRegularExpressionMatch &m : markdownPattern().globalMatch(rest)) {
+            QString target = m.captured(2);
+            const bool bracketed = target.startsWith(u'<');
+            if (bracketed)
+                target = target.mid(1, target.size() - 2);
+            if (target.isEmpty() || target.startsWith(u'#') || isUrl(target))
+                continue;
+            if (std::optional<QString> with = replace(target, false)) {
+                // Spaces need the angle brackets, or %20, to stay one target.
+                if (bracketed)
+                    *with = u'<' + *with + u'>';
+                else
+                    with->replace(u' ', u"%20"_s);
+                edits.append({lineStart + m.capturedStart(2), m.capturedLength(2), *with});
+            }
+        }
+    });
+    QString result = body.toString();
+    std::ranges::sort(edits, std::greater{}, &Edit::start);
+    for (const Edit &edit : std::as_const(edits))
+        result.replace(edit.start, edit.length, edit.text);
+    return result;
 }
 
 int bodyFirstLine(QStringView note, QStringView body)

@@ -9,6 +9,8 @@ add_library(jotcore STATIC
     Fuzzy.cpp
     jot/NoteScan.h
     NoteScan.cpp
+    jot/Rename.h
+    Rename.cpp
     jot/Settings.h
     Settings.cpp
     jot/Vault.h

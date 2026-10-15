@@ -5,6 +5,9 @@
 #include <QStringList>
 #include <QStringView>
 
+#include <functional>
+#include <optional>
+
 namespace jot {
 
 /// What a note's Markdown body holds that the index cares about. Code blocks and code
@@ -39,6 +42,13 @@ struct NoteScan
 
 /// Scans `body`, whose first line is line `firstLine` of the file.
 [[nodiscard]] NoteScan scanNote(QStringView body, int firstLine = 1);
+
+/// `body` with link targets changed: `replace` gets each link's target as written, without
+/// its label, and whether it is a [[wikilink]], and gives a new target or nothing to leave
+/// it. Code is left alone.
+[[nodiscard]] QString
+rewriteLinks(QStringView body,
+             const std::function<std::optional<QString>(const QString &raw, bool wiki)> &replace);
 
 /// The number of the file's line that `body` starts on, given the whole note.
 [[nodiscard]] int bodyFirstLine(QStringView note, QStringView body);
