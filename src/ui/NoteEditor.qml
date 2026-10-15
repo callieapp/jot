@@ -264,8 +264,10 @@ Rectangle {
                     cursorShape: Qt.IBeamCursor
                     onPointChanged: previewTimer.restart()
                     onHoveredChanged: {
-                        if (!hovered)
+                        if (!hovered) {
                             previewTimer.stop()
+                            preview.close()
+                        }
                     }
                 }
 

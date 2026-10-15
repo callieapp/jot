@@ -473,6 +473,14 @@ void TestVaultController::listsBacklinksAndMentions()
     QCOMPARE(links.unlinked(), 1);
     QCOMPARE(column(links, "path").last(), u"Ashfall/Characters/Soren.md"_s);
 
+    // Another note starting to link here shows up once the watcher says so.
+    QFile soren(m_root + u"/Ashfall/Characters/Soren.md"_s);
+    QVERIFY(soren.open(QIODevice::Append));
+    soren.write("\nAsks [[Mara Vey]] for the ledger.\n");
+    soren.close();
+    QTRY_COMPARE_WITH_TIMEOUT(links.linked(), 3, 3000);
+    QCOMPARE(links.unlinked(), 0);
+
     m_vault->setCurrent(u"Recipes/Sourdough.md"_s);
     QCOMPARE(links.rowCount(), 0);
 }
