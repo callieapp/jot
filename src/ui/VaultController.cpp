@@ -373,6 +373,27 @@ QString VaultController::attachmentPath(const QString &target, bool wiki) const
     return QFileInfo(file).isFile() ? file : QString();
 }
 
+QVariantMap VaultController::preview(const QString &target) const
+{
+    if (!m_index || m_current.isEmpty())
+        return {};
+    const QString path = m_index->resolve(target, m_current);
+    const std::optional<NoteInfo> info =
+        path.endsWith(u".md"_s) ? m_index->note(path) : std::nullopt;
+    if (!info)
+        return {};
+    QString error;
+    const QString text = notefile::read(m_vault->absolute(path), &error).value_or(QString());
+    // Enough to recognise the note by, cut at a line so no Markdown is left half open.
+    QString body = splitFrontMatter(text).body.toString().trimmed();
+    constexpr qsizetype kLength = 600;
+    if (body.size() > kLength) {
+        const qsizetype cut = body.lastIndexOf(u'\n', kLength);
+        body = body.left(cut > kLength / 2 ? cut : kLength) + u"\n..."_s;
+    }
+    return {{u"path"_s, path}, {u"title"_s, info->title}, {u"text"_s, body}};
+}
+
 void VaultController::resyncAfterRename(const QString &from, const QString &to)
 {
     if (!QFileInfo::exists(m_vault->absolute(from)) && QFileInfo::exists(m_vault->absolute(to))) {
@@ -439,10 +460,12 @@ void VaultController::reloadModels()
         m_notebooks.reload(m_vault.get(), m_index->noteCounts(), m_index->noteCount());
         m_notes.reload(m_index.get());
         m_switcher.reload(m_index.get());
+        m_backlinks.reload(m_vault.get(), m_index.get(), m_current);
     } else {
         m_notebooks.reload(nullptr, {}, 0);
         m_notes.reload(nullptr);
         m_switcher.reload(nullptr);
+        m_backlinks.reload(nullptr, nullptr, {});
     }
     Q_EMIT notesChanged();
 }
@@ -504,6 +527,7 @@ void VaultController::readCurrent()
         else
             setProblem(tr("Could not read the note: %1").arg(error));
     }
+    m_backlinks.reload(m_vault.get(), m_index.get(), m_current);
     m_crlf = m_currentText.contains(u"\r\n"_s);
     m_byteOrderMark = m_currentText.startsWith(QChar(0xfeff));
     Q_EMIT currentChanged();

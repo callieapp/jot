@@ -16,6 +16,8 @@ qt_add_qml_module(jotui
         WindowButtons.cpp
         LiveQml.h
         LiveQml.cpp
+        BacklinksModel.h
+        BacklinksModel.cpp
         MarkdownHighlighter.h
         MarkdownHighlighter.cpp
         MarkdownStyler.h
@@ -30,6 +32,7 @@ qt_add_qml_module(jotui
         VaultController.cpp
     QML_FILES
         Main.qml
+        Backlinks.qml
         DangerButton.qml
         Dropdown.qml
         Field.qml
@@ -37,6 +40,7 @@ qt_add_qml_module(jotui
         Glyph.qml
         KeyCap.qml
         LazyPopup.qml
+        LinkPreview.qml
         Logo.qml
         MenuCard.qml
         MenuEntry.qml

@@ -259,8 +259,49 @@ Rectangle {
                     }
                 }
                 HoverHandler {
+                    id: hover
+
                     cursorShape: Qt.IBeamCursor
+                    onPointChanged: previewTimer.restart()
+                    onHoveredChanged: {
+                        if (!hovered)
+                            previewTimer.stop()
+                    }
                 }
+
+                // A link the pointer rests on shows the start of its note.
+                Timer {
+                    id: previewTimer
+
+                    interval: 450
+                    onTriggered: {
+                        const at = body.positionAt(hover.point.position.x, hover.point.position.y)
+                        const hit = styler.hitAt(at)
+                        if (hit.kind !== "wikilink" && hit.kind !== "link") {
+                            preview.close()
+                            return
+                        }
+                        const note = Vault.preview(hit.target)
+                        if (!note.path) {
+                            preview.close()
+                            return
+                        }
+                        preview.title = note.title
+                        preview.text = note.text
+                        preview.x = Math.min(hover.point.position.x, body.width - preview.width)
+                        preview.y = body.positionToRectangle(at).y + body.positionToRectangle(
+                                    at).height + Theme.space2
+                        preview.open()
+                    }
+                }
+
+                LinkPreview {
+                    id: preview
+                }
+            }
+
+            Backlinks {
+                width: parent.width - 2 * parent.padding
             }
         }
     }

@@ -16,6 +16,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   makes the note a wikilink names), and a click ticks a task.
 - Paste an image, or drop files on a note, to keep them beside it in its `.assets` folder. An image
   on a line of its own shows in place of its link.
+- Under each note, the lines that link to it, and the notes that name it without a link. Resting the
+  pointer on a link shows the start of the note it leads to.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 
