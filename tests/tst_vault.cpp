@@ -2,6 +2,7 @@
 #include "jot/Vault.h"
 
 #include <QDir>
+#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QTemporaryDir>
@@ -29,6 +30,7 @@ private Q_SLOTS:
     void newNotesNeverOverwrite();
     void createdNotesCarryTheirDateAndTitle();
     void movingANoteTakesItsAttachments();
+    void keepsItsOwnTrashWhereTheDriveHasNone();
     void relativePathsStayInside();
     void newerVaultsAreOnlyRead();
 
@@ -187,6 +189,32 @@ void TestVault::movingANoteTakesItsAttachments()
     write(u"Other.md"_s);
     QVERIFY(!m_vault->moveNote(u"Other.md"_s, u"Cast/Mara Vey.md"_s, &error));
     QVERIFY(error.contains(u"already exists"_s));
+}
+
+void TestVault::keepsItsOwnTrashWhereTheDriveHasNone()
+{
+    m_vault->setSystemTrash(false);
+    write(u"A/Mara.md"_s, "first\n");
+    write(u"A/Mara.assets/sketch.png"_s);
+    write(u"B/Mara.md"_s, "second\n");
+    QString error;
+    QVERIFY2(m_vault->trashNote(u"A/Mara.md"_s, &error), qPrintable(error));
+    QVERIFY2(m_vault->trashNote(u"B/Mara.md"_s, &error), qPrintable(error));
+
+    QStringList trashed;
+    QDirIterator files(m_vault->absolute(u".jot/trash"_s), QDir::Files,
+                       QDirIterator::Subdirectories);
+    while (files.hasNext())
+        trashed.append(QFileInfo(files.next()).fileName());
+    trashed.sort();
+    // Both notes kept, though they share a name, and the attachments with them.
+    QCOMPARE(trashed.size(), 3);
+    QVERIFY(trashed.contains(u"sketch.png"_s));
+    QCOMPARE(trashed.filter(u"Mara.md"_s).size(), 2);
+    QVERIFY(!QFileInfo::exists(m_vault->absolute(u"A/Mara.md"_s)));
+    QVERIFY(!QFileInfo::exists(m_vault->absolute(u"A/Mara.assets"_s)));
+    // The trash is out of sight: not a notebook, not a note.
+    QCOMPARE(m_vault->entries(), (QList<VaultEntry>{{u"A"_s, true}, {u"B"_s, true}}));
 }
 
 void TestVault::relativePathsStayInside()
