@@ -44,6 +44,8 @@ private Q_SLOTS:
     void aRenameThatFailsHalfwayShowsWhereTheNoteIs();
     void aFailedSaveIsShownAndRetried();
     void attachesDroppedFilesAndPastedImages();
+    void listsBacklinksAndMentions();
+    void previewsWhatALinkLeadsTo();
 
 private:
     QStringList column(const QAbstractItemModel &model, const QByteArray &role) const;
@@ -455,6 +457,36 @@ void TestVaultController::attachesDroppedFilesAndPastedImages()
     QVERIFY2(pasted.startsWith(u"![](Mara%20Vey.assets/Pasted%20"_s), qPrintable(pasted));
     QGuiApplication::clipboard()->setText(u"just words"_s);
     QCOMPARE(m_vault->pasteImage(), QString());
+}
+
+void TestVaultController::listsBacklinksAndMentions()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Characters/Mara Vey.md"_s);
+    BacklinksModel &links = *m_vault->backlinks();
+    QCOMPARE(links.linked(), 2);
+    QCOMPARE(column(links, "path").mid(0, 2),
+             (QStringList{u"Ashfall/Pitch.md"_s, u"Ashfall/Places/The Ferry.md"_s}));
+    // Read as text, not Markdown.
+    QCOMPARE(column(links, "excerpt").first(), u"See Mara and The Ferry."_s);
+    // Soren's note names her by her alias, without a link.
+    QCOMPARE(links.unlinked(), 1);
+    QCOMPARE(column(links, "path").last(), u"Ashfall/Characters/Soren.md"_s);
+
+    m_vault->setCurrent(u"Recipes/Sourdough.md"_s);
+    QCOMPARE(links.rowCount(), 0);
+}
+
+void TestVaultController::previewsWhatALinkLeadsTo()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Pitch.md"_s);
+    const QVariantMap mara = m_vault->preview(u"Mara"_s);
+    QCOMPARE(mara.value(u"path"_s).toString(), u"Ashfall/Characters/Mara Vey.md"_s);
+    QCOMPARE(mara.value(u"title"_s).toString(), u"Mara Vey"_s);
+    QVERIFY(mara.value(u"text"_s).toString().startsWith(u"Mara runs the last ferry"_s));
+    QVERIFY(m_vault->preview(u"Nobody"_s).isEmpty());
+    QVERIFY(m_vault->preview(u"The%20Ferry.assets/ferry.png"_s).isEmpty());
 }
 
 QTEST_MAIN(TestVaultController)

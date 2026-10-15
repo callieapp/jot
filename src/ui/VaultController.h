@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BacklinksModel.h"
 #include "NoteListModel.h"
 #include "NotebookModel.h"
 #include "SwitcherModel.h"
@@ -12,6 +13,7 @@
 #include <QQmlEngine>
 #include <QTimer>
 #include <QUrl>
+#include <QVariantMap>
 
 #include <memory>
 
@@ -39,6 +41,8 @@ class VaultController : public QObject
     Q_PROPERTY(jot::NotebookModel *notebooks READ notebooks CONSTANT)
     Q_PROPERTY(jot::NoteListModel *notes READ notes CONSTANT)
     Q_PROPERTY(jot::SwitcherModel *switcher READ switcher CONSTANT)
+    /// What links to, or names, the note shown.
+    Q_PROPERTY(jot::BacklinksModel *backlinks READ backlinks CONSTANT)
     /// The note shown, by vault path, and what it says.
     Q_PROPERTY(QString current READ current WRITE setCurrent NOTIFY currentChanged)
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentChanged)
@@ -91,6 +95,9 @@ public:
                                        const QString &markdown) const;
     /// The file an image link in the note shown reaches, or empty for none.
     Q_INVOKABLE QString attachmentPath(const QString &target, bool wiki) const;
+    /// What a link in the note shown leads to, for a preview: `{path, title, text}`, where
+    /// `text` is the start of the note without its front matter. Empty when it leads to no note.
+    Q_INVOKABLE QVariantMap preview(const QString &target) const;
     /// How long typing must pause before edits are written, in ms.
     void setSaveDelay(int ms)
     {
@@ -110,6 +117,7 @@ public:
     [[nodiscard]] NotebookModel *notebooks() { return &m_notebooks; }
     [[nodiscard]] NoteListModel *notes() { return &m_notes; }
     [[nodiscard]] SwitcherModel *switcher() { return &m_switcher; }
+    [[nodiscard]] BacklinksModel *backlinks() { return &m_backlinks; }
     [[nodiscard]] QString current() const { return m_current; }
     void setCurrent(const QString &path);
     [[nodiscard]] QString currentTitle() const;
@@ -149,6 +157,7 @@ private:
     NotebookModel m_notebooks;
     NoteListModel m_notes;
     SwitcherModel m_switcher;
+    BacklinksModel m_backlinks;
     QString m_indexPath;
     QString m_error;
     QString m_current;
