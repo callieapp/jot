@@ -87,8 +87,9 @@ Rectangle {
         return ""
     }
 
-    /// The formatting a key press asks for, or "". Letters and digits only, so the keys are
-    /// the same on every keyboard layout.
+    /// The formatting a key press asks for, or "". Letters and digits match by key, so they
+    /// are the same on every layout; the slash matches by the character typed, with Shift
+    /// or without, so layouts that need Shift for it (Shift+7 in German) work too.
     function formatKey(event) {
         const ctrl = (event.modifiers & Qt.ControlModifier) !== 0
         const shift = (event.modifiers & Qt.ShiftModifier) !== 0

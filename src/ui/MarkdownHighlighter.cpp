@@ -198,6 +198,15 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
         QTextCharFormat mono;
         mono.setFontFamilies({m_look.monoFamily.isEmpty() ? u"monospace"_s : m_look.monoFamily});
         setFormat(0, int(text.size()), mono);
+        // Still knows code and front matter, so clicks there tick and follow nothing.
+        const QString trimmed = text.trimmed();
+        const bool fence = fencePattern().match(text).hasMatch();
+        if (first && (text == u"---" || text == u"\ufeff---"))
+            setCurrentBlockState(InFrontMatter);
+        else if (state == InFrontMatter && trimmed != u"---" && trimmed != u"...")
+            setCurrentBlockState(InFrontMatter);
+        else if (state != InFrontMatter && (state == InFence ? !fence : fence))
+            setCurrentBlockState(InFence);
         return;
     }
 
