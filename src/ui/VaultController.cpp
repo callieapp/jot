@@ -437,10 +437,11 @@ bool VaultController::rewriteNote(
     return true;
 }
 
-bool VaultController::setTaskDone(const QString &path, int line, bool done)
+bool VaultController::setTaskDone(const QString &path, int line, bool done, const QString &task)
 {
-    return rewriteNote(
-        path, [line, done](const QString &text) { return jot::setTaskDone(text, line, done); });
+    return rewriteNote(path, [line, done, task](const QString &text) {
+        return jot::setTaskDone(text, line, done, task);
+    });
 }
 
 bool VaultController::completeTodo(const QString &path)
@@ -456,8 +457,13 @@ bool VaultController::completeTodo(const QString &path)
 void VaultController::openAt(const QString &path, int line)
 {
     setCurrent(path);
-    if (line > 0)
-        Q_EMIT revealLine(line);
+    if (line <= 0)
+        return;
+    QString text = m_currentText;
+    text.remove(u'\r');
+    if (text.startsWith(QChar(0xfeff)))
+        text.remove(0, 1);
+    Q_EMIT revealPosition(int(lineStart(text, line)));
 }
 
 void VaultController::resyncAfterRename(const QString &from, const QString &to)
