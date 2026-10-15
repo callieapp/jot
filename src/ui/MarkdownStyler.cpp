@@ -69,6 +69,17 @@ void MarkdownStyler::readFrontMatter()
     Q_EMIT frontMatterChanged();
 }
 
+QVariantMap MarkdownStyler::wikilinkAt(int position) const
+{
+    if (!m_document || !m_document->textDocument())
+        return {};
+    const std::optional<markdownedit::WikilinkQuery> query =
+        markdownedit::wikilinkAt(m_document->textDocument()->toPlainText(), position);
+    if (!query)
+        return {};
+    return {{u"start"_s, int(query->start)}, {u"text"_s, query->text}};
+}
+
 QVariantMap MarkdownStyler::format(const QString &action, int from, int to, const QString &argument)
 {
     using namespace markdownedit;
@@ -108,6 +119,11 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
         if (!edit)
             edit = action == u"newline" ? continueList(working, from, to)
                                         : indentList(working, from, to, outdent);
+        if (!edit)
+            return {};
+        step(*edit);
+    } else if (action == u"wikilink") {
+        const std::optional<Edit> edit = completeWikilink(working, from, argument);
         if (!edit)
             return {};
         step(*edit);

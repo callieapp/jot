@@ -46,6 +46,8 @@ class VaultController : public QObject
     Q_PROPERTY(jot::NotebookModel *notebooks READ notebooks CONSTANT)
     Q_PROPERTY(jot::NoteListModel *notes READ notes CONSTANT)
     Q_PROPERTY(jot::SwitcherModel *switcher READ switcher CONSTANT)
+    /// The notes offered while typing a wikilink.
+    Q_PROPERTY(jot::SwitcherModel *linkSuggestions READ linkSuggestions CONSTANT)
     /// What is left to do across the vault.
     Q_PROPERTY(jot::TodoModel *todos READ todos CONSTANT)
     /// The middle column shows to-dos rather than notes.
@@ -135,6 +137,7 @@ public:
     [[nodiscard]] NotebookModel *notebooks() { return &m_notebooks; }
     [[nodiscard]] NoteListModel *notes() { return &m_notes; }
     [[nodiscard]] SwitcherModel *switcher() { return &m_switcher; }
+    [[nodiscard]] SwitcherModel *linkSuggestions() { return &m_linkSuggestions; }
     [[nodiscard]] BacklinksModel *backlinks() { return &m_backlinks; }
     [[nodiscard]] TodoModel *todos() { return &m_todos; }
     [[nodiscard]] bool showingTodos() const { return m_showingTodos; }
@@ -185,6 +188,7 @@ private:
     NotebookModel m_notebooks;
     NoteListModel m_notes;
     SwitcherModel m_switcher;
+    SwitcherModel m_linkSuggestions;
     BacklinksModel m_backlinks;
     TodoModel m_todos;
     bool m_showingTodos = false;

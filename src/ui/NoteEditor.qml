@@ -260,6 +260,62 @@ Rectangle {
                 /// Bumped when lines may have moved, so the images find their lines again.
                 property int layoutTick: 0
 
+                /// Where the wikilink being typed starts, or -1, and the one Escape put away.
+                property int linkStart: -1
+                property int dismissedLink: -1
+
+                /// Offers notes for the wikilink being typed at the cursor, if any.
+                function findLink() {
+                    const query = activeFocus && selectionStart === selectionEnd ? styler.wikilinkAt(
+                                                                                       cursorPosition) :
+                                                                                   ({})
+                    linkStart = query.start === undefined ? -1 : query.start
+                    if (linkStart < 0 || linkStart === dismissedLink) {
+                        if (linkStart < 0)
+                            dismissedLink = -1
+                        linkPopup.items = []
+                        return
+                    }
+                    Vault.linkSuggestions.query = query.text
+                    linkPopup.items = Vault.linkSuggestions.suggestions(8)
+                    linkPopup.highlighted = 0
+                }
+
+                function pickLink(index) {
+                    const item = linkPopup.items[index]
+                    if (item)
+                        root.format("wikilink", item.target)
+                }
+
+                /// Handles a key while notes are offered; says whether it did.
+                function linkKey(event) {
+                    const count = linkPopup.items.length
+                    switch (event.key) {
+                    case Qt.Key_Down:
+                        linkPopup.highlighted = (linkPopup.highlighted + 1) % count
+                        return true
+                    case Qt.Key_Up:
+                        linkPopup.highlighted = (linkPopup.highlighted + count - 1) % count
+                        return true
+                    case Qt.Key_Return:
+                    case Qt.Key_Enter:
+                    case Qt.Key_Tab:
+                        if (event.modifiers !== Qt.NoModifier && event.modifiers
+                                !== Qt.KeypadModifier)
+                            return false
+                        pickLink(linkPopup.highlighted)
+                        return true
+                    case Qt.Key_Escape:
+                        dismissedLink = linkStart
+                        linkPopup.items = []
+                        return true
+                    }
+                    return false
+                }
+
+                onCursorPositionChanged: findLink()
+                onActiveFocusChanged: findLink()
+
                 /// Puts `markdown` on lines of its own at `position`.
                 function insertBlock(position, markdown) {
                     const place = Vault.placeBlock(text, position, markdown)
@@ -268,6 +324,12 @@ Rectangle {
                 }
 
                 Keys.onPressed: event => {
+                    // While notes are offered for a wikilink, the arrows choose one and
+                    // Return or Tab puts it in.
+                    if (linkPopup.visible && body.linkKey(event)) {
+                        event.accepted = true
+                        return
+                    }
                     // Lists carry on and nest; elsewhere these keys do what they always do.
                     const listAction = root.listKey(event)
                     if (listAction !== "" && !body.inputMethodComposing && root.format(listAction,
@@ -289,6 +351,20 @@ Rectangle {
                         return
                     insertBlock(cursorPosition, markdown)
                     event.accepted = true
+                }
+
+                // The card of notes for a wikilink sits under the cursor, kept inside the note.
+                Item {
+                    x: Math.max(0, Math.min(body.cursorRectangle.x, body.width - width))
+                    y: body.cursorRectangle.y
+                    width: Math.min(320, body.width)
+                    height: body.cursorRectangle.height
+
+                    SuggestionPopup {
+                        id: linkPopup
+                        wanted: body.activeFocus
+                        onPicked: index => body.pickLink(index)
+                    }
                 }
 
                 MarkdownStyler {

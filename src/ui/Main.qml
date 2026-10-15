@@ -467,6 +467,11 @@ ApplicationWindow {
             "inNote": true
         },
         {
+            "keys": ["[["],
+            "label": qsTr("Link to a note, chosen as you type"),
+            "inNote": true
+        },
+        {
             "keys": ["Ctrl+Click"],
             "label": qsTr("Follow a link"),
             "inNote": true
