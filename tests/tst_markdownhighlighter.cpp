@@ -199,6 +199,13 @@ void TestMarkdownHighlighter::sourceModeShowsTheMarkdownAsWritten()
 
     m_highlighter->setSourceMode(false);
     QCOMPARE(formatAt(find(u"**bold"_s)).foreground().color(), QColor(Qt::transparent));
+
+    // Code and front matter stay out of reach of clicks, as written as when styled.
+    setText(u"---\nurl: https://a.example\n---\n```\n- [ ] not a task\n```\n- [ ] task\n"_s);
+    m_highlighter->setSourceMode(true);
+    QCOMPARE(m_highlighter->hitAt(find(u"[ ] not"_s) + 1).kind, MarkdownHighlighter::Hit::None);
+    QCOMPARE(m_highlighter->hitAt(find(u"https"_s) + 2).kind, MarkdownHighlighter::Hit::None);
+    QCOMPARE(m_highlighter->hitAt(find(u"[ ] task"_s) + 1).kind, MarkdownHighlighter::Hit::TaskBox);
 }
 
 void TestMarkdownHighlighter::saysWhatIsUnderAPosition()
