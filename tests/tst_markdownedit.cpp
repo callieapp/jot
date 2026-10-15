@@ -195,6 +195,11 @@ void TestMarkdownEdit::continuesLists_data()
     QTest::newRow("empty task ends the list") << u"- a\n- [ ] |"_s << u"- a\n|"_s;
     QTest::newRow("empty nested item steps out") << u"- a\n  - |"_s << u"- a\n- |"_s;
     QTest::newRow("empty quote ends it") << u"> a\n> |"_s << u"> a\n|"_s;
+    QTest::newRow("quoted heading carries on as a quote") << u"> # Title|"_s << u"> # Title\n> |"_s;
+    QTest::newRow("empty nested number steps out as far as Tab nested it")
+        << u"1. a\n   2. |"_s << u"1. a\n2. |"_s;
+    QTest::newRow("in a code block") << u"```\n- a|\n```"_s << QString();
+    QTest::newRow("on a fence") << u"```- a|"_s << QString();
     QTest::newRow("plain line") << u"milk|"_s << QString();
     QTest::newRow("heading") << u"# Title|"_s << QString();
     QTest::newRow("cursor in the marker") << u"-| milk"_s << QString();
@@ -223,6 +228,8 @@ void TestMarkdownEdit::indentsLists_data()
     QTest::newRow("out of a tab") << true << u"\t- b|"_s << u"- b|"_s;
     QTest::newRow("out at the margin stays") << true << u"- b|"_s << u"- b|"_s;
     QTest::newRow("cursor in the indent") << true << u" | - b"_s << u"|- b"_s;
+    QTest::newRow("quoted item") << false << u"> - a|"_s << QString();
+    QTest::newRow("in a code block") << false << u"```\n- a|\n```"_s << QString();
     QTest::newRow("not a list") << false << u"plain|"_s << QString();
     QTest::newRow("partly a list") << false << u"[- a\nb]"_s << QString();
 }
