@@ -264,8 +264,19 @@ void TestVaultController::suggestsLinksThatResolve()
     QVERIFY(twin.open(QIODevice::WriteOnly));
     twin.write("Another stack.\n");
     twin.close();
+    // A front matter title the file name cannot hold: links still use the file name.
+    QFile titled(m_root + u"/Inbox/meeting-2026.md"_s);
+    QVERIFY(titled.open(QIODevice::WriteOnly));
+    titled.write("---\ntitle: Team sync\n---\nAgenda.\n");
+    titled.close();
     QVERIFY(m_vault->openPath(m_root));
     SwitcherModel &links = *m_vault->linkSuggestions();
+
+    links.setQuery(u"team sync"_s);
+    const QVariantMap meeting = links.suggestions(8).first().toMap();
+    QCOMPARE(meeting.value(u"text"_s).toString(), u"Team sync"_s);
+    QCOMPARE(meeting.value(u"target"_s).toString(), u"meeting-2026"_s);
+    QCOMPARE(m_vault->index()->resolve(u"meeting-2026"_s, {}), u"Inbox/meeting-2026.md"_s);
 
     links.setQuery(u"ferrywoman"_s);
     const QVariantMap mara = links.suggestions(8).first().toMap();

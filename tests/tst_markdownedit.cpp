@@ -428,6 +428,9 @@ void TestMarkdownEdit::completesWikilinks_data()
     QTest::newRow("closes it") << u"see [[Ma| now"_s << u"see [[Mara Vey]]| now"_s;
     QTest::newRow("fills an open pair") << u"see [[Ma|]] now"_s << u"see [[Mara Vey]]| now"_s;
     QTest::newRow("replaces the rest of the target") << u"[[Ma|rx]]"_s << u"[[Mara Vey]]|"_s;
+    QTest::newRow("keeps a label")
+        << u"[[Ma|ra|the captain]] now"_s << u"[[Mara Vey|the captain]]| now"_s;
+    QTest::newRow("keeps a heading") << u"[[Ma|ra#Early life]]"_s << u"[[Mara Vey#Early life]]|"_s;
     QTest::newRow("keeps a later link")
         << u"[[Ma| and [[Soren]]"_s << u"[[Mara Vey]]| and [[Soren]]"_s;
 }
@@ -436,6 +439,7 @@ void TestMarkdownEdit::completesWikilinks()
 {
     QFETCH(QString, before);
     QFETCH(QString, after);
+    // The cursor is the first bar; a label's bar comes after it.
     const qsizetype cursor = before.indexOf(u'|');
     const QString text = QString(before).remove(cursor, 1);
     const std::optional<Edit> edit = completeWikilink(text, cursor, u"Mara Vey"_s);
