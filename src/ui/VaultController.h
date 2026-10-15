@@ -45,6 +45,9 @@ class VaultController : public QObject
     Q_PROPERTY(QString currentText READ currentText NOTIFY currentChanged)
     /// Edits not yet written to the note's file.
     Q_PROPERTY(bool unsaved READ unsaved NOTIFY unsavedChanged)
+    /// What went wrong with the note shown, such as a save that failed and is being
+    /// retried; empty when all is well.
+    Q_PROPERTY(QString problem READ problem NOTIFY problemChanged)
 
 public:
     explicit VaultController(Settings &settings, QObject *parent = nullptr);
@@ -76,7 +79,11 @@ public:
     /// but nothing holds yet, or opens anything else with the desktop.
     Q_INVOKABLE bool follow(const QString &target, bool wiki);
     /// How long typing must pause before edits are written, in ms.
-    void setSaveDelay(int ms) { m_saveTimer.setInterval(ms); }
+    void setSaveDelay(int ms)
+    {
+        m_saveDelay = ms;
+        m_saveTimer.setInterval(ms);
+    }
     /// Index the database at `path` rather than the default one, as tests do.
     void setIndexPath(const QString &path) { m_indexPath = path; }
 
@@ -95,6 +102,7 @@ public:
     [[nodiscard]] QString currentTitle() const;
     [[nodiscard]] QString currentText() const { return m_currentText; }
     [[nodiscard]] bool unsaved() const { return m_unsaved; }
+    [[nodiscard]] QString problem() const { return m_problem; }
     [[nodiscard]] const VaultIndex *index() const { return m_index.get(); }
 
 Q_SIGNALS:
@@ -103,6 +111,7 @@ Q_SIGNALS:
     void notesChanged();
     void currentChanged();
     void unsavedChanged();
+    void problemChanged();
 
 private:
     void close();
@@ -111,6 +120,10 @@ private:
     void readCurrent();
     void fail(const QString &error);
     void setUnsaved(bool unsaved);
+    void setProblem(const QString &problem);
+    /// After a rename that did not finish, shows whichever of the two paths now holds
+    /// the note, so nothing writes to one that is gone.
+    void resyncAfterRename(const QString &from, const QString &to);
     /// Keeps what another program wrote to the note shown beside it, as the user's own
     /// edits are about to replace it.
     void keepConflict(const QString &theirs);
@@ -128,6 +141,12 @@ private:
     QString m_current;
     QString m_currentText;
     bool m_unsaved = false;
+    QString m_problem;
+    /// How the note on disk ends its lines and whether it starts with a byte order mark,
+    /// which the editor does not keep but the file must.
+    bool m_crlf = false;
+    bool m_byteOrderMark = false;
+    int m_saveDelay = 500;
     QTimer m_saveTimer;
     QTimer m_reloadTimer;
 };

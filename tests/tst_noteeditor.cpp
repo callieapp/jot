@@ -32,6 +32,7 @@ private Q_SLOTS:
 
     void drawsTheNoteAndKeepsDrawingItAcrossSwitches();
     void typingIsDrawnAndSaved();
+    void typingKeepsWindowsLineEndings();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -150,6 +151,24 @@ void TestNoteEditor::typingIsDrawnAndSaved()
 
     QString error;
     QVERIFY(notefile::read(m_root + u"/Welcome.md"_s, &error)->endsWith(u"And **bold** words."_s));
+}
+
+void TestNoteEditor::typingKeepsWindowsLineEndings()
+{
+    QFile file(m_root + u"/Windows.md"_s);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("one\r\ntwo\r\n");
+    file.close();
+    // Written before the window opened, so the watcher may not have told the index yet.
+    QTRY_VERIFY_WITH_TIMEOUT(m_vault->index()->note(u"Windows.md"_s), 3000);
+    m_vault->setCurrent(u"Windows.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    body->forceActiveFocus();
+    body->setProperty("cursorPosition", 3);
+    QTest::keyClick(m_window.get(), '!');
+    QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), QByteArray("one!\r\ntwo\r\n"));
 }
 
 QTEST_MAIN(TestNoteEditor)

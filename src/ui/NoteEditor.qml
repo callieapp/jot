@@ -131,6 +131,17 @@ Rectangle {
                 }
             }
 
+            Text {
+                width: parent.width - 2 * parent.padding
+                visible: Vault.problem !== ""
+                text: Vault.problem
+                wrapMode: Text.WordWrap
+                color: Theme.danger
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.textMd
+                font.weight: Theme.weightStrong
+            }
+
             TextEdit {
                 id: body
 
