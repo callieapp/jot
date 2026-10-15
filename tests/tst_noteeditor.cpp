@@ -38,6 +38,7 @@ private Q_SLOTS:
     void formatsAndUndoesInOneStep();
     void formatsFromTheKeyboard();
     void makesTheNoteATodoWithADueDate();
+    void continuesAndNestsLists();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -254,6 +255,37 @@ void TestNoteEditor::makesTheNoteATodoWithADueDate()
     const QString undone = *notefile::read(m_root + u"/Recipes/Pancakes.md"_s, &error);
     QVERIFY(!undone.contains(u"todo:"_s));
     QVERIFY(!undone.contains(u"due:"_s));
+}
+
+void TestNoteEditor::continuesAndNestsLists()
+{
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    body->forceActiveFocus();
+    body->setProperty("cursorPosition", body->property("length"));
+    const QString before = body->property("text").toString();
+    const auto type = [this](const QString &text) {
+        for (const QChar c : text)
+            QTest::keyClick(m_window.get(), c.toLatin1());
+    };
+
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    type(u"- eggs"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QTest::keyClick(m_window.get(), Qt::Key_Tab);
+    type(u"brown"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QTest::keyClick(m_window.get(), Qt::Key_Backtab);
+    type(u"milk"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    type(u"done"_s);
+    QCOMPARE(body->property("text").toString().mid(before.size()),
+             u"\n- eggs\n  - brown\n- milk\ndone"_s);
+
+    // Shift+Return is a plain line break, even in a list.
+    QTest::keyClick(m_window.get(), Qt::Key_Return, Qt::ShiftModifier);
+    QVERIFY(body->property("text").toString().endsWith(u"done\n"_s));
 }
 
 QTEST_MAIN(TestNoteEditor)

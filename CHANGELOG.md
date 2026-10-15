@@ -3,6 +3,14 @@
 What changed in each version of Jot, for the people using it. Notes collect under Unreleased
 as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md).
 
+## Unreleased
+
+### New
+
+- Lists carry on as you type: Return starts the next bullet, number or unticked box, Return on an
+  empty item ends the list, and Tab and Shift+Tab nest and unnest items. Shift+Return breaks the
+  line without a new item.
+
 ## 0.0.3 - 2026-10-15
 
 ### New

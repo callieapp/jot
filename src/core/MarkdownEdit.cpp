@@ -393,6 +393,107 @@ Edit codeBlock(const QString &text, qsizetype from, qsizetype to)
     return difference(text, changed, from + 4, to + 4);
 }
 
+std::optional<Edit> continueList(const QString &text, qsizetype from, qsizetype to)
+{
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    to = std::clamp<qsizetype>(to, 0, text.size());
+    if (from > to)
+        std::swap(from, to);
+    const qsizetype start = lineStartOf(text, from);
+    // A selection over several lines is replaced as a plain line break would replace it.
+    if (to > lineEndOf(text, from))
+        return std::nullopt;
+    const Line line = parse(text.mid(start, lineEndOf(text, from) - start));
+    const bool listed =
+        line.kind == Line::Bullet || line.kind == Line::Numbered || line.kind == Line::Task;
+    if ((!listed && line.quote.isEmpty()) || from - start < line.prefix())
+        return std::nullopt;
+
+    if (line.content.trimmed().isEmpty()) {
+        // An empty item ends the list, or steps out of a nested one first.
+        Line ended = line;
+        if (!ended.indent.isEmpty() && listed) {
+            const qsizetype unit =
+                std::min<qsizetype>(ended.indent.size(), ended.indent.startsWith(u'\t') ? 1 : 2);
+            ended.indent.remove(0, unit);
+        } else if (listed) {
+            ended.block.clear();
+        } else {
+            ended.quote.clear();
+        }
+        const qsizetype end = lineEndOf(text, from);
+        const QString changed = text.left(start) + ended.joined() + text.mid(end);
+        const qsizetype cursor = start + ended.prefix();
+        return difference(text, changed, cursor, cursor);
+    }
+
+    QString block = line.block;
+    if (line.kind == Line::Task) {
+        block = block.left(2) + u"[ ] "_s;
+    } else if (line.kind == Line::Numbered) {
+        const qsizetype digits = block.indexOf(QRegularExpression(u"[.)]"_s));
+        block = QString::number(block.left(digits).toInt() + 1) + block.mid(digits);
+    }
+    const QString next = u'\n' + line.indent + line.quote + block;
+    const QString changed = text.left(from) + next + text.mid(to);
+    const qsizetype cursor = from + next.size();
+    return difference(text, changed, cursor, cursor);
+}
+
+std::optional<Edit> indentList(const QString &text, qsizetype from, qsizetype to, bool outdent)
+{
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    to = std::clamp<qsizetype>(to, 0, text.size());
+    if (from > to)
+        std::swap(from, to);
+    const qsizetype last = to > from && to == lineStartOf(text, to) ? to - 1 : to;
+    const qsizetype first = lineStartOf(text, from);
+    const qsizetype end = lineEndOf(text, last);
+
+    QStringList out;
+    // How far each line's start moved, to carry the selection along.
+    QList<qsizetype> starts, shifts;
+    qsizetype at = first;
+    for (const QString &raw : text.mid(first, end - first).split(u'\n')) {
+        Line line = parse(raw);
+        if (line.kind != Line::Bullet && line.kind != Line::Numbered && line.kind != Line::Task)
+            return std::nullopt;
+        // A nested item lines up with the text of the item above it.
+        const qsizetype unit = line.kind == Line::Numbered ? line.block.size() : 2;
+        const qsizetype before = line.indent.size();
+        if (!outdent) {
+            line.indent += QString(unit, u' ');
+        } else if (line.indent.startsWith(u'\t')) {
+            line.indent.remove(0, 1);
+        } else {
+            qsizetype spaces = 0;
+            while (spaces < std::min(unit, line.indent.size()) && line.indent.at(spaces) == u' ')
+                ++spaces;
+            line.indent.remove(0, spaces);
+        }
+        starts.append(at);
+        shifts.append(line.indent.size() - before);
+        at += raw.size() + 1;
+        out.append(line.joined());
+    }
+    const QString changed = text.left(first) + out.join(u'\n') + text.mid(end);
+    const auto map = [&](qsizetype position) {
+        qsizetype i = starts.size() - 1;
+        while (i > 0 && starts[i] > position)
+            --i;
+        qsizetype moved = 0;
+        for (qsizetype j = 0; j < i; ++j)
+            moved += shifts[j];
+        // Indenting carries the whole line along; outdenting pulls a position inside the
+        // removed indent back to the line's start.
+        const qsizetype shift = shifts[i];
+        return position + moved + (shift >= 0 ? shift : std::max(shift, starts[i] - position));
+    };
+    // A selection from the start of its first line keeps the indent it gains.
+    const qsizetype start = from < to && from == first ? from : map(from);
+    return difference(text, changed, start, map(to));
+}
+
 Edit setKey(const QString &text, qsizetype from, qsizetype to, const QString &key,
             const QVariant &value)
 {

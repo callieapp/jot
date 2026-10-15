@@ -20,6 +20,10 @@ private Q_SLOTS:
     void makesLinks();
     void fencesCode_data();
     void fencesCode();
+    void continuesLists_data();
+    void continuesLists();
+    void indentsLists_data();
+    void indentsLists();
     void setsFrontMatterKeepingTheSelection();
     void editsAreAsSmallAsTheyCanBe();
 };
@@ -170,6 +174,67 @@ void TestMarkdownEdit::fencesCode()
     QFETCH(QString, after);
     const Marked in = unmark(before);
     QCOMPARE(applied(in.text, codeBlock(in.text, in.from, in.to)), after);
+}
+
+// An empty `after` means Return is left to break the line as usual.
+void TestMarkdownEdit::continuesLists_data()
+{
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("after");
+    QTest::newRow("bullet") << u"- milk|"_s << u"- milk\n- |"_s;
+    QTest::newRow("star bullet keeps its star") << u"* milk|"_s << u"* milk\n* |"_s;
+    QTest::newRow("number counts on") << u"9. milk|"_s << u"9. milk\n10. |"_s;
+    QTest::newRow("paren numbers") << u"2) milk|"_s << u"2) milk\n3) |"_s;
+    QTest::newRow("a ticked task gives an open one")
+        << u"- [x] milk|"_s << u"- [x] milk\n- [ ] |"_s;
+    QTest::newRow("splits the item") << u"- mi|lk"_s << u"- mi\n- |lk"_s;
+    QTest::newRow("nested keeps its indent") << u"  - milk|"_s << u"  - milk\n  - |"_s;
+    QTest::newRow("quote") << u"> said|"_s << u"> said\n> |"_s;
+    QTest::newRow("quoted list") << u"> - a|"_s << u"> - a\n> - |"_s;
+    QTest::newRow("empty item ends the list") << u"- a\n- |"_s << u"- a\n|"_s;
+    QTest::newRow("empty task ends the list") << u"- a\n- [ ] |"_s << u"- a\n|"_s;
+    QTest::newRow("empty nested item steps out") << u"- a\n  - |"_s << u"- a\n- |"_s;
+    QTest::newRow("empty quote ends it") << u"> a\n> |"_s << u"> a\n|"_s;
+    QTest::newRow("plain line") << u"milk|"_s << QString();
+    QTest::newRow("heading") << u"# Title|"_s << QString();
+    QTest::newRow("cursor in the marker") << u"-| milk"_s << QString();
+    QTest::newRow("selection over lines") << u"- [a\n- b]"_s << QString();
+}
+
+void TestMarkdownEdit::continuesLists()
+{
+    QFETCH(QString, before);
+    QFETCH(QString, after);
+    const Marked in = unmark(before);
+    const std::optional<Edit> edit = continueList(in.text, in.from, in.to);
+    QCOMPARE(edit ? applied(in.text, *edit) : QString(), after);
+}
+
+void TestMarkdownEdit::indentsLists_data()
+{
+    QTest::addColumn<bool>("outdent");
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("after");
+    QTest::newRow("bullet") << false << u"- a\n- b|"_s << u"- a\n  - b|"_s;
+    QTest::newRow("number lines up with the text")
+        << false << u"1. a\n2. b|"_s << u"1. a\n   2. b|"_s;
+    QTest::newRow("several lines") << false << u"[- a\n- b]"_s << u"[  - a\n  - b]"_s;
+    QTest::newRow("out") << true << u"- a\n  - b|"_s << u"- a\n- b|"_s;
+    QTest::newRow("out of a tab") << true << u"\t- b|"_s << u"- b|"_s;
+    QTest::newRow("out at the margin stays") << true << u"- b|"_s << u"- b|"_s;
+    QTest::newRow("cursor in the indent") << true << u" | - b"_s << u"|- b"_s;
+    QTest::newRow("not a list") << false << u"plain|"_s << QString();
+    QTest::newRow("partly a list") << false << u"[- a\nb]"_s << QString();
+}
+
+void TestMarkdownEdit::indentsLists()
+{
+    QFETCH(bool, outdent);
+    QFETCH(QString, before);
+    QFETCH(QString, after);
+    const Marked in = unmark(before);
+    const std::optional<Edit> edit = indentList(in.text, in.from, in.to, outdent);
+    QCOMPARE(edit ? applied(in.text, *edit) : QString(), after);
 }
 
 void TestMarkdownEdit::setsFrontMatterKeepingTheSelection()

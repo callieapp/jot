@@ -22,16 +22,18 @@ Rectangle {
     }
 
     /// Formats the selection, or the word or line at the cursor, and keeps the cursor in
-    /// the note.
+    /// the note. Says whether anything was done.
     function format(action, argument) {
         if (body.readOnly)
-            return
+            return false
         const from = body.selectionStart
         const to = body.selectionEnd
         const after = styler.format(action, from, to, argument)
         body.forceActiveFocus()
-        if (after.start !== undefined)
-            body.select(after.start, after.end)
+        if (after.start === undefined)
+            return false
+        body.select(after.start, after.end)
+        return true
     }
 
     color: Theme.bg
@@ -65,6 +67,21 @@ Rectangle {
         }
     }
     Component.onCompleted: load()
+
+    /// What Return, Tab or Shift+Tab with no other keys would do in a list, or "".
+    function listKey(event) {
+        const others = event.modifiers & ~(Qt.ShiftModifier | Qt.KeypadModifier)
+        if (others !== 0)
+            return ""
+        const shift = (event.modifiers & Qt.ShiftModifier) !== 0
+        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && !shift)
+            return "newline"
+        if (event.key === Qt.Key_Tab && !shift)
+            return "indent"
+        if (event.key === Qt.Key_Backtab)
+            return "outdent"
+        return ""
+    }
 
     /// The formatting a key press asks for, or "". Letters and digits only, so the keys are
     /// the same on every keyboard layout.
@@ -251,6 +268,13 @@ Rectangle {
                 }
 
                 Keys.onPressed: event => {
+                    // Lists carry on and nest; elsewhere these keys do what they always do.
+                    const listAction = root.listKey(event)
+                    if (listAction !== "" && !body.inputMethodComposing && root.format(listAction,
+                                                                                       "")) {
+                        event.accepted = true
+                        return
+                    }
                     const action = root.formatKey(event)
                     if (action !== "") {
                         root.format(action, "")

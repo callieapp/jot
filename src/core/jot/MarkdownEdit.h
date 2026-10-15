@@ -3,6 +3,8 @@
 #include <QString>
 #include <QVariant>
 
+#include <optional>
+
 namespace jot {
 
 /// The formatting a toolbar or shortcut applies to Markdown text, done to the text itself.
@@ -40,6 +42,16 @@ enum class LineStyle { Bullet, Numbered, Task, Quote, Heading1, Heading2, Headin
 
 /// Fences the lines the selection touches as a code block, or unfences them.
 [[nodiscard]] Edit codeBlock(const QString &text, qsizetype from, qsizetype to);
+
+/// What Return does on a list item or quote: starts the next item, with the next number or
+/// an unticked box, or ends the list when the item is empty. Nothing when the cursor is not
+/// in an item's text, so Return breaks the line as usual.
+[[nodiscard]] std::optional<Edit> continueList(const QString &text, qsizetype from, qsizetype to);
+
+/// Nests the list items the selection touches one level deeper, or one level out. Nothing
+/// when any line touched is not a list item, so Tab types a tab as usual.
+[[nodiscard]] std::optional<Edit> indentList(const QString &text, qsizetype from, qsizetype to,
+                                             bool outdent);
 
 /// Sets front matter `key` to `value`, or removes it when `value` is null, keeping the
 /// selection on the same text.

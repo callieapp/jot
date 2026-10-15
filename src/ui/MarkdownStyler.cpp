@@ -100,6 +100,13 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
         step(wrap(working, from, to, markers.value(action)));
     } else if (styles.contains(action)) {
         step(styleLines(working, from, to, styles.value(action)));
+    } else if (action == u"newline" || action == u"indent" || action == u"outdent") {
+        const std::optional<Edit> edit = action == u"newline"
+                                             ? continueList(working, from, to)
+                                             : indentList(working, from, to, action == u"outdent");
+        if (!edit)
+            return {};
+        step(*edit);
     } else if (action == u"link") {
         step(link(working, from, to));
     } else if (action == u"codeblock") {
