@@ -32,6 +32,9 @@ private Q_SLOTS:
     void movingANoteTakesItsAttachments();
     void keepsItsOwnTrashWhereTheDriveHasNone();
     void relativePathsStayInside();
+    void keepsAttachmentsBesideTheirNote();
+    void writesLinkTargetsOtherToolsRead_data();
+    void writesLinkTargetsOtherToolsRead();
     void newerVaultsAreOnlyRead();
 
     void readAndWriteKeepEveryByte();
@@ -215,6 +218,46 @@ void TestVault::keepsItsOwnTrashWhereTheDriveHasNone()
     QVERIFY(!QFileInfo::exists(m_vault->absolute(u"A/Mara.assets"_s)));
     // The trash is out of sight: not a notebook, not a note.
     QCOMPARE(m_vault->entries(), (QList<VaultEntry>{{u"A"_s, true}, {u"B"_s, true}}));
+}
+
+void TestVault::keepsAttachmentsBesideTheirNote()
+{
+    write(u"Cast/Mara Vey.md"_s);
+    QString error;
+    const std::optional<QString> first =
+        m_vault->addAttachment(u"Cast/Mara Vey.md"_s, u"sketch.png"_s, "png", &error);
+    QVERIFY2(first, qPrintable(error));
+    QCOMPARE(*first, u"Cast/Mara Vey.assets/sketch.png"_s);
+    QCOMPARE(m_vault->addAttachment(u"Cast/Mara Vey.md"_s, u"sketch.png"_s, "png2", &error),
+             std::optional(u"Cast/Mara Vey.assets/sketch 2.png"_s));
+    // A name with a path in it stays in the note's folder.
+    QCOMPARE(m_vault->addAttachment(u"Cast/Mara Vey.md"_s, u"../../escape.sh"_s, "x", &error),
+             std::optional(u"Cast/Mara Vey.assets/escape.sh"_s));
+    QFile written(m_vault->absolute(u"Cast/Mara Vey.assets/sketch 2.png"_s));
+    QVERIFY(written.open(QIODevice::ReadOnly));
+    QCOMPARE(written.readAll(), QByteArray("png2"));
+    // And the note still lists alone, its attachments under it.
+    QCOMPARE(m_vault->notes(), QStringList{u"Cast/Mara Vey.md"_s});
+}
+
+void TestVault::writesLinkTargetsOtherToolsRead_data()
+{
+    QTest::addColumn<QString>("from");
+    QTest::addColumn<QString>("to");
+    QTest::addColumn<QString>("target");
+    QTest::newRow("beside") << u"Cast/Mara Vey.md"_s << u"Cast/Mara Vey.assets/a b.png"_s
+                            << u"Mara%20Vey.assets/a%20b.png"_s;
+    QTest::newRow("from the top") << u"Pitch.md"_s << u"Cast/Mara.md"_s << u"Cast/Mara.md"_s;
+    QTest::newRow("up") << u"Acts/One.md"_s << u"Cast/Mara.md"_s << u"../Cast/Mara.md"_s;
+    QTest::newRow("parentheses") << u"Pitch.md"_s << u"Plan (draft).md"_s << u"<Plan (draft).md>"_s;
+}
+
+void TestVault::writesLinkTargetsOtherToolsRead()
+{
+    QFETCH(QString, from);
+    QFETCH(QString, to);
+    QFETCH(QString, target);
+    QCOMPARE(Vault::linkTarget(from, to), target);
 }
 
 void TestVault::relativePathsStayInside()

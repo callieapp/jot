@@ -1,8 +1,13 @@
 #pragma once
 
 #include <QColor>
+#include <QHash>
+#include <QSize>
 #include <QSyntaxHighlighter>
+#include <QTextBlockUserData>
 #include <QTextCharFormat>
+
+#include <functional>
 
 namespace jot {
 
@@ -29,7 +34,21 @@ public:
         int pixelSize = 15;
         int strongWeight = 600;
         int boldWeight = 700;
+        /// The widest and tallest an image is shown inline.
+        int imageWidth = 600;
+        int imageHeight = 360;
     };
+
+    /// An image shown in place of a line that holds only its link.
+    struct Image : QTextBlockUserData
+    {
+        QString path;
+        QSize size;
+    };
+
+    /// Finds the file an image link reaches: its target as written, and whether it is a
+    /// wikilink. Empty when it reaches none.
+    using Resolver = std::function<QString(const QString &target, bool wiki)>;
 
     /// What sits under a position: a link's target, or the box of a task.
     struct Hit
@@ -45,6 +64,7 @@ public:
     explicit MarkdownHighlighter(QTextDocument *document);
 
     void setLook(const Look &look);
+    void setResolver(Resolver resolver);
     /// The block the cursor is in shows its marks; others fold them away.
     void setCursorPosition(int position);
 
@@ -60,10 +80,15 @@ private:
     void merge(int start, int length, const QTextCharFormat &format);
     void mark(int start, int length);
     void inlineStyles(const QString &text, int from);
+    /// Shows the image a line links to, if the line is only that link; says whether it did.
+    bool imageLine(const QString &text);
+    [[nodiscard]] QSize imageSize(const QString &path);
 
     Look m_look;
     int m_cursorBlock = -1;
     bool m_cursorHere = false;
+    Resolver m_resolver;
+    QHash<QString, QSize> m_sizes;
 };
 
 } // namespace jot

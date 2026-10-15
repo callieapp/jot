@@ -204,6 +204,42 @@ QString Vault::assetsFolderFor(const QString &notePath)
     return stem + kAssetsSuffix;
 }
 
+std::optional<QString> Vault::addAttachment(const QString &notePath, const QString &fileName,
+                                            const QByteArray &bytes, QString *error) const
+{
+    if (!writable()) {
+        *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
+        return std::nullopt;
+    }
+    const QString folder = assetsFolderFor(notePath);
+    if (!QDir().mkpath(absolute(folder))) {
+        *error = QObject::tr("could not create %1").arg(folder);
+        return std::nullopt;
+    }
+    // Only the name: a path in it could reach outside the folder.
+    const QFileInfo name(fileName.section(u'/', -1));
+    const QString base = fileNameFor(name.completeBaseName());
+    const QString suffix = name.suffix().isEmpty() ? QString() : u'.' + name.suffix();
+    QString path = folder + u'/' + base + suffix;
+    for (int n = 2; QFileInfo::exists(absolute(path)); ++n)
+        path = folder + u'/' + u"%1 %2"_s.arg(base).arg(n) + suffix;
+    QSaveFile file(absolute(path));
+    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
+        *error = file.errorString();
+        return std::nullopt;
+    }
+    return path;
+}
+
+QString Vault::linkTarget(const QString &from, const QString &to)
+{
+    const QString folder = from.contains(u'/') ? from.section(u'/', 0, -2) : QString();
+    QString target = folder.isEmpty() ? to : QDir(u"/"_s + folder).relativeFilePath(u"/"_s + to);
+    if (target.contains(u'(') || target.contains(u')'))
+        return u'<' + target + u'>';
+    return target.replace(u' ', u"%20"_s);
+}
+
 QString Vault::freePath(const QString &folder, const QString &title) const
 {
     const QString base = fileNameFor(title);

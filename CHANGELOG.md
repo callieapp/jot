@@ -14,6 +14,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   emphasis, links and code fold away except on the line you are on. Notes save as you type.
   Ctrl+N makes a note, its title renames it and every link to it, Ctrl+click follows a link (or
   makes the note a wikilink names), and a click ticks a task.
+- Paste an image, or drop files on a note, to keep them beside it in its `.assets` folder. An image
+  on a line of its own shows in place of its link.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 

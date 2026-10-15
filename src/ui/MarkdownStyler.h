@@ -4,6 +4,7 @@
 #include <QPointer>
 #include <QQmlEngine>
 #include <QQuickTextDocument>
+#include <QVariantList>
 #include <QVariantMap>
 
 namespace jot {
@@ -23,6 +24,11 @@ class MarkdownStyler : public QObject
         int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
     /// The editor's body text size, which headings are scaled from.
     Q_PROPERTY(int pixelSize READ pixelSize WRITE setPixelSize NOTIFY pixelSizeChanged)
+    /// The width of the text, which images shown inline fit within.
+    Q_PROPERTY(int width READ width WRITE setWidth NOTIFY widthChanged)
+    /// The images shown in place of their links, as `{position, source, width, height}`,
+    /// where `position` is where the link's line starts.
+    Q_PROPERTY(QVariantList images READ images NOTIFY imagesChanged)
 
 public:
     explicit MarkdownStyler(QObject *parent = nullptr);
@@ -34,6 +40,9 @@ public:
     void setCursorPosition(int position);
     [[nodiscard]] int pixelSize() const { return m_pixelSize; }
     void setPixelSize(int size);
+    [[nodiscard]] int width() const { return m_width; }
+    void setWidth(int width);
+    [[nodiscard]] QVariantList images() const;
 
     /// What is at `position`: `{kind, target, position}`, where kind is "", "link",
     /// "wikilink", "url" or "task"; for a task, `position` is where its mark is.
@@ -43,14 +52,21 @@ Q_SIGNALS:
     void documentChanged();
     void cursorPositionChanged();
     void pixelSizeChanged();
+    void widthChanged();
+    void imagesChanged();
 
 private:
     void applyLook();
+    /// Images can come and go with any edit or move of the cursor; the list is told once
+    /// the event loop is back, after the highlighter has had its turn.
+    void scheduleImages();
 
     QPointer<QQuickTextDocument> m_document;
     MarkdownHighlighter *m_highlighter = nullptr;
     int m_cursorPosition = 0;
     int m_pixelSize = 16;
+    int m_width = 600;
+    bool m_imagesPending = false;
 };
 
 } // namespace jot
