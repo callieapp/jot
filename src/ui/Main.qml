@@ -407,6 +407,11 @@ ApplicationWindow {
             "inNote": true
         },
         {
+            "keys": ["Ctrl+/"],
+            "label": qsTr("Markdown as written, or styled"),
+            "inNote": true
+        },
+        {
             "keys": ["Ctrl+B"],
             "label": qsTr("Bold"),
             "inNote": true

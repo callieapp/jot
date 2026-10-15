@@ -156,6 +156,14 @@ void MarkdownHighlighter::setCursorPosition(int position)
     rehighlightBlock(document()->findBlockByNumber(block));
 }
 
+void MarkdownHighlighter::setSourceMode(bool source)
+{
+    if (m_source == source)
+        return;
+    m_source = source;
+    rehighlight();
+}
+
 void MarkdownHighlighter::merge(int start, int length, const QTextCharFormat &format)
 {
     for (int i = start; i < start + length; ++i) {
@@ -185,6 +193,13 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
     m_cursorHere = currentBlock().blockNumber() == m_cursorBlock;
     setCurrentBlockState(Normal);
     setCurrentBlockUserData(nullptr);
+
+    if (m_source) {
+        QTextCharFormat mono;
+        mono.setFontFamilies({m_look.monoFamily.isEmpty() ? u"monospace"_s : m_look.monoFamily});
+        setFormat(0, int(text.size()), mono);
+        return;
+    }
 
     QTextCharFormat faint;
     faint.setForeground(m_look.faint);

@@ -24,6 +24,8 @@ class Settings : public QObject
     /// Looks for newer releases once a day.
     Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY
                    checkForUpdatesChanged)
+    /// Notes show their Markdown as written rather than styled.
+    Q_PROPERTY(bool sourceMode READ sourceMode WRITE setSourceMode NOTIFY sourceModeChanged)
     /// The version that ran last, so a new one can say what changed.
     Q_PROPERTY(QString lastSeenVersion READ lastSeenVersion WRITE setLastSeenVersion NOTIFY
                    lastSeenVersionChanged)
@@ -45,6 +47,8 @@ public:
     void setCollapsedNotebooks(const QStringList &paths);
     [[nodiscard]] bool checkForUpdates() const { return m_checkForUpdates; }
     void setCheckForUpdates(bool check);
+    [[nodiscard]] bool sourceMode() const { return m_sourceMode; }
+    void setSourceMode(bool source);
     [[nodiscard]] QString lastSeenVersion() const { return m_lastSeenVersion; }
     void setLastSeenVersion(const QString &version);
 
@@ -58,6 +62,7 @@ Q_SIGNALS:
     void noteSortChanged();
     void collapsedNotebooksChanged();
     void checkForUpdatesChanged();
+    void sourceModeChanged();
     void lastSeenVersionChanged();
 
 private:
@@ -67,6 +72,7 @@ private:
     QString m_noteSort;
     QStringList m_collapsedNotebooks;
     bool m_checkForUpdates = true;
+    bool m_sourceMode = false;
     QString m_lastSeenVersion;
 };
 

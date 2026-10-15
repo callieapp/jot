@@ -25,6 +25,7 @@ private Q_SLOTS:
     void frontMatterIsNotMarkdown();
     void doneTasksAreStruckThrough();
     void tablesAreMonospaceAndKeepTheirMarks();
+    void sourceModeShowsTheMarkdownAsWritten();
     void saysWhatIsUnderAPosition();
     void neverChangesTheText();
     void reservesRoomForImagesOnTheirOwnLines();
@@ -181,6 +182,23 @@ void TestMarkdownHighlighter::tablesAreMonospaceAndKeepTheirMarks()
     QCOMPARE(formatAt(find(u"**Mara"_s)).foreground().color(), m_look.faint);
     QCOMPARE(formatAt(find(u"Mara"_s)).fontWeight(), m_look.boldWeight);
     QVERIFY(formatAt(find(u"After"_s)).fontFamilies().toStringList() != mono);
+}
+
+void TestMarkdownHighlighter::sourceModeShowsTheMarkdownAsWritten()
+{
+    setText(u"# Title\nSome **bold** text.\n"_s);
+    QCOMPARE(formatAt(find(u"**bold"_s)).foreground().color(), QColor(Qt::transparent));
+
+    m_highlighter->setSourceMode(true);
+    const QTextCharFormat mark = formatAt(find(u"**bold"_s));
+    QCOMPARE(mark.fontFamilies().toStringList(), QStringList{u"Mono Sample"_s});
+    QVERIFY(!mark.hasProperty(QTextFormat::FontPixelSize));
+    QVERIFY(!mark.hasProperty(QTextFormat::ForegroundBrush));
+    QVERIFY(!formatAt(find(u"Title"_s)).hasProperty(QTextFormat::FontPixelSize));
+    QVERIFY(formatAt(find(u"bold"_s)).fontWeight() != m_look.boldWeight);
+
+    m_highlighter->setSourceMode(false);
+    QCOMPARE(formatAt(find(u"**bold"_s)).foreground().color(), QColor(Qt::transparent));
 }
 
 void TestMarkdownHighlighter::saysWhatIsUnderAPosition()
