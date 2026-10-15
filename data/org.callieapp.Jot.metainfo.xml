@@ -35,6 +35,21 @@
   </categories>
 
   <releases>
+    <release version="0.0.3" date="2026-10-15">
+      <description>
+        <ul>
+          <li>Open a folder of Markdown notes as your vault. The sidebar lists its notebooks, which fold, and its tags; the middle column lists their notes, newest or by title, and searches them; Ctrl+P finds any note by a few letters of its title, an alias or its folder.</li>
+          <li>Write notes in Markdown that styles itself as you type: headings grow, and the marks behind emphasis, links and code fold away except on the line you are on. Notes save as you type. Ctrl+N makes a note, its title renames it and every link to it, Ctrl+click follows a link (or makes the note a wikilink names), and a click ticks a task.</li>
+          <li>Paste an image, or drop files on a note, to keep them beside it in its .assets folder. An image on a line of its own shows in place of its link.</li>
+          <li>Under each note, the lines that link to it, and the notes that name it without a link. Resting the pointer on a link shows the start of the note it leads to.</li>
+          <li>To-dos, in the sidebar: notes that are to-dos, soonest due first, and every unticked box in the vault. Ticking one changes its note; choosing one opens the note on that line.</li>
+          <li>jot status, ls, search, new, show, open and todo work on your vault from a terminal, with --json for scripts; jot new takes a note's body from a pipe.</li>
+          <li>A row of formatting over each note: headings, bold, italic, strikethrough, code, links, lists, checkboxes, quotes and code blocks, each also undone in one step, and most with a shortcut. The To-do button makes the note a to-do, with a due date and a Done switch under its title.</li>
+          <li>Settings, under the title bar's slider button or Ctrl+,: change the notes folder, pick, import, export or recolor a theme, and turn off the daily check for new releases. The ? menu copies debug info, reports a bug, lists the keyboard shortcuts, says what is new, and tells you when an update is out.</li>
+          <li>jot upgrade and jot downgrade install another release, jot logs and jot doctor help with bug reports, and the jot command completes in bash, zsh and fish.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.0.2" date="2026-10-14">
       <description>
         <ul>

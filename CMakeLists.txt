@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 project(jot
-    VERSION 0.0.2
+    VERSION 0.0.3
     DESCRIPTION "Plain-file notes for Linux"
     HOMEPAGE_URL "https://callieapp.org/jot"
     LANGUAGES CXX
