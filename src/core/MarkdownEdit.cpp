@@ -174,6 +174,12 @@ Line parse(const QString &text)
     return line;
 }
 
+/// How far a nested item is indented: under the text of the item above it.
+qsizetype nestUnit(const Line &line)
+{
+    return line.kind == Line::Numbered ? line.block.size() : 2;
+}
+
 bool has(const Line &line, LineStyle style)
 {
     switch (style) {
@@ -210,6 +216,30 @@ void apply(Line &line, LineStyle style, bool remove, int number)
         break;
     case LineStyle::Quote: break;
     }
+}
+
+bool isFence(const QString &text, qsizetype start)
+{
+    return text.mid(start, lineEndOf(text, start) - start).trimmed().startsWith(u"```"_s);
+}
+
+/// Where the code block that the line at `start` sits inside opens, or -1. Fences pair up
+/// from the top of the note, so it depends on how many come before the line, not on its
+/// neighbours alone.
+qsizetype openFenceBefore(const QString &text, qsizetype start)
+{
+    qsizetype open = -1;
+    for (qsizetype line = 0; line < start; line = lineEndOf(text, line) + 1) {
+        if (isFence(text, line))
+            open = open < 0 ? line : -1;
+    }
+    return open;
+}
+
+/// Whether the line at `start` is code: a fence, or inside a fenced block.
+bool inCode(const QString &text, qsizetype start)
+{
+    return isFence(text, start) || openFenceBefore(text, start) >= 0;
 }
 
 } // namespace
@@ -354,16 +384,8 @@ Edit codeBlock(const QString &text, qsizetype from, qsizetype to)
     const qsizetype last = to > from && to == lineStartOf(text, to) ? to - 1 : to;
     const qsizetype first = lineStartOf(text, from);
     const qsizetype end = lineEndOf(text, last);
-    const auto fence = [&](qsizetype start) {
-        return text.mid(start, lineEndOf(text, start) - start).trimmed().startsWith(u"```"_s);
-    };
-    // Fences pair up from the top of the note, so whether the selection is in a block
-    // depends on how many come before it, not on its neighbours alone.
-    qsizetype open = -1;
-    for (qsizetype line = 0; line < first; line = lineEndOf(text, line) + 1) {
-        if (fence(line))
-            open = open < 0 ? line : -1;
-    }
+    const auto fence = [&](qsizetype start) { return isFence(text, start); };
+    qsizetype open = openFenceBefore(text, first);
     if (open < 0 && fence(first))
         open = first;
     if (open >= 0) {
@@ -403,6 +425,8 @@ std::optional<Edit> continueList(const QString &text, qsizetype from, qsizetype 
     // A selection over several lines is replaced as a plain line break would replace it.
     if (to > lineEndOf(text, from))
         return std::nullopt;
+    if (inCode(text, start))
+        return std::nullopt;
     const Line line = parse(text.mid(start, lineEndOf(text, from) - start));
     const bool listed =
         line.kind == Line::Bullet || line.kind == Line::Numbered || line.kind == Line::Task;
@@ -413,9 +437,9 @@ std::optional<Edit> continueList(const QString &text, qsizetype from, qsizetype 
         // An empty item ends the list, or steps out of a nested one first.
         Line ended = line;
         if (!ended.indent.isEmpty() && listed) {
-            const qsizetype unit =
-                std::min<qsizetype>(ended.indent.size(), ended.indent.startsWith(u'\t') ? 1 : 2);
-            ended.indent.remove(0, unit);
+            // As far as Tab nested it, so one Return undoes one Tab.
+            const qsizetype unit = ended.indent.startsWith(u'\t') ? 1 : nestUnit(ended);
+            ended.indent.remove(0, std::min(unit, ended.indent.size()));
         } else if (listed) {
             ended.block.clear();
         } else {
@@ -427,7 +451,8 @@ std::optional<Edit> continueList(const QString &text, qsizetype from, qsizetype 
         return difference(text, changed, cursor, cursor);
     }
 
-    QString block = line.block;
+    // A quoted heading carries on as quoted text, not as another heading.
+    QString block = listed ? line.block : QString();
     if (line.kind == Line::Task) {
         block = block.left(2) + u"[ ] "_s;
     } else if (line.kind == Line::Numbered) {
@@ -454,12 +479,16 @@ std::optional<Edit> indentList(const QString &text, qsizetype from, qsizetype to
     // How far each line's start moved, to carry the selection along.
     QList<qsizetype> starts, shifts;
     qsizetype at = first;
+    if (inCode(text, first))
+        return std::nullopt;
     for (const QString &raw : text.mid(first, end - first).split(u'\n')) {
         Line line = parse(raw);
-        if (line.kind != Line::Bullet && line.kind != Line::Numbered && line.kind != Line::Task)
+        // Nesting inside a quote would need its indent after the marker, which the line
+        // parser does not keep, so quoted items are left to Tab's usual behaviour.
+        if ((line.kind != Line::Bullet && line.kind != Line::Numbered && line.kind != Line::Task) ||
+            !line.quote.isEmpty())
             return std::nullopt;
-        // A nested item lines up with the text of the item above it.
-        const qsizetype unit = line.kind == Line::Numbered ? line.block.size() : 2;
+        const qsizetype unit = nestUnit(line);
         const qsizetype before = line.indent.size();
         if (!outdent) {
             line.indent += QString(unit, u' ');

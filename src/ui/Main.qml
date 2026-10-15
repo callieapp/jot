@@ -442,6 +442,21 @@ ApplicationWindow {
             "inNote": true
         },
         {
+            "keys": ["Enter"],
+            "label": qsTr("Next list item, or end the list"),
+            "inNote": true
+        },
+        {
+            "keys": ["Shift+Enter"],
+            "label": qsTr("New line in a list item"),
+            "inNote": true
+        },
+        {
+            "keys": ["Tab", "Shift+Tab"],
+            "label": qsTr("Nest or unnest list items"),
+            "inNote": true
+        },
+        {
             "keys": ["Ctrl+Click"],
             "label": qsTr("Follow a link"),
             "inNote": true
