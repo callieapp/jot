@@ -112,6 +112,7 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
             return {};
         step(*edit);
     } else if (action == u"table") {
+        // In a table, however much of it is selected, the button lines it up.
         const std::optional<Edit> lined = formatTable(working, from, to);
         step(lined ? *lined : insertTable(working, from, to));
     } else if (action == u"link") {

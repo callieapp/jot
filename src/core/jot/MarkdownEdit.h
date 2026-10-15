@@ -53,8 +53,8 @@ enum class LineStyle { Bullet, Numbered, Task, Quote, Heading1, Heading2, Headin
 [[nodiscard]] std::optional<Edit> indentList(const QString &text, qsizetype from, qsizetype to,
                                              bool outdent);
 
-/// Lines up the table the cursor is in, padding cells so the pipes align, keeping the
-/// cursor in its cell. Nothing outside a table.
+/// Lines up the table the selection starts in, padding cells so the pipes align, keeping
+/// the selection in its cells. Nothing outside a table.
 [[nodiscard]] std::optional<Edit> formatTable(const QString &text, qsizetype from, qsizetype to);
 
 /// Tab and Shift+Tab in a table: lines it up and selects the next or previous cell, adding
