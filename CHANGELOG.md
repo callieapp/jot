@@ -20,6 +20,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   pointer on a link shows the start of the note it leads to.
 - To-dos, in the sidebar: notes that are to-dos, soonest due first, and every unticked box in the
   vault. Ticking one changes its note; choosing one opens the note on that line.
+- `jot status`, `ls`, `search`, `new`, `show`, `open` and `todo` work on your vault from a terminal,
+  with `--json` for scripts; `jot new` takes a note's body from a pipe.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 
