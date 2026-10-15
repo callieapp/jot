@@ -56,6 +56,8 @@ public:
     /// Moves a note and its `.assets` folder to the system trash, or to the vault's own
     /// `.jot/trash` where the drive has none.
     bool trashNote(const QString &path, QString *error) const;
+    /// Uses the vault's own trash even where the desktop has one, as tests do.
+    void setSystemTrash(bool use) { m_systemTrash = use; }
     /// Renames or moves a note and its `.assets` folder. Links to it are the index's job.
     bool moveNote(const QString &from, const QString &to, QString *error) const;
 
@@ -75,6 +77,7 @@ private:
     void collect(const QString &folder, QList<VaultEntry> &into) const;
 
     QString m_root;
+    bool m_systemTrash = true;
 };
 
 /// Orders names as people read them: case aside, and "Ch 2" before "Ch 10".

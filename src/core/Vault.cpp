@@ -238,15 +238,18 @@ bool Vault::trashNote(const QString &path, QString *error) const
 {
     // Where the desktop has no trash, as on some removable or network drives, the vault
     // keeps its own, so a note is never deleted outright.
-    const auto toTrash = [this](const QString &relative) {
+    const QString stamp = QDateTime::currentDateTime().toString(u"yyyyMMdd-HHmmss"_s);
+    const auto toTrash = [this, &stamp](const QString &relative) {
         const QString file = absolute(relative);
-        if (QFile::moveToTrash(file))
+        if (m_systemTrash && QFile::moveToTrash(file))
             return true;
-        const QString folder =
-            absolute(kSettingsFolder + u"/trash/"_s +
-                     QDateTime::currentDateTime().toString(u"yyyyMMdd-HHmmss"_s));
-        return QDir().mkpath(folder) &&
-               QDir().rename(file, folder + u'/' + relative.section(u'/', -1));
+        const QString folder = absolute(kSettingsFolder + u"/trash/"_s + stamp);
+        const QString name = relative.section(u'/', -1);
+        QString target = folder + u'/' + name;
+        // Two notes of one name trashed in the same second keep both.
+        for (int n = 2; QFileInfo::exists(target); ++n)
+            target = folder + u'/' + u"%1 %2"_s.arg(n).arg(name);
+        return QDir().mkpath(folder) && QDir().rename(file, target);
     };
     if (!toTrash(path)) {
         *error = QObject::tr("could not move %1 to the trash").arg(path);
