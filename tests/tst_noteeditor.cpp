@@ -33,6 +33,7 @@ private Q_SLOTS:
     void drawsTheNoteAndKeepsDrawingItAcrossSwitches();
     void typingIsDrawnAndSaved();
     void typingKeepsWindowsLineEndings();
+    void showsImagesInPlaceOfTheirLinks();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -169,6 +170,24 @@ void TestNoteEditor::typingKeepsWindowsLineEndings()
     QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
     QVERIFY(file.open(QIODevice::ReadOnly));
     QCOMPARE(file.readAll(), QByteArray("one!\r\ntwo\r\n"));
+}
+
+void TestNoteEditor::showsImagesInPlaceOfTheirLinks()
+{
+    m_vault->setCurrent(u"Ashfall/Places/The Ferry.md"_s);
+    // The sample picture's lower half is a blue nothing else in the editor has.
+    const auto blue = [this] {
+        const QImage image = m_window->grabWindow();
+        int count = 0;
+        for (int y = 0; y < image.height(); y += 2) {
+            for (int x = 0; x < image.width(); x += 2) {
+                const QColor c = image.pixelColor(x, y);
+                count += c.blue() > 200 && c.red() < 140 && c.green() > 110 ? 1 : 0;
+            }
+        }
+        return count;
+    };
+    QTRY_VERIFY_WITH_TIMEOUT(blue() > 1000, 3000);
 }
 
 QTEST_MAIN(TestNoteEditor)

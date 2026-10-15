@@ -1,5 +1,8 @@
 #include "MarkdownHighlighter.h"
 
+#include <QFileInfo>
+#include <QFontMetricsF>
+#include <QImageReader>
 #include <QRegularExpression>
 #include <QTextDocument>
 
@@ -63,6 +66,74 @@ void MarkdownHighlighter::setLook(const Look &look)
     rehighlight();
 }
 
+void MarkdownHighlighter::setResolver(Resolver resolver)
+{
+    m_resolver = std::move(resolver);
+    m_sizes.clear();
+    rehighlight();
+}
+
+QSize MarkdownHighlighter::imageSize(const QString &path)
+{
+    const QString key =
+        path + u'@' + QString::number(QFileInfo(path).lastModified().toMSecsSinceEpoch());
+    if (const auto it = m_sizes.constFind(key); it != m_sizes.cend())
+        return *it;
+    const QSize size = QImageReader(path).size();
+    m_sizes.insert(key, size);
+    return size;
+}
+
+bool MarkdownHighlighter::imageLine(const QString &text)
+{
+    static const QRegularExpression line(
+        uR"(^(\s*)!(?:\[[^\]]*\]\(\s*(<[^>]*>|[^\s)]+)(?:\s+"[^"]*")?\s*\)|\[\[([^\]|#]+)(?:\|[^\]]*)?\]\])\s*$)"_s);
+    const QRegularExpressionMatch m = line.match(text);
+    if (!m.hasMatch() || !m_resolver)
+        return false;
+    const bool wiki = m.capturedLength(3) > 0;
+    QString target = wiki ? m.captured(3).trimmed() : m.captured(2);
+    if (target.startsWith(u'<'))
+        target = target.mid(1, target.size() - 2);
+    const QString path = m_resolver(target, wiki);
+    const QSize natural = path.isEmpty() ? QSize() : imageSize(path);
+    if (!natural.isValid() || natural.isEmpty())
+        return false;
+
+    QSize shown = natural;
+    if (shown.width() > m_look.imageWidth)
+        shown = QSize(m_look.imageWidth, natural.height() * m_look.imageWidth / natural.width());
+    if (shown.height() > m_look.imageHeight)
+        shown = QSize(shown.width() * m_look.imageHeight / shown.height(), m_look.imageHeight);
+    // On the cursor's line the link shows instead, to be edited.
+    if (m_cursorHere)
+        return false;
+    auto *image = new Image;
+    image->path = path;
+    image->size = shown;
+    setCurrentBlockUserData(image);
+
+    // The line's one visible character is made exactly as tall as the image and no wider,
+    // which reserves the room the image is drawn into; the rest folds away.
+    const int bang = int(m.capturedLength(1));
+    QFont font;
+    if (!m_look.family.isEmpty())
+        font.setFamily(m_look.family);
+    font.setPixelSize(std::max(shown.height(), 1));
+    const double lineHeight = QFontMetricsF(font).height();
+    const int pixelSize = std::max(1, int(shown.height() * shown.height() / lineHeight));
+    font.setPixelSize(pixelSize);
+    QTextCharFormat tall;
+    tall.setForeground(Qt::transparent);
+    tall.setProperty(QTextFormat::FontPixelSize, pixelSize);
+    tall.setFontLetterSpacingType(QFont::AbsoluteSpacing);
+    tall.setFontLetterSpacing(-QFontMetricsF(font).horizontalAdvance(u'!'));
+    setFormat(bang, 1, tall);
+    mark(0, bang);
+    mark(bang + 1, int(text.size()) - bang - 1);
+    return true;
+}
+
 void MarkdownHighlighter::setCursorPosition(int position)
 {
     if (!document())
@@ -105,6 +176,7 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
     const bool first = currentBlock().blockNumber() == 0;
     m_cursorHere = currentBlock().blockNumber() == m_cursorBlock;
     setCurrentBlockState(Normal);
+    setCurrentBlockUserData(nullptr);
 
     QTextCharFormat faint;
     faint.setForeground(m_look.faint);
@@ -137,6 +209,9 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
             setCurrentBlockState(InFence);
         return;
     }
+
+    if (imageLine(text))
+        return;
 
     static const QRegularExpression heading(uR"(^(#{1,6})(\s+|$))"_s);
     static const QRegularExpression quote(uR"(^(\s*>\s?)+)"_s);

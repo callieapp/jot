@@ -1,5 +1,7 @@
 #include "MarkdownHighlighter.h"
 
+#include <QImage>
+#include <QTemporaryDir>
 #include <QTest>
 #include <QTextBlock>
 #include <QTextDocument>
@@ -24,6 +26,7 @@ private Q_SLOTS:
     void doneTasksAreStruckThrough();
     void saysWhatIsUnderAPosition();
     void neverChangesTheText();
+    void reservesRoomForImagesOnTheirOwnLines();
 
 private:
     /// Sets the text and styles it at once, as the event loop would in the app.
@@ -194,6 +197,39 @@ void TestMarkdownHighlighter::neverChangesTheText()
     m_highlighter->setCursorPosition(20);
     QCOMPARE(m_document->toPlainText(), text);
     QVERIFY(!m_document->isUndoAvailable());
+}
+
+void TestMarkdownHighlighter::reservesRoomForImagesOnTheirOwnLines()
+{
+    QTemporaryDir dir;
+    QImage picture(400, 200, QImage::Format_RGB32);
+    picture.fill(Qt::magenta);
+    QVERIFY(picture.save(dir.filePath(u"sketch.png"_s)));
+    m_look.imageWidth = 300;
+    m_highlighter->setLook(m_look);
+    m_highlighter->setResolver([&dir](const QString &target, bool) {
+        return target == u"sketch.png" ? dir.filePath(u"sketch.png"_s) : QString();
+    });
+    setText(
+        u"text\n![](sketch.png)\n![[sketch.png]]\nsee ![](sketch.png) inline\n![](missing.png)\n"_s);
+
+    const auto image = [this](int block) {
+        return dynamic_cast<MarkdownHighlighter::Image *>(
+            m_document->findBlockByNumber(block).userData());
+    };
+    QVERIFY(image(1));
+    QCOMPARE(image(1)->size, QSize(300, 150)); // fitted to the width given
+    QVERIFY(image(2));                         // wikilink embeds too
+    QVERIFY(!image(3));                        // not alone on its line
+    QVERIFY(!image(4));                        // nothing to show
+    const int bang = find(u"![](sketch"_s);
+    QVERIFY(formatAt(bang).property(QTextFormat::FontPixelSize).toInt() > 100);
+    QCOMPARE(formatAt(bang + 2).property(QTextFormat::FontPixelSize).toInt(), 1);
+
+    // On the cursor's line the link is there to edit instead.
+    m_highlighter->setCursorPosition(bang + 3);
+    QVERIFY(!image(1));
+    QCOMPARE(formatAt(bang + 4).foreground().color(), m_look.faint);
 }
 
 QTEST_MAIN(TestMarkdownHighlighter)

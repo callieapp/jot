@@ -214,6 +214,9 @@ void TestVaultIndex::resolvesLinksTheWayObsidianDoes()
     QCOMPARE(m_index->resolve(u"../Places/The%20Ferry.md"_s, from), u"Places/The Ferry.md"_s);
     QCOMPARE(m_index->resolve(u"The Ferry"_s, from), u"Places/The Ferry.md"_s);
     QCOMPARE(m_index->resolve(u"Mara.assets/sketch.png"_s, from), u"Cast/Mara.assets/sketch.png"_s);
+    // An attachment by name alone, from its own note.
+    QCOMPARE(m_index->resolve(u"sketch.png"_s, u"Cast/Mara.md"_s),
+             u"Cast/Mara.assets/sketch.png"_s);
     QCOMPARE(m_index->resolve(u"the ferrywoman"_s, from), u"Cast/Mara.md"_s);
     QCOMPARE(m_index->resolve(u"#Heading"_s, from), from);
     QCOMPARE(m_index->resolve(u"Nobody"_s, from), QString());

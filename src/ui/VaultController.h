@@ -78,6 +78,14 @@ public:
     /// Follows a link written in the note shown: opens a note, makes one a wikilink names
     /// but nothing holds yet, or opens anything else with the desktop.
     Q_INVOKABLE bool follow(const QString &target, bool wiki);
+    /// Keeps the clipboard's image as an attachment of the note shown and gives the Markdown
+    /// that shows it, or nothing when the clipboard holds no image.
+    Q_INVOKABLE QString pasteImage();
+    /// Copies files dropped on the note into its attachments and gives the Markdown that
+    /// shows images and links the rest, a line each.
+    Q_INVOKABLE QString attachFiles(const QList<QUrl> &files);
+    /// The file an image link in the note shown reaches, or empty for none.
+    Q_INVOKABLE QString attachmentPath(const QString &target, bool wiki) const;
     /// How long typing must pause before edits are written, in ms.
     void setSaveDelay(int ms)
     {

@@ -165,12 +165,76 @@ Rectangle {
                         Vault.edit(text)
                 }
                 onCursorRectangleChanged: flick.follow(cursorRectangle)
+                onContentHeightChanged: layoutTick++
+                onWidthChanged: layoutTick++
+
+                /// Bumped when lines may have moved, so the images find their lines again.
+                property int layoutTick: 0
+
+                /// Puts `markdown` on lines of its own at `position`.
+                function insertBlock(position, markdown) {
+                    const before = position > 0 && getText(position - 1, position) !== "\n" ? "\n" :
+                                                                                              ""
+
+                    const after = getText(position, position + 1) === "\n" ? "" : "\n"
+                    insert(position, before + markdown + after)
+                    cursorPosition = position + before.length + markdown.length + after.length
+                }
+
+                Keys.onPressed: event => {
+                    if (!event.matches(StandardKey.Paste))
+                        return
+                    // An image on the clipboard becomes an attachment; anything else pastes as text.
+                    const markdown = Vault.pasteImage()
+                    if (markdown === "")
+                        return
+                    insertBlock(cursorPosition, markdown)
+                    event.accepted = true
+                }
 
                 MarkdownStyler {
                     id: styler
 
                     cursorPosition: body.activeFocus ? body.cursorPosition : -1
                     pixelSize: body.font.pixelSize
+                    width: body.width
+                }
+
+                Repeater {
+                    model: styler.images
+
+                    Image {
+                        required property var modelData
+
+                        readonly property rect line: {
+                            body.layoutTick
+                            return body.positionToRectangle(modelData.position)
+                        }
+
+                        x: 0
+                        y: line.y
+                        width: modelData.width
+                        height: modelData.height
+                        source: modelData.source
+                        sourceSize: Qt.size(modelData.width * 2, modelData.height * 2)
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        smooth: true
+                        mipmap: true
+                    }
+                }
+
+                DropArea {
+                    anchors.fill: parent
+                    enabled: !body.readOnly
+                    keys: ["text/uri-list"]
+                    onDropped: drop => {
+                        const markdown = Vault.attachFiles(drop.urls)
+                        if (markdown === "")
+                            return
+                        body.insertBlock(body.positionAt(drop.x, drop.y), markdown)
+                        drop.accept(Qt.CopyAction)
+                    }
                 }
 
                 TapHandler {

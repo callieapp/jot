@@ -111,6 +111,8 @@ class ThemeController : public QObject
     Q_PROPERTY(int noteListWidth READ noteListWidth CONSTANT)
     /// The widest a note's text runs, so lines stay easy to read on a wide window.
     Q_PROPERTY(int editorWidth READ editorWidth CONSTANT)
+    /// The tallest an image shows inline in a note.
+    Q_PROPERTY(int imageHeight READ imageHeight CONSTANT)
     /// How far each notebook steps in from the one holding it.
     Q_PROPERTY(int treeIndent READ treeIndent CONSTANT)
     /// A row in a list such as the sidebar's notebooks.
@@ -207,6 +209,7 @@ public:
     int noteListWidth() const { return 320; }
     int treeIndent() const { return 14; }
     int editorWidth() const { return 760; }
+    int imageHeight() const { return 360; }
     int listRowHeight() const { return 28; }
     int smallGlyphSize() const { return 10; }
     qreal smallGlyphStroke() const { return 1.6; }

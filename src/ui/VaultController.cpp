@@ -5,9 +5,14 @@
 #include "jot/Rename.h"
 #include "jot/Settings.h"
 
+#include <QBuffer>
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
+#include <QImage>
+#include <QImageReader>
 #include <QRegularExpression>
 
 using namespace Qt::StringLiterals;
@@ -283,6 +288,63 @@ bool VaultController::renameCurrent(const QString &title)
     m_index->update({m_current});
     reloadModels();
     return true;
+}
+
+QString VaultController::pasteImage()
+{
+    if (!m_vault || m_current.isEmpty())
+        return {};
+    const QImage image = QGuiApplication::clipboard()->image();
+    if (image.isNull())
+        return {};
+    QByteArray png;
+    QBuffer buffer(&png);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "PNG");
+    const QString name =
+        tr("Pasted %1").arg(QDateTime::currentDateTime().toString(u"yyyy-MM-dd HHmmss"_s)) +
+        u".png"_s;
+    QString error;
+    const std::optional<QString> path = m_vault->addAttachment(m_current, name, png, &error);
+    if (!path) {
+        setProblem(tr("Could not keep the pasted image: %1").arg(error));
+        return {};
+    }
+    return u"![](%1)"_s.arg(Vault::linkTarget(m_current, *path));
+}
+
+QString VaultController::attachFiles(const QList<QUrl> &files)
+{
+    if (!m_vault || m_current.isEmpty())
+        return {};
+    QStringList lines;
+    for (const QUrl &url : files) {
+        QFile file(url.toLocalFile());
+        if (!url.isLocalFile() || !file.open(QIODevice::ReadOnly))
+            continue;
+        QString error;
+        const std::optional<QString> path =
+            m_vault->addAttachment(m_current, QFileInfo(file).fileName(), file.readAll(), &error);
+        if (!path) {
+            setProblem(tr("Could not attach %1: %2").arg(QFileInfo(file).fileName(), error));
+            continue;
+        }
+        const bool image = !QImageReader::imageFormat(m_vault->absolute(*path)).isEmpty();
+        lines.append((image ? u"![](%1)"_s : u"[%2](%1)"_s)
+                         .arg(Vault::linkTarget(m_current, *path), QFileInfo(*path).fileName()));
+    }
+    return lines.join(u'\n');
+}
+
+QString VaultController::attachmentPath(const QString &target, bool wiki) const
+{
+    if (!m_vault || !m_index || m_current.isEmpty())
+        return {};
+    const QString path = m_index->resolve(target, m_current);
+    if (path.isEmpty() || path.endsWith(u".md"_s) || !(wiki || !target.contains(u':')))
+        return {};
+    const QString file = m_vault->absolute(path);
+    return QFileInfo(file).isFile() ? file : QString();
 }
 
 void VaultController::resyncAfterRename(const QString &from, const QString &to)

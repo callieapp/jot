@@ -2,9 +2,12 @@
 
 #include "jot/Settings.h"
 
+#include <QClipboard>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
+#include <QGuiApplication>
+#include <QImage>
 #include <QRegularExpression>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -40,6 +43,7 @@ private Q_SLOTS:
     void keepsLineEndingsAndTheByteOrderMark();
     void aRenameThatFailsHalfwayShowsWhereTheNoteIs();
     void aFailedSaveIsShownAndRetried();
+    void attachesDroppedFilesAndPastedImages();
 
 private:
     QStringList column(const QAbstractItemModel &model, const QByteArray &role) const;
@@ -406,5 +410,36 @@ void TestVaultController::aFailedSaveIsShownAndRetried()
     QVERIFY(readFile(folder + u"/Groceries.md"_s).contains(u"eggs"_s));
 }
 
-QTEST_GUILESS_MAIN(TestVaultController)
+void TestVaultController::attachesDroppedFilesAndPastedImages()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Characters/Mara Vey.md"_s);
+    QImage picture(20, 10, QImage::Format_RGB32);
+    picture.fill(Qt::red);
+    QVERIFY(picture.save(m_dir->filePath(u"map of the river.png"_s)));
+    QFile notes(m_dir->filePath(u"notes.txt"_s));
+    QVERIFY(notes.open(QIODevice::WriteOnly));
+    notes.write("plain\n");
+    notes.close();
+
+    const QString dropped =
+        m_vault->attachFiles({QUrl::fromLocalFile(m_dir->filePath(u"map of the river.png"_s)),
+                              QUrl::fromLocalFile(notes.fileName())});
+    QCOMPARE(dropped, u"![](Mara%20Vey.assets/map%20of%20the%20river.png)\n"
+                      u"[notes.txt](Mara%20Vey.assets/notes.txt)"_s);
+    QVERIFY(QFileInfo::exists(m_root + u"/Ashfall/Characters/Mara Vey.assets/notes.txt"_s));
+    QCOMPARE(m_vault->attachmentPath(u"Mara%20Vey.assets/map%20of%20the%20river.png"_s, false),
+             m_root + u"/Ashfall/Characters/Mara Vey.assets/map of the river.png"_s);
+    QCOMPARE(m_vault->attachmentPath(u"map of the river.png"_s, true),
+             m_root + u"/Ashfall/Characters/Mara Vey.assets/map of the river.png"_s);
+    QCOMPARE(m_vault->attachmentPath(u"https://example.org/x.png"_s, false), QString());
+
+    QGuiApplication::clipboard()->setImage(picture);
+    const QString pasted = m_vault->pasteImage();
+    QVERIFY2(pasted.startsWith(u"![](Mara%20Vey.assets/Pasted%20"_s), qPrintable(pasted));
+    QGuiApplication::clipboard()->setText(u"just words"_s);
+    QCOMPARE(m_vault->pasteImage(), QString());
+}
+
+QTEST_MAIN(TestVaultController)
 #include "tst_vaultcontroller.moc"

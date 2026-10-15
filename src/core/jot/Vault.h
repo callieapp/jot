@@ -61,6 +61,14 @@ public:
     /// Renames or moves a note and its `.assets` folder. Links to it are the index's job.
     bool moveNote(const QString &from, const QString &to, QString *error) const;
 
+    /// Keeps `bytes` as an attachment of the note at `notePath`, in its `.assets` folder,
+    /// as `fileName` or, when that is taken, "name 2.ext". Gives the attachment's vault path.
+    std::optional<QString> addAttachment(const QString &notePath, const QString &fileName,
+                                         const QByteArray &bytes, QString *error) const;
+    /// A Markdown link target for `to` written in the note at `from`: relative to the note's
+    /// folder, with spaces as %20, and in angle brackets when it holds a parenthesis.
+    [[nodiscard]] static QString linkTarget(const QString &from, const QString &to);
+
     /// A path for a new note called `title` in `folder` that nothing has yet:
     /// "Pancakes.md", then "Pancakes 2.md".
     [[nodiscard]] QString freePath(const QString &folder, const QString &title) const;
