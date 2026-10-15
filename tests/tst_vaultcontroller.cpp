@@ -37,6 +37,9 @@ private Q_SLOTS:
     void renamingRewritesLinksAndKeepsTheTitle();
     void trashesTheNoteShown();
     void followsLinksAndMakesMissingNotes();
+    void keepsLineEndingsAndTheByteOrderMark();
+    void aRenameThatFailsHalfwayShowsWhereTheNoteIs();
+    void aFailedSaveIsShownAndRetried();
 
 private:
     QStringList column(const QAbstractItemModel &model, const QByteArray &role) const;
@@ -343,6 +346,64 @@ void TestVaultController::followsLinksAndMakesMissingNotes()
     QCOMPARE(m_vault->noteCount(), 9);
     // A Markdown link to nothing makes nothing.
     QVERIFY(!m_vault->follow(u"Nowhere.md"_s, false));
+}
+
+void TestVaultController::keepsLineEndingsAndTheByteOrderMark()
+{
+    QFile file(m_root + u"/Windows.md"_s);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("\xef\xbb\xbfone\r\ntwo\r\n");
+    file.close();
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Windows.md"_s);
+    // As the editor hands text back: \n lines and no byte order mark.
+    m_vault->edit(u"one\ntwo, three\n"_s);
+    m_vault->saveNow();
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), QByteArray("\xef\xbb\xbfone\r\ntwo, three\r\n"));
+}
+
+void TestVaultController::aRenameThatFailsHalfwayShowsWhereTheNoteIs()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    // The note moves, but its attachments cannot: a folder of that name is in the way.
+    QVERIFY(QDir().mkpath(m_root + u"/Recipes/Pancakes.assets"_s));
+    QFile photo(m_root + u"/Recipes/Pancakes.assets/photo.png"_s);
+    QVERIFY(photo.open(QIODevice::WriteOnly));
+    photo.close();
+    QVERIFY(QDir().mkpath(m_root + u"/Recipes/Crepes.assets/in-the-way"_s));
+    m_vault->setCurrent(u"Recipes/Pancakes.md"_s);
+    m_vault->edit(m_vault->currentText() + u"more butter\n"_s);
+
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not rename.*"_s));
+    QVERIFY(!m_vault->renameCurrent(u"Crepes"_s));
+    QVERIFY(!m_vault->problem().isEmpty());
+    QCOMPARE(m_vault->current(), u"Recipes/Crepes.md"_s);
+    QVERIFY(m_vault->currentText().contains(u"more butter"_s));
+    m_vault->edit(m_vault->currentText() + u"and syrup\n"_s);
+    m_vault->saveNow();
+    // Nothing writes the old path back into being.
+    QVERIFY(!QFileInfo::exists(m_root + u"/Recipes/Pancakes.md"_s));
+    QVERIFY(readFile(m_root + u"/Recipes/Crepes.md"_s).contains(u"and syrup"_s));
+}
+
+void TestVaultController::aFailedSaveIsShownAndRetried()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Inbox/Groceries.md"_s);
+    const QString folder = m_root + u"/Inbox"_s;
+    // The folder taken away, as a drive that drops out: no user, root included, can save.
+    QVERIFY(QDir().rename(folder, m_root + u"/.away"_s));
+    m_vault->edit(m_vault->currentText() + u"- [ ] eggs\n"_s);
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not save.*"_s));
+    m_vault->saveNow();
+    QVERIFY(m_vault->unsaved());
+    QVERIFY(m_vault->problem().startsWith(u"Not saved"_s));
+
+    QVERIFY(QDir().rename(m_root + u"/.away"_s, folder));
+    QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 8000);
+    QVERIFY(m_vault->problem().isEmpty());
+    QVERIFY(readFile(folder + u"/Groceries.md"_s).contains(u"eggs"_s));
 }
 
 QTEST_GUILESS_MAIN(TestVaultController)

@@ -24,7 +24,7 @@ VaultController::VaultController(Settings &settings, QObject *parent)
     : QObject(parent), m_settings(settings), m_notebooks(settings)
 {
     m_saveTimer.setSingleShot(true);
-    m_saveTimer.setInterval(500);
+    m_saveTimer.setInterval(m_saveDelay);
     connect(&m_saveTimer, &QTimer::timeout, this, &VaultController::saveNow);
     // Saving changes the list's order and titles; a burst of saves reloads it once.
     m_reloadTimer.setSingleShot(true);
@@ -163,9 +163,26 @@ void VaultController::setUnsaved(bool unsaved)
     Q_EMIT unsavedChanged();
 }
 
-void VaultController::edit(const QString &text)
+void VaultController::setProblem(const QString &problem)
 {
-    if (!m_vault || m_current.isEmpty() || text == m_currentText)
+    if (m_problem == problem)
+        return;
+    m_problem = problem;
+    Q_EMIT problemChanged();
+}
+
+void VaultController::edit(const QString &edited)
+{
+    if (!m_vault || m_current.isEmpty())
+        return;
+    // The editor gives plain \n lines and drops a byte order mark; the file keeps its own.
+    QString text = edited;
+    text.replace(u"\r\n"_s, u"\n"_s);
+    if (m_crlf)
+        text.replace(u'\n', u"\r\n"_s);
+    if (m_byteOrderMark && !text.startsWith(QChar(0xfeff)))
+        text.prepend(QChar(0xfeff));
+    if (text == m_currentText)
         return;
     m_currentText = text;
     setUnsaved(true);
@@ -186,9 +203,14 @@ void VaultController::saveNow()
         m_watcher->expectWrite(m_current, m_currentText);
     if (!notefile::write(m_vault->absolute(m_current), m_currentText, &error)) {
         qCWarning(lcVault) << "could not save" << m_current << error;
+        setProblem(tr("Not saved: %1. Trying again.").arg(error));
+        // Tried again until it works, typing or not.
+        m_saveTimer.start(5000);
         return;
     }
+    m_saveTimer.setInterval(m_saveDelay);
     setUnsaved(false);
+    setProblem({});
     m_index->update({m_current});
     scheduleModelReload();
 }
@@ -238,6 +260,8 @@ bool VaultController::renameCurrent(const QString &title)
         };
         if (!renameNote(*m_vault, *m_index, m_current, to, &error, expect)) {
             qCWarning(lcVault) << "could not rename" << m_current << error;
+            resyncAfterRename(m_current, to);
+            setProblem(tr("Could not rename the note: %1").arg(error));
             return false;
         }
         m_current = to;
@@ -259,6 +283,16 @@ bool VaultController::renameCurrent(const QString &title)
     m_index->update({m_current});
     reloadModels();
     return true;
+}
+
+void VaultController::resyncAfterRename(const QString &from, const QString &to)
+{
+    if (!QFileInfo::exists(m_vault->absolute(from)) && QFileInfo::exists(m_vault->absolute(to))) {
+        m_current = to;
+        readCurrent();
+    }
+    m_index->update({from, to});
+    reloadModels();
 }
 
 bool VaultController::trashCurrent()
@@ -370,7 +404,9 @@ QString VaultController::currentTitle() const
 void VaultController::readCurrent()
 {
     m_saveTimer.stop();
+    m_saveTimer.setInterval(m_saveDelay);
     setUnsaved(false);
+    setProblem({});
     m_currentText.clear();
     if (m_vault && !m_current.isEmpty()) {
         QString error;
@@ -378,8 +414,10 @@ void VaultController::readCurrent()
                 notefile::read(m_vault->absolute(m_current), &error))
             m_currentText = *text;
         else
-            qCWarning(lcVault) << "could not read" << m_current << error;
+            setProblem(tr("Could not read the note: %1").arg(error));
     }
+    m_crlf = m_currentText.contains(u"\r\n"_s);
+    m_byteOrderMark = m_currentText.startsWith(QChar(0xfeff));
     Q_EMIT currentChanged();
 }
 
