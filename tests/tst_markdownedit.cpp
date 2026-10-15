@@ -155,6 +155,13 @@ void TestMarkdownEdit::fencesCode_data()
     QTest::newRow("fence") << u"a\nx = |1\nb"_s << u"a\n```\nx = |1\n```\nb"_s;
     QTest::newRow("unfence") << u"a\n```\nx = |1\n```\nb"_s << u"a\nx = |1\nb"_s;
     QTest::newRow("unfence a tagged fence") << u"```cpp\n[x\ny]\n```"_s << u"[x\ny]"_s;
+    QTest::newRow("unfence from the middle") << u"```\na\n|b\nc\n```"_s << u"a\n|b\nc"_s;
+    QTest::newRow("unfence from a fence line") << u"|```\na\n```"_s << u"|a"_s;
+    QTest::newRow("between two blocks")
+        << u"```\na\n```\n|b\n```\nc\n```"_s << u"```\na\n```\n```\n|b\n```\n```\nc\n```"_s;
+    QTest::newRow("under a closing fence")
+        << u"```\na\n```\n|b"_s << u"```\na\n```\n```\n|b\n```"_s;
+    QTest::newRow("an unclosed block") << u"```\na\n|b"_s << u"a\n|b"_s;
 }
 
 void TestMarkdownEdit::fencesCode()
