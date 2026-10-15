@@ -357,12 +357,36 @@ Edit codeBlock(const QString &text, qsizetype from, qsizetype to)
     const auto fence = [&](qsizetype start) {
         return text.mid(start, lineEndOf(text, start) - start).trimmed().startsWith(u"```"_s);
     };
-    if (first > 0 && end < text.size() && fence(lineStartOf(text, first - 1)) && fence(end + 1)) {
-        const qsizetype above = first - lineStartOf(text, first - 1);
-        const qsizetype below = lineEndOf(text, end + 1) - end;
-        const QString changed =
-            text.left(first - above) + text.mid(first, end - first) + text.mid(end + below);
-        return difference(text, changed, from - above, to - above);
+    // Fences pair up from the top of the note, so whether the selection is in a block
+    // depends on how many come before it, not on its neighbours alone.
+    qsizetype open = -1;
+    for (qsizetype line = 0; line < first; line = lineEndOf(text, line) + 1) {
+        if (fence(line))
+            open = open < 0 ? line : -1;
+    }
+    if (open < 0 && fence(first))
+        open = first;
+    if (open >= 0) {
+        qsizetype close = -1;
+        for (qsizetype line = open == first ? lineEndOf(text, first) + 1 : first;
+             line < text.size(); line = lineEndOf(text, line) + 1) {
+            if (fence(line)) {
+                close = line;
+                break;
+            }
+        }
+        const qsizetype opening = std::min(lineEndOf(text, open) + 1, text.size()) - open;
+        QString changed = text;
+        // The closing fence goes with the line break before it; an unclosed block loses only
+        // its opening.
+        if (close > 0)
+            changed.remove(close - 1, lineEndOf(text, close) - close + 1);
+        changed.remove(open, opening);
+        const auto map = [&](qsizetype position) {
+            return std::max(open, position >= open + opening ? position - opening : open);
+        };
+        return difference(text, changed, std::min(map(from), qsizetype(changed.size())),
+                          std::min(map(to), qsizetype(changed.size())));
     }
     const QString changed =
         text.left(first) + u"```\n"_s + text.mid(first, end - first) + u"\n```"_s + text.mid(end);
