@@ -116,6 +116,26 @@ ApplicationWindow {
             }
 
             StickerButton {
+                id: newButton
+
+                anchors {
+                    right: searchButton.left
+                    rightMargin: Theme.space3
+                    verticalCenter: parent.verticalCenter
+                }
+                visible: Vault.isOpen && Vault.writable
+                glyph: "plus"
+                Accessible.name: qsTr("New note")
+                tip: qsTr("New note (Ctrl+N)")
+                onClicked: {
+                    if (Vault.newNote() !== "")
+                        editor.editTitle()
+                }
+            }
+
+            StickerButton {
+                id: searchButton
+
                 anchors {
                     right: rightControls.left
                     rightMargin: Theme.space4
@@ -176,7 +196,9 @@ ApplicationWindow {
                 }
                 width: Theme.noteListWidth
             }
-            NoteView {
+            NoteEditor {
+                id: editor
+
                 visible: Vault.isOpen
                 anchors {
                     left: noteList.right
@@ -192,6 +214,19 @@ ApplicationWindow {
         id: switcher
     }
 
+    Shortcut {
+        sequences: [StandardKey.New]
+        enabled: Vault.isOpen && Vault.writable
+        onActivated: {
+            if (Vault.newNote() !== "")
+                editor.editTitle()
+        }
+    }
+    Shortcut {
+        sequences: [StandardKey.Save]
+        enabled: Vault.isOpen
+        onActivated: Vault.saveNow()
+    }
     Shortcut {
         sequence: "Ctrl+P"
         enabled: Vault.isOpen

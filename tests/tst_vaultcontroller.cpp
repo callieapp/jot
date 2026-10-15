@@ -30,6 +30,13 @@ private Q_SLOTS:
     void switcherFindsByTitleAliasAndPath();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
+    void savesShortlyAfterTypingStops();
+    void savesBeforeSwitchingNotes();
+    void keepsTheOtherVersionWhenBothChanged();
+    void makesNewNotesInTheNotebookShown();
+    void renamingRewritesLinksAndKeepsTheTitle();
+    void trashesTheNoteShown();
+    void followsLinksAndMakesMissingNotes();
 
 private:
     QStringList column(const QAbstractItemModel &model, const QByteArray &role) const;
@@ -223,6 +230,119 @@ void TestVaultController::followsChangesOnDisk()
     QVERIFY(m_vault->tags().contains(u"idea"_s));
     QTRY_VERIFY_WITH_TIMEOUT(m_vault->currentText().contains(u"Rewritten"_s), 3000);
     QVERIFY(!changed.isEmpty());
+}
+
+namespace {
+
+QString readFile(const QString &path)
+{
+    QString error;
+    return notefile::read(path, &error).value_or(error);
+}
+
+} // namespace
+
+void TestVaultController::savesShortlyAfterTypingStops()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setSaveDelay(50);
+    m_vault->setCurrent(u"Welcome.md"_s);
+    m_vault->edit(u"First draft\n"_s);
+    QVERIFY(m_vault->unsaved());
+    QVERIFY(readFile(m_root + u"/Welcome.md"_s) != u"First draft\n"_s);
+    QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
+    QCOMPARE(readFile(m_root + u"/Welcome.md"_s), u"First draft\n"_s);
+
+    // Jot's own save is not mistaken for someone else's.
+    QSignalSpy current(m_vault.get(), &VaultController::currentChanged);
+    QTest::qWait(700);
+    QCOMPARE(current.size(), 0);
+}
+
+void TestVaultController::savesBeforeSwitchingNotes()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setSaveDelay(60000);
+    m_vault->setCurrent(u"Welcome.md"_s);
+    m_vault->edit(u"Kept\n"_s);
+    m_vault->setCurrent(u"Recipes/Pancakes.md"_s);
+    QCOMPARE(readFile(m_root + u"/Welcome.md"_s), u"Kept\n"_s);
+    QVERIFY(!m_vault->unsaved());
+}
+
+void TestVaultController::keepsTheOtherVersionWhenBothChanged()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setSaveDelay(60000);
+    m_vault->setCurrent(u"Welcome.md"_s);
+    m_vault->edit(u"Mine\n"_s);
+    QString error;
+    QVERIFY(notefile::write(m_root + u"/Welcome.md"_s, u"Theirs\n"_s, &error));
+
+    QTRY_COMPARE_WITH_TIMEOUT(QDir(m_root).entryList({u"Welcome (conflict *).md"_s}).size(), 1,
+                              3000);
+    const QString copy = QDir(m_root).entryList({u"Welcome (conflict *).md"_s}).first();
+    QCOMPARE(readFile(m_root + u'/' + copy), u"Theirs\n"_s);
+    m_vault->saveNow();
+    QCOMPARE(readFile(m_root + u"/Welcome.md"_s), u"Mine\n"_s);
+}
+
+void TestVaultController::makesNewNotesInTheNotebookShown()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->notes()->setNotebook(u"Recipes"_s);
+    QCOMPARE(m_vault->newNote(), u"Recipes/Untitled.md"_s);
+    QCOMPARE(m_vault->newNote(), u"Recipes/Untitled 2.md"_s);
+    QCOMPARE(m_vault->current(), u"Recipes/Untitled 2.md"_s);
+    QCOMPARE(m_vault->notes()->rowCount(), 4);
+    QVERIFY(m_vault->currentText().startsWith(u"---\ncreated: "_s));
+}
+
+void TestVaultController::renamingRewritesLinksAndKeepsTheTitle()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Places/The Ferry.md"_s);
+    QVERIFY(m_vault->renameCurrent(u"The Rope Ferry"_s));
+    QCOMPARE(m_vault->current(), u"Ashfall/Places/The Rope Ferry.md"_s);
+    QCOMPARE(m_vault->currentTitle(), u"The Rope Ferry"_s);
+    QVERIFY(readFile(m_root + u"/Ashfall/Pitch.md"_s).contains(u"[[The Rope Ferry]]"_s));
+    QVERIFY(
+        readFile(m_root + u"/Ashfall/Characters/Mara Vey.md"_s).contains(u"[[The Rope Ferry]]"_s));
+
+    // A title the file name cannot hold goes into the front matter, and out again.
+    QVERIFY(m_vault->renameCurrent(u"Ferry: the rope one"_s));
+    QCOMPARE(m_vault->current(), u"Ashfall/Places/Ferry the rope one.md"_s);
+    QCOMPARE(m_vault->currentTitle(), u"Ferry: the rope one"_s);
+    QVERIFY(m_vault->currentText().contains(u"title: \"Ferry: the rope one\""_s));
+    QVERIFY(m_vault->renameCurrent(u"Ferry"_s));
+    QVERIFY(!m_vault->currentText().contains(u"title:"_s));
+    QVERIFY(!m_vault->renameCurrent(u"  "_s));
+}
+
+void TestVaultController::trashesTheNoteShown()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Recipes/Pancakes.md"_s);
+    QVERIFY(m_vault->trashCurrent());
+    QVERIFY(!QFileInfo::exists(m_root + u"/Recipes/Pancakes.md"_s));
+    QCOMPARE(m_vault->current(), QString());
+    QCOMPARE(m_vault->noteCount(), 7);
+}
+
+void TestVaultController::followsLinksAndMakesMissingNotes()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Pitch.md"_s);
+    QVERIFY(m_vault->follow(u"Mara"_s, true));
+    QCOMPARE(m_vault->current(), u"Ashfall/Characters/Mara Vey.md"_s);
+    QVERIFY(m_vault->follow(u"Soren"_s, true));
+    QCOMPARE(m_vault->current(), u"Ashfall/Characters/Soren.md"_s);
+
+    QVERIFY(m_vault->follow(u"Harbor Master#Debts"_s, true));
+    QCOMPARE(m_vault->current(), u"Ashfall/Characters/Harbor Master.md"_s);
+    QCOMPARE(m_vault->noteCount(), 9);
+    // A Markdown link to nothing makes nothing.
+    QVERIFY(!m_vault->follow(u"Nowhere.md"_s, false));
 }
 
 QTEST_GUILESS_MAIN(TestVaultController)

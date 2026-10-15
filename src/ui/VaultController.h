@@ -10,6 +10,7 @@
 
 #include <QObject>
 #include <QQmlEngine>
+#include <QTimer>
 #include <QUrl>
 
 #include <memory>
@@ -42,6 +43,8 @@ class VaultController : public QObject
     Q_PROPERTY(QString current READ current WRITE setCurrent NOTIFY currentChanged)
     Q_PROPERTY(QString currentTitle READ currentTitle NOTIFY currentChanged)
     Q_PROPERTY(QString currentText READ currentText NOTIFY currentChanged)
+    /// Edits not yet written to the note's file.
+    Q_PROPERTY(bool unsaved READ unsaved NOTIFY unsavedChanged)
 
 public:
     explicit VaultController(Settings &settings, QObject *parent = nullptr);
@@ -58,6 +61,22 @@ public:
     Q_INVOKABLE bool openFolder(const QUrl &folder);
     /// Opens the vault used last, if there is one.
     bool openLast();
+    /// The text of the note shown, as the user typed it; written out shortly after typing
+    /// stops, or at once on saveNow().
+    Q_INVOKABLE void edit(const QString &text);
+    /// Writes any edits waiting, as before switching notes or quitting.
+    Q_INVOKABLE void saveNow();
+    /// Makes a note in the notebook shown and shows it. Gives its path.
+    Q_INVOKABLE QString newNote(const QString &title = {});
+    /// Gives the note shown a new title, renaming its file and the links to it.
+    Q_INVOKABLE bool renameCurrent(const QString &title);
+    /// Moves the note shown, and its attachments, to the system trash.
+    Q_INVOKABLE bool trashCurrent();
+    /// Follows a link written in the note shown: opens a note, makes one a wikilink names
+    /// but nothing holds yet, or opens anything else with the desktop.
+    Q_INVOKABLE bool follow(const QString &target, bool wiki);
+    /// How long typing must pause before edits are written, in ms.
+    void setSaveDelay(int ms) { m_saveTimer.setInterval(ms); }
     /// Index the database at `path` rather than the default one, as tests do.
     void setIndexPath(const QString &path) { m_indexPath = path; }
 
@@ -75,6 +94,7 @@ public:
     void setCurrent(const QString &path);
     [[nodiscard]] QString currentTitle() const;
     [[nodiscard]] QString currentText() const { return m_currentText; }
+    [[nodiscard]] bool unsaved() const { return m_unsaved; }
     [[nodiscard]] const VaultIndex *index() const { return m_index.get(); }
 
 Q_SIGNALS:
@@ -82,6 +102,7 @@ Q_SIGNALS:
     void errorChanged();
     void notesChanged();
     void currentChanged();
+    void unsavedChanged();
 
 private:
     void close();
@@ -89,6 +110,11 @@ private:
     void reloadModels();
     void readCurrent();
     void fail(const QString &error);
+    void setUnsaved(bool unsaved);
+    /// Keeps what another program wrote to the note shown beside it, as the user's own
+    /// edits are about to replace it.
+    void keepConflict(const QString &theirs);
+    void scheduleModelReload();
 
     Settings &m_settings;
     std::unique_ptr<Vault> m_vault;
@@ -101,6 +127,9 @@ private:
     QString m_error;
     QString m_current;
     QString m_currentText;
+    bool m_unsaved = false;
+    QTimer m_saveTimer;
+    QTimer m_reloadTimer;
 };
 
 } // namespace jot

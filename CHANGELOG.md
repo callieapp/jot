@@ -10,6 +10,10 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - Open a folder of Markdown notes as your vault. The sidebar lists its notebooks, which fold, and
   its tags; the middle column lists their notes, newest or by title, and searches them; Ctrl+P
   finds any note by a few letters of its title, an alias or its folder.
+- Write notes in Markdown that styles itself as you type: headings grow, and the marks behind
+  emphasis, links and code fold away except on the line you are on. Notes save as you type.
+  Ctrl+N makes a note, its title renames it and every link to it, Ctrl+click follows a link (or
+  makes the note a wikilink names), and a click ticks a task.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 

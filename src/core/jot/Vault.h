@@ -53,7 +53,8 @@ public:
     /// `title` too when the file name cannot hold it. Gives its vault path.
     std::optional<QString> createNote(const QString &folder, const QString &title,
                                       const QDateTime &created, QString *error) const;
-    /// Moves a note and its `.assets` folder to the system trash.
+    /// Moves a note and its `.assets` folder to the system trash, or to the vault's own
+    /// `.jot/trash` where the drive has none.
     bool trashNote(const QString &path, QString *error) const;
     /// Renames or moves a note and its `.assets` folder. Links to it are the index's job.
     bool moveNote(const QString &from, const QString &to, QString *error) const;
