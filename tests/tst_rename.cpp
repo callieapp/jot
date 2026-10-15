@@ -21,6 +21,7 @@ private Q_SLOTS:
     void leavesOtherLinksAndCodeAlone();
     void keepsTheMovedNotesOwnPathsWorking();
     void reportsWhatItWrote();
+    void parenthesesStayInsideTheLink();
 
 private:
     void write(const QString &path, const QString &text);
@@ -163,6 +164,21 @@ void TestRename::reportsWhatItWrote()
     QVERIFY(!renameNote(*m_vault, *m_index, u"Mara Vey.md"_s, u"Taken.md"_s, &error));
     QVERIFY(error.contains(u"already exists"_s));
     QCOMPARE(read(u"Scene.md"_s), u"[[Mara Vey]]\n"_s);
+}
+
+void TestRename::parenthesesStayInsideTheLink()
+{
+    write(u"Plan.md"_s, u"plan\n"_s);
+    write(u"Scene.md"_s, u"[x](Plan.md) and [y](<Plan.md>)\n"_s);
+    open();
+
+    QString error;
+    QVERIFY(renameNote(*m_vault, *m_index, u"Plan.md"_s, u"Plan (draft).md"_s, &error));
+    QCOMPARE(read(u"Scene.md"_s), u"[x](<Plan (draft).md>) and [y](<Plan (draft).md>)\n"_s);
+    QCOMPARE(m_index->backlinks(u"Plan (draft).md"_s).size(), 2);
+    // And it can be renamed again from there.
+    QVERIFY(renameNote(*m_vault, *m_index, u"Plan (draft).md"_s, u"Plan.md"_s, &error));
+    QCOMPARE(read(u"Scene.md"_s), u"[x](<Plan.md>) and [y](<Plan.md>)\n"_s);
 }
 
 QTEST_GUILESS_MAIN(TestRename)

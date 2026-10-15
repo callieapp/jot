@@ -169,8 +169,9 @@ rewriteLinks(QStringView body,
             if (target.isEmpty() || target.startsWith(u'#') || isUrl(target))
                 continue;
             if (std::optional<QString> with = replace(target, false)) {
-                // Spaces need the angle brackets, or %20, to stay one target.
-                if (bracketed)
+                // Spaces need the angle brackets, or %20, to stay one target; a parenthesis
+                // would end it, so it takes the brackets.
+                if (bracketed || with->contains(u')') || with->contains(u'('))
                     *with = u'<' + *with + u'>';
                 else
                     with->replace(u' ', u"%20"_s);
