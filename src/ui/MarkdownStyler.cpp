@@ -247,6 +247,7 @@ void MarkdownStyler::applyLook()
     look.faint = theme.textFaint();
     look.accent = theme.accent();
     look.codeBackground = theme.surfaceAlt();
+    look.dark = theme.dark();
     look.family = theme.fontFamily();
     look.monoFamily = theme.monoFontFamily();
     look.displayFamily = theme.displayFontFamily();

@@ -22,6 +22,7 @@ private Q_SLOTS:
     void emphasisAndCode();
     void linksShowTheirTextOrLabel();
     void fencedCodeCarriesAcrossLines();
+    void codeIsColoredByItsLanguage();
     void frontMatterIsNotMarkdown();
     void doneTasksAreStruckThrough();
     void tablesAreMonospaceAndKeepTheirMarks();
@@ -44,6 +45,8 @@ private:
 void TestMarkdownHighlighter::init()
 {
     m_document = std::make_unique<QTextDocument>();
+    // A document reports edits only once it has a layout, as an editor's always does.
+    m_document->documentLayout();
     m_highlighter = new MarkdownHighlighter(m_document.get());
     m_look.text = QColor(u"#eeeeee"_s);
     m_look.muted = QColor(u"#aaaaaa"_s);
@@ -138,16 +141,51 @@ void TestMarkdownHighlighter::linksShowTheirTextOrLabel()
 
 void TestMarkdownHighlighter::fencedCodeCarriesAcrossLines()
 {
-    setText(u"```cpp\n# not a heading\n**not bold**\n```\n# heading\n"_s);
+    // No language, so only the Markdown rules could style it, and they leave code alone.
+    setText(u"```\n# not a heading\n**not bold**\n```\n# heading\n"_s);
     const QTextCharFormat inside = formatAt(find(u"not a heading"_s));
     QCOMPARE(inside.fontFamilies().toStringList(), QStringList{u"Mono Sample"_s});
     QVERIFY(!inside.hasProperty(QTextFormat::FontPixelSize));
     QVERIFY(formatAt(find(u"not bold"_s)).fontWeight() != m_look.boldWeight);
-    QVERIFY(formatAt(find(u"heading\n"_s, find(u"```\n#"_s)))
+    QVERIFY(formatAt(find(u"heading\n"_s, find(u"```\n# heading"_s)))
                 .property(QTextFormat::FontPixelSize)
                 .toInt() > 16);
-    QCOMPARE(m_document->findBlockByNumber(1).userState(), int(MarkdownHighlighter::InFence));
+    QCOMPARE(MarkdownHighlighter::kindOf(m_document->findBlockByNumber(1).userState()),
+             int(MarkdownHighlighter::InFence));
     QCOMPARE(m_document->findBlockByNumber(4).userState(), int(MarkdownHighlighter::Normal));
+}
+
+void TestMarkdownHighlighter::codeIsColoredByItsLanguage()
+{
+    // Styled by the language: a color, or bold or italic, as keywords are in some themes.
+    const auto colored = [this](const QString &needle, int from = 0) {
+        const QTextCharFormat format = formatAt(find(needle, from));
+        return format.hasProperty(QTextFormat::ForegroundBrush) ||
+               format.fontWeight() == QFont::Bold || format.fontItalic();
+    };
+    setText(u"```cpp\nint x = 1; /* a\nstill a comment */\n```\n```nosuchlang\nint y;\n```\n"_s);
+    QVERIFY(colored(u"int x"_s));
+    // A comment opened on one line is still a comment on the next.
+    QVERIFY(colored(u"still"_s));
+    QCOMPARE(formatAt(find(u"still"_s)).foreground(), formatAt(find(u"/* a"_s)).foreground());
+    QVERIFY(formatAt(find(u"still"_s)).foreground() != formatAt(find(u"int x"_s)).foreground());
+    // A language nobody knows is plain code: monospace, no colors.
+    QVERIFY(!colored(u"int y"_s));
+    QCOMPARE(formatAt(find(u"int y"_s)).fontFamilies().toStringList(),
+             QStringList{u"Mono Sample"_s});
+
+    // Naming the language later colors the lines under the fence again. The highlighter's
+    // first pass waits for the event loop, and edits before it are not highlighted.
+    QCoreApplication::processEvents();
+    QTextCursor cursor(m_document.get());
+    cursor.setPosition(find(u"nosuchlang"_s));
+    cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+    cursor.insertText(u"python"_s);
+    QVERIFY(colored(u"int y"_s));
+
+    // Short names work through their file extension.
+    setText(u"```py\ndef go():\n```\n"_s);
+    QVERIFY(colored(u"def"_s));
 }
 
 void TestMarkdownHighlighter::frontMatterIsNotMarkdown()

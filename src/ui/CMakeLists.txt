@@ -1,3 +1,6 @@
+# Colors fenced code by language. 6.13 is what Debian trixie ships.
+find_package(KF6SyntaxHighlighting 6.13 REQUIRED)
+
 # The QML files sit at this module's root, which is what Qt expects. Keeping
 # them in a subdirectory would require a hand-written qmldir (policy QTP0004).
 qt_add_qml_module(jotui
@@ -18,6 +21,8 @@ qt_add_qml_module(jotui
         LiveQml.cpp
         BacklinksModel.h
         BacklinksModel.cpp
+        CodeHighlighter.h
+        CodeHighlighter.cpp
         MarkdownHighlighter.h
         MarkdownHighlighter.cpp
         MarkdownStyler.h
@@ -90,3 +95,4 @@ qt_add_resources(jotui "jot_logo"
 target_include_directories(jotui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(jotui PUBLIC Qt6::Quick Qt6::QuickControls2 jotcore)
+target_link_libraries(jotui PRIVATE KF6::SyntaxHighlighting)

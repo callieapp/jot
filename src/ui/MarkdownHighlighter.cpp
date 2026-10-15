@@ -1,5 +1,7 @@
 #include "MarkdownHighlighter.h"
 
+#include "CodeHighlighter.h"
+
 #include <QFileInfo>
 #include <QFontMetricsF>
 #include <QImageReader>
@@ -14,8 +16,15 @@ namespace {
 
 const QRegularExpression &fencePattern()
 {
-    static const QRegularExpression fence(uR"(^\s{0,3}(```+|~~~+))"_s);
+    // The info string's first word names the language.
+    static const QRegularExpression fence(uR"(^\s{0,3}(```+|~~~+)\s*([^\s`{]*))"_s);
     return fence;
+}
+
+int fenceState(const QString &language, const KSyntaxHighlighting::State &parse)
+{
+    const size_t hash = qHash(language) ^ qHash(parse);
+    return int((hash & 0x0fffffff) << 2) | MarkdownHighlighter::InFence;
 }
 
 const QRegularExpression &wikiPattern()
@@ -58,11 +67,16 @@ bool overlaps(const QList<Range> &taken, int start, int end)
 
 } // namespace
 
-MarkdownHighlighter::MarkdownHighlighter(QTextDocument *document) : QSyntaxHighlighter(document) {}
+MarkdownHighlighter::MarkdownHighlighter(QTextDocument *document)
+    : QSyntaxHighlighter(document), m_code(std::make_unique<CodeHighlighter>())
+{}
+
+MarkdownHighlighter::~MarkdownHighlighter() = default;
 
 void MarkdownHighlighter::setLook(const Look &look)
 {
     m_look = look;
+    m_code->setDark(look.dark);
     rehighlight();
 }
 
@@ -188,7 +202,7 @@ void MarkdownHighlighter::mark(int start, int length)
 
 void MarkdownHighlighter::highlightBlock(const QString &text)
 {
-    const int state = previousBlockState();
+    const int state = kindOf(previousBlockState());
     const bool first = currentBlock().blockNumber() == 0;
     m_cursorHere = currentBlock().blockNumber() == m_cursorBlock;
     setCurrentBlockState(Normal);
@@ -232,13 +246,32 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
         return;
     }
 
-    const bool fence = fencePattern().match(text).hasMatch();
-    if (state == InFence || fence) {
+    const QRegularExpressionMatch fence = fencePattern().match(text);
+    if (state == InFence || fence.hasMatch()) {
         merge(0, int(text.size()), code);
-        if (fence)
+        if (fence.hasMatch()) {
             merge(0, int(text.size()), faint);
-        if (state == InFence ? !fence : fence)
-            setCurrentBlockState(InFence);
+            // An opening fence names the language the lines under it are read in.
+            if (state != InFence) {
+                auto *line = new CodeHighlighter::Line;
+                line->language = fence.captured(2);
+                setCurrentBlockState(fenceState(line->language, line->state));
+                setCurrentBlockUserData(line);
+            }
+            return;
+        }
+        const auto *above =
+            dynamic_cast<const CodeHighlighter::Line *>(currentBlock().previous().userData());
+        auto *line = new CodeHighlighter::Line;
+        if (above) {
+            line->language = above->language;
+            line->state = above->state;
+        }
+        for (const CodeHighlighter::Span &span :
+             m_code->highlight(text, line->language, line->state))
+            merge(span.start, span.length, span.format);
+        setCurrentBlockState(fenceState(line->language, line->state));
+        setCurrentBlockUserData(line);
         return;
     }
 
@@ -406,7 +439,7 @@ MarkdownHighlighter::Hit MarkdownHighlighter::hitAt(int position) const
     if (!document())
         return {};
     const QTextBlock block = document()->findBlock(position);
-    if (!block.isValid() || block.userState() == InFence || block.userState() == InFrontMatter)
+    if (!block.isValid() || kindOf(block.userState()) != Normal)
         return {};
     const QString text = block.text();
     const int at = position - block.position();
