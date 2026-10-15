@@ -335,7 +335,18 @@ ApplicationWindow {
 
     LazyPopup {
         id: settingsDialog
-        sourceComponent: SettingsDialog {}
+        sourceComponent: SettingsDialog {
+            onEditColorsRequested: {
+                close()
+                themeEditor.open()
+            }
+        }
+    }
+    LazyPopup {
+        id: themeEditor
+        sourceComponent: ThemeEditor {
+            onFinished: settingsDialog.open()
+        }
     }
     LazyPopup {
         id: keyHelp

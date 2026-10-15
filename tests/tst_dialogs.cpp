@@ -62,6 +62,7 @@ void TestDialogs::opensCleanly_data()
     QTest::newRow("about") << u"AboutDialog"_s << QVariantMap{};
     QTest::newRow("what's new") << u"WhatsNewDialog"_s << QVariantMap{};
     QTest::newRow("update") << u"UpdateDialog"_s << QVariantMap{};
+    QTest::newRow("theme colors") << u"ThemeEditor"_s << QVariantMap{};
 }
 
 void TestDialogs::opensCleanly()
