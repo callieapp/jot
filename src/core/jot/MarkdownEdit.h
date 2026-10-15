@@ -80,7 +80,8 @@ struct WikilinkQuery
 [[nodiscard]] std::optional<WikilinkQuery> wikilinkAt(const QString &text, qsizetype cursor);
 
 /// Puts `target` in the wikilink being typed at the cursor, closing it with `]]` unless it
-/// is closed already, and leaves the cursor after the link.
+/// is closed already, and leaves the cursor after the link. A `|label` or `#heading` the link
+/// has already stays.
 [[nodiscard]] std::optional<Edit> completeWikilink(const QString &text, qsizetype cursor,
                                                    const QString &target);
 

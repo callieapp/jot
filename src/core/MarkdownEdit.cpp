@@ -840,17 +840,22 @@ std::optional<Edit> completeWikilink(const QString &text, qsizetype cursor, cons
     const std::optional<WikilinkQuery> query = wikilinkAt(text, cursor);
     if (!query)
         return std::nullopt;
-    // What is typed after the cursor, up to a closing `]]` on the line, is replaced too.
-    qsizetype end = cursor;
     const qsizetype lineEnd = lineEndOf(text, cursor);
     const qsizetype close = text.indexOf(u"]]"_s, cursor);
     const bool closed =
         close >= 0 && close <= lineEnd && !text.mid(cursor, close - cursor).contains(u"[["_s);
-    if (closed)
-        end = close;
+    // In a closed link, the rest of the target after the cursor is replaced too, but not a
+    // `|label` or `#heading` after it. An open one is closed where the cursor is.
+    qsizetype end = cursor;
+    if (closed) {
+        while (end < close && text.at(end) != u'|' && text.at(end) != u'#')
+            ++end;
+    }
     const QString changed =
         text.left(query->start) + target + (closed ? QString() : u"]]"_s) + text.mid(end);
-    const qsizetype after = query->start + target.size() + 2;
+    // The cursor goes after the whole link, its label and heading included.
+    const qsizetype after = closed ? close + target.size() - (end - query->start) + 2
+                                   : query->start + target.size() + 2;
     return difference(text, changed, after, after);
 }
 

@@ -1,6 +1,7 @@
 #include "SwitcherModel.h"
 
 #include "jot/Fuzzy.h"
+#include "jot/Vault.h"
 
 #include <algorithm>
 
@@ -86,20 +87,22 @@ QString SwitcherModel::pathAt(int row) const
 
 QVariantList SwitcherModel::suggestions(int limit) const
 {
-    QHash<QString, int> titles;
+    // Wikilinks find notes by file name, which a front matter title can differ from.
+    QHash<QString, int> names;
     for (const NoteInfo &note : std::as_const(m_notes))
-        ++titles[note.title.toCaseFolded()];
+        ++names[Vault::titleFromPath(note.path).toCaseFolded()];
     QVariantList items;
     for (const Row &row : std::as_const(m_rows)) {
         if (items.size() == limit)
             break;
-        const bool shared = titles.value(row.title.toCaseFolded()) > 1;
+        const QString name = Vault::titleFromPath(row.path);
+        const bool shared = names.value(name.toCaseFolded()) > 1;
         const QString notebook =
             row.path.contains(u'/') ? row.path.section(u'/', 0, -2) : QString();
         items.append(QVariantMap{
             {u"text"_s, row.title},
             {u"detail"_s, row.alias.isEmpty() ? notebook : row.alias},
-            {u"target"_s, shared ? row.path.chopped(3) : row.title},
+            {u"target"_s, shared ? row.path.chopped(3) : name},
         });
     }
     return items;

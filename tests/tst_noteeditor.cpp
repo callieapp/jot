@@ -342,6 +342,12 @@ void TestNoteEditor::completesWikilinksFromTheKeyboard()
 
     QCOMPARE(body->property("text").toString().mid(before.size()),
              u"See [[Sourdough]] and [[ferry\n"_s);
+
+    // Moving into a finished link offers nothing, so Return still breaks the line.
+    const int inside = int(body->property("text").toString().indexOf(u"Sourd"_s)) + 2;
+    body->setProperty("cursorPosition", inside);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QVERIFY(body->property("text").toString().contains(u"[[So\nurdough]]"_s));
 }
 
 QTEST_MAIN(TestNoteEditor)

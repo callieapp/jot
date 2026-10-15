@@ -250,8 +250,11 @@ Rectangle {
                 tabStopDistance: 4 * Theme.space5
                 Accessible.name: qsTr("Note")
                 onTextChanged: {
-                    if (!root.loading)
-                        Vault.edit(text)
+                    if (root.loading)
+                        return
+                    Vault.edit(text)
+                    // Once the cursor has moved too, so it is read where the typing ended.
+                    Qt.callLater(findLink)
                 }
                 onCursorRectangleChanged: flick.follow(cursorRectangle)
                 onContentHeightChanged: layoutTick++
@@ -264,11 +267,11 @@ Rectangle {
                 property int linkStart: -1
                 property int dismissedLink: -1
 
-                /// Offers notes for the wikilink being typed at the cursor, if any.
+                /// Offers notes for the wikilink being typed at the cursor, if any. Only typing
+                /// asks, so moving through an existing link leaves Return and Tab alone.
                 function findLink() {
-                    const query = activeFocus && selectionStart === selectionEnd ? styler.wikilinkAt(
-                                                                                       cursorPosition) :
-                                                                                   ({})
+                    const query = activeFocus && !readOnly && selectionStart === selectionEnd
+                          ? styler.wikilinkAt(cursorPosition) : ({})
                     linkStart = query.start === undefined ? -1 : query.start
                     if (linkStart < 0 || linkStart === dismissedLink) {
                         if (linkStart < 0)
@@ -313,8 +316,12 @@ Rectangle {
                     return false
                 }
 
-                onCursorPositionChanged: findLink()
-                onActiveFocusChanged: findLink()
+                // Moving out of the link being typed puts its notes away.
+                onCursorPositionChanged: {
+                    if (linkPopup.items.length > 0 && styler.wikilinkAt(cursorPosition).start
+                            !== linkStart)
+                        linkPopup.items = []
+                }
 
                 /// Puts `markdown` on lines of its own at `position`.
                 function insertBlock(position, markdown) {
