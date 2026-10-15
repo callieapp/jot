@@ -70,6 +70,7 @@ qt_add_qml_module(jotui
         SoftShadow.qml
         StickerButton.qml
         SuggestionPopup.qml
+        ThemeEditor.qml
         Tip.qml
         TodoDetails.qml
         TodoList.qml

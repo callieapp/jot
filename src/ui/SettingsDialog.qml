@@ -16,6 +16,9 @@ Popup {
     focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
+    /// The user wants to edit the theme's colors, which needs the window in view.
+    signal editColorsRequested
+
     /// Which group of settings shows: "general", "appearance" or "developer".
     property string tab: "general"
 
@@ -190,6 +193,13 @@ Popup {
                 width: parent.width
                 spacing: Theme.space2
 
+                StickerButton {
+                    text: Themes.editable ? qsTr("Edit colors") : qsTr("Customize colors")
+                    onClicked: {
+                        if (Themes.customize())
+                            root.editColorsRequested()
+                    }
+                }
                 StickerButton {
                     text: qsTr("Import...")
                     onClicked: importDialog.open()
