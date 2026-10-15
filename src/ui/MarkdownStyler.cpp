@@ -4,6 +4,12 @@
 #include "ThemeController.h"
 #include "VaultController.h"
 
+#include "jot/FrontMatter.h"
+#include "jot/MarkdownEdit.h"
+
+#include <QDateTime>
+#include <QTextCursor>
+
 #include <QTextBlock>
 #include <QTextDocument>
 #include <QTimer>
@@ -41,9 +47,93 @@ void MarkdownStyler::setDocument(QQuickTextDocument *document)
         m_highlighter->setCursorPosition(m_cursorPosition);
         connect(document->textDocument(), &QTextDocument::contentsChanged, this,
                 &MarkdownStyler::scheduleImages);
+        connect(document->textDocument(), &QTextDocument::contentsChanged, this,
+                &MarkdownStyler::readFrontMatter);
     }
     Q_EMIT documentChanged();
     scheduleImages();
+    readFrontMatter();
+}
+
+void MarkdownStyler::readFrontMatter()
+{
+    QVariantMap keys;
+    if (m_document && m_document->textDocument()) {
+        const QString text = m_document->textDocument()->toPlainText();
+        if (const NoteParts parts = splitFrontMatter(text); parts.hasFrontMatter)
+            keys = jot::readFrontMatter(parts.frontMatter);
+    }
+    if (keys == m_frontMatter)
+        return;
+    m_frontMatter = keys;
+    Q_EMIT frontMatterChanged();
+}
+
+QVariantMap MarkdownStyler::format(const QString &action, int from, int to, const QString &argument)
+{
+    using namespace markdownedit;
+    if (!m_document || !m_document->textDocument())
+        return {};
+    QTextDocument *document = m_document->textDocument();
+    const QString text = document->toPlainText();
+
+    // Steps on the note as a whole run one after another, then land as one change.
+    QString working = text;
+    qsizetype start = from, end = to;
+    const auto step = [&](const Edit &edit) {
+        working.replace(edit.start, edit.end - edit.start, edit.text);
+        start = edit.selectionStart;
+        end = edit.selectionEnd;
+    };
+    const auto setKey = [&](const QString &key, const QVariant &value) {
+        step(markdownedit::setKey(working, start, end, key, value));
+    };
+    static const QHash<QString, QString> markers{
+        {u"bold"_s, u"**"_s}, {u"italic"_s, u"*"_s}, {u"strike"_s, u"~~"_s}, {u"code"_s, u"`"_s}};
+    static const QHash<QString, LineStyle> styles{
+        {u"bullet"_s, LineStyle::Bullet}, {u"numbered"_s, LineStyle::Numbered},
+        {u"task"_s, LineStyle::Task},     {u"quote"_s, LineStyle::Quote},
+        {u"h1"_s, LineStyle::Heading1},   {u"h2"_s, LineStyle::Heading2},
+        {u"h3"_s, LineStyle::Heading3}};
+    const QString todo = m_frontMatter.value(u"todo"_s).toString();
+    if (markers.contains(action)) {
+        step(wrap(working, from, to, markers.value(action)));
+    } else if (styles.contains(action)) {
+        step(styleLines(working, from, to, styles.value(action)));
+    } else if (action == u"link") {
+        step(link(working, from, to));
+    } else if (action == u"codeblock") {
+        step(codeBlock(working, from, to));
+    } else if (action == u"todo" && todo.isEmpty()) {
+        setKey(u"todo"_s, u"open"_s);
+    } else if (action == u"todo") {
+        setKey(u"todo"_s, {});
+        setKey(u"due"_s, {});
+        setKey(u"done"_s, {});
+    } else if (action == u"done" && todo == u"done") {
+        setKey(u"todo"_s, u"open"_s);
+        setKey(u"done"_s, {});
+    } else if (action == u"done") {
+        setKey(u"todo"_s, u"done"_s);
+        setKey(u"done"_s, QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    } else if (action == u"due") {
+        if (todo.isEmpty())
+            setKey(u"todo"_s, u"open"_s);
+        setKey(u"due"_s, argument.isEmpty() ? QVariant() : QVariant(argument));
+    } else {
+        return {};
+    }
+
+    const Edit edit = difference(text, working, start, end);
+    if (edit.start != edit.end || !edit.text.isEmpty()) {
+        QTextCursor cursor(document);
+        cursor.beginEditBlock();
+        cursor.setPosition(int(edit.start));
+        cursor.setPosition(int(edit.end), QTextCursor::KeepAnchor);
+        cursor.insertText(edit.text);
+        cursor.endEditBlock();
+    }
+    return {{u"start"_s, int(start)}, {u"end"_s, int(end)}};
 }
 
 void MarkdownStyler::setCursorPosition(int position)

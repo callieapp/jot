@@ -22,6 +22,9 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   vault. Ticking one changes its note; choosing one opens the note on that line.
 - `jot status`, `ls`, `search`, `new`, `show`, `open` and `todo` work on your vault from a terminal,
   with `--json` for scripts; `jot new` takes a note's body from a pipe.
+- A row of formatting over each note: headings, bold, italic, strikethrough, code, links, lists,
+  checkboxes, quotes and code blocks, each also undone in one step, and most with a shortcut. The
+  To-do button makes the note a to-do, with a due date and a Done switch under its title.
 - Settings, under the title bar's slider button or Ctrl+,: change the notes folder, pick, import or
   export a theme, and turn off the daily check for new releases. The ? menu copies debug info,
   reports a bug, lists the keyboard shortcuts, says what is new, and tells you when an update is out.

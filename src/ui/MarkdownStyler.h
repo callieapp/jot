@@ -31,6 +31,8 @@ class MarkdownStyler : public QObject
     /// The images shown in place of their links, as `{position, source, width, height}`,
     /// where `position` is where the link's line starts.
     Q_PROPERTY(QVariantList images READ images NOTIFY imagesChanged)
+    /// The note's front matter keys, as the text has them now.
+    Q_PROPERTY(QVariantMap frontMatter READ frontMatter NOTIFY frontMatterChanged)
 
 public:
     explicit MarkdownStyler(QObject *parent = nullptr);
@@ -45,10 +47,18 @@ public:
     [[nodiscard]] int width() const { return m_width; }
     void setWidth(int width);
     [[nodiscard]] QVariantList images() const;
+    [[nodiscard]] QVariantMap frontMatter() const { return m_frontMatter; }
 
     /// What is at `position`: `{kind, target, position}`, where kind is "", "link",
     /// "wikilink", "url" or "task"; for a task, `position` is where its mark is.
     Q_INVOKABLE QVariantMap hitAt(int position) const;
+
+    /// Formats the text from `from` to `to` as one step to undo, and gives the selection
+    /// after as `{start, end}`. `action` is bold, italic, strike, code, link, codeblock,
+    /// bullet, numbered, task, quote, h1, h2 or h3, or for the note as a whole todo, done,
+    /// or due with `argument` a date or empty.
+    Q_INVOKABLE QVariantMap format(const QString &action, int from, int to,
+                                   const QString &argument = {});
 
 Q_SIGNALS:
     void documentChanged();
@@ -56,12 +66,14 @@ Q_SIGNALS:
     void pixelSizeChanged();
     void widthChanged();
     void imagesChanged();
+    void frontMatterChanged();
 
 private:
     void applyLook();
     /// Images can come and go with any edit or move of the cursor; the list is told once
     /// the event loop is back, after the highlighter has had its turn.
     void scheduleImages();
+    void readFrontMatter();
 
     QPointer<QQuickTextDocument> m_document;
     MarkdownHighlighter *m_highlighter = nullptr;
@@ -69,6 +81,7 @@ private:
     int m_pixelSize = 16;
     int m_width = 600;
     bool m_imagesPending = false;
+    QVariantMap m_frontMatter;
     /// Widths settle before images are fitted again, so a window being resized does
     /// not restyle the note on every frame.
     QTimer *m_widthSettle = nullptr;

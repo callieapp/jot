@@ -35,6 +35,7 @@ qt_add_qml_module(jotui
         ReleaseInfo.h
         ReleaseInfo.cpp
         SettingsForeign.h
+        MonthModelForeign.h
         SupportActions.h
         SupportActions.cpp
         ThemesController.h
@@ -45,7 +46,9 @@ qt_add_qml_module(jotui
         Backlinks.qml
         DangerButton.qml
         Dropdown.qml
+        DatePicker.qml
         Field.qml
+        FormatBar.qml
         FormRow.qml
         Glyph.qml
         KeyCap.qml
@@ -68,6 +71,7 @@ qt_add_qml_module(jotui
         StickerButton.qml
         SuggestionPopup.qml
         Tip.qml
+        TodoDetails.qml
         TodoList.qml
         Toggle.qml
         UpdateDialog.qml

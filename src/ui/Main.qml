@@ -396,6 +396,41 @@ ApplicationWindow {
             "inNote": true
         },
         {
+            "keys": ["Ctrl+B"],
+            "label": qsTr("Bold"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+I"],
+            "label": qsTr("Italic"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+Shift+X"],
+            "label": qsTr("Strikethrough"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+E"],
+            "label": qsTr("Code"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+K"],
+            "label": qsTr("Link"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+1", "Ctrl+2", "Ctrl+3"],
+            "label": qsTr("Headings"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+Enter"],
+            "label": qsTr("Checkbox"),
+            "inNote": true
+        },
+        {
             "keys": ["Ctrl+Click"],
             "label": qsTr("Follow a link"),
             "inNote": true

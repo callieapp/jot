@@ -7,6 +7,10 @@ add_library(jotcore STATIC
     FrontMatter.cpp
     jot/Fuzzy.h
     Fuzzy.cpp
+    jot/MarkdownEdit.h
+    MarkdownEdit.cpp
+    jot/MonthModel.h
+    MonthModel.cpp
     jot/NoteScan.h
     NoteScan.cpp
     jot/Rename.h

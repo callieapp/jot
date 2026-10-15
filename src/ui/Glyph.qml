@@ -4,7 +4,8 @@ import QtQuick
 
 /// A small line icon drawn from rounded bars, so icons need no image files and
 /// take the text color: chevron-left, chevron-right, chevron-down, minimize, maximize,
-/// restore, close, check, plus, refresh, bell, search, settings, menu, video or more.
+/// restore, close, check, plus, refresh, bell, search, settings, menu, video, more,
+/// list-bullet, list-number, task or quote.
 Item {
     id: root
 
@@ -43,6 +44,23 @@ Item {
                                                                                       0.22], [0.3,
                                                                                               90, 0.68, 0.5],
                     [0.3, 90, 0.42, 0.78]]
+        case "list-bullet":
+            return [[0.12, 0, 0.12, 0.22], [0.12, 0, 0.12, 0.5], [0.12, 0, 0.12, 0.78], [0.6, 0,
+                                                                                         0.62, 0.22],
+                    [0.6, 0, 0.62, 0.5], [0.6, 0, 0.62, 0.78]]
+        case "list-number":
+            // Upright ticks read as the numbers.
+            return [[0.24, 90, 0.12, 0.22], [0.24, 90, 0.12, 0.5], [0.24, 90, 0.12, 0.78], [0.6, 0, 0.62,
+                                                                                            0.22], [0.6,
+                                                                                                    0, 0.62, 0.5],
+                    [0.6, 0, 0.62, 0.78]]
+        case "task":
+            return [[0.76, 0, 0.5, 0.12], [0.76, 0, 0.5, 0.88], [0.76, 90, 0.12, 0.5], [0.76, 90,
+                                                                                        0.88, 0.5],
+                    [0.24, 45, 0.37, 0.55], [0.4, -50, 0.57, 0.46]]
+        case "quote":
+            return [[0.8, 90, 0.14, 0.5], [0.56, 0, 0.64, 0.22], [0.56, 0, 0.64, 0.5], [0.4, 0, 0.56,
+                                                                                        0.78]]
         default:
             return []
         }

@@ -51,6 +51,7 @@ Shared code:
 | `SupportActions`                                                                                   | Jot's diagnostics are synchronous and have no accounts; it also opens the vault's folder                                                                                                                                   |
 | `SettingsForeign`                                                                                  | Callie keeps this in `EventModelForeign.h` beside its calendar types                                                                                                                                                       |
 | `KeyHelp`, `SettingsDialog`                                                                        | Callie's layout and sections, with Jot's shortcuts and settings                                                                                                                                                            |
+| `MonthModel`, `DatePicker`                                                                         | `MonthModel` keeps its own week helpers instead of Callie's `ViewRange`; `DatePicker` takes the first day of the week from the locale and shows a placeholder for no date                                                  |
 
 `.markdownlint-cli2.yaml` and `.prettierignore` also skip `tests/data/`, which holds sample notes
 here; Callie should take the same lines. The Makefile's `screenshots` recipe now reads

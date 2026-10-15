@@ -10,6 +10,8 @@ endfunction()
 
 jot_add_test(tst_frontmatter)
 jot_add_test(tst_fuzzy)
+jot_add_test(tst_markdownedit)
+jot_add_test(tst_monthmodel)
 jot_add_test(tst_notescan)
 jot_add_test(tst_vault)
 jot_add_test(tst_vaultwatcher)
