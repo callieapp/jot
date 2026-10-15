@@ -268,14 +268,17 @@ QList<Cell> cellsOf(const QString &line)
             cuts.append(i);
         }
     }
-    const QString trimmed = line.trimmed();
     qsizetype indent = 0;
     while (indent < line.size() && line.at(indent).isSpace())
         ++indent;
-    // Outer pipes are optional; without them the row runs to the line's ends.
-    if (!trimmed.startsWith(u'|'))
+    qsizetype last = line.size() - 1;
+    while (last > indent && line.at(last).isSpace())
+        --last;
+    // Outer pipes are optional; without them the row runs to the line's ends. An escaped
+    // pipe at the end is the last cell's text, not its closing pipe.
+    if (cuts.isEmpty() || cuts.first() != indent)
         cuts.prepend(indent - 1);
-    if (!trimmed.endsWith(u'|') || cuts.size() < 2)
+    if (cuts.size() < 2 || cuts.last() != last)
         cuts.append(line.size());
     QList<Cell> cells;
     for (qsizetype k = 0; k + 1 < cuts.size(); ++k) {
@@ -704,13 +707,20 @@ std::optional<Edit> formatTable(const QString &text, qsizetype from, qsizetype t
 {
     from = std::clamp<qsizetype>(from, 0, text.size());
     to = std::clamp<qsizetype>(to, 0, text.size());
+    if (from > to)
+        std::swap(from, to);
     const std::optional<Table> table = tableAt(text, from);
-    if (!table || lineStartOf(text, to) != lineStartOf(text, from))
+    if (!table)
         return std::nullopt;
     const Laid laid = layOut(table->indent, table->rows);
     const QString changed = text.left(table->start) + laid.text + text.mid(table->end);
-    const qsizetype cursor = table->start + laid.cells[table->row][table->column] + table->offset;
-    return difference(text, changed, cursor, cursor + (to - from));
+    const auto place = [&](const Table &at) {
+        return table->start + laid.cells[at.row][at.column] + at.offset;
+    };
+    const qsizetype start = place(*table);
+    // A selection that leaves the table ends at the cursor.
+    const std::optional<Table> other = to <= table->end ? tableAt(text, to) : std::nullopt;
+    return difference(text, changed, start, other ? place(*other) : start);
 }
 
 std::optional<Edit> moveInTable(const QString &text, qsizetype from, bool backwards)
@@ -794,7 +804,8 @@ Edit insertTable(const QString &text, qsizetype from, qsizetype to)
     // way a blank line keeps it apart from the text around it.
     const qsizetype start = lineStartOf(text, from);
     const qsizetype end = lineEndOf(text, to);
-    const bool blank = blankLine(start);
+    // Only a selection that stays on one blank line gives that line up to the table.
+    const bool blank = lineStartOf(text, to) == start && blankLine(start);
     const qsizetype at = blank ? start : end;
     const bool textBefore = blank ? start > 0 && !blankLine(lineStartOf(text, start - 1)) : true;
     const bool textAfter = end < text.size() && !blankLine(end + 1);

@@ -26,6 +26,7 @@ private Q_SLOTS:
     void indentsLists();
     void linesUpTables_data();
     void linesUpTables();
+    void linesUpASelectionAcrossRows();
     void movesThroughCells();
     void addsAndEndsRows();
     void insertsTables_data();
@@ -268,6 +269,8 @@ void TestMarkdownEdit::linesUpTables_data()
         << u"a | b\n- | -\n1 | 2^"_s << u"| a   | b   |\n| --- | --- |\n| 1   | 2^   |"_s;
     QTest::newRow("escaped and code pipes stay in the cell")
         << u"^| a \\| b | `c|d` |\n|-|-|"_s << u"| ^a \\| b | `c|d` |\n| ------ | ----- |"_s;
+    QTest::newRow("an escaped pipe ends the last cell")
+        << u"^| a | b \\|\n|-|-|"_s << u"| ^a   | b \\| |\n| --- | ---- |"_s;
     QTest::newRow("short rows get their cells")
         << u"^| a | b |\n|-|-|\n| 1 |"_s << u"| ^a   | b   |\n| --- | --- |\n| 1   |     |"_s;
 }
@@ -283,6 +286,19 @@ void TestMarkdownEdit::linesUpTables()
     QString out = text;
     out.replace(edit->start, edit->end - edit->start, edit->text);
     QCOMPARE(out.insert(edit->selectionStart, u'^'), after);
+}
+
+void TestMarkdownEdit::linesUpASelectionAcrossRows()
+{
+    // Two rows selected: the button lines the table up rather than adding another.
+    const QString text = u"| a | b |\n|-|-|\n| c | d |"_s;
+    const std::optional<Edit> edit = formatTable(text, 2, text.indexOf(u'd') + 1);
+    QVERIFY(edit);
+    QString out = text;
+    out.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(out, u"| a   | b   |\n| --- | --- |\n| c   | d   |"_s);
+    QCOMPARE(out.mid(edit->selectionStart, edit->selectionEnd - edit->selectionStart),
+             u"a   | b   |\n| --- | --- |\n| c   | d"_s);
 }
 
 void TestMarkdownEdit::movesThroughCells()
@@ -351,6 +367,10 @@ void TestMarkdownEdit::insertsTables_data()
     QTest::newRow("on an empty note") << u"|"_s << table;
     QTest::newRow("after a line of text")
         << u"Some te|xt\nMore"_s << u"Some text\n\n"_s + table + u"\n\nMore"_s;
+    QTest::newRow("a selection from a blank line keeps its text")
+        << u"[\nfoo\nbar]"_s
+        << u"\nfoo\nbar\n\n"_s +
+               u"| [Column] | Column |\n| ------ | ------ |\n|        |        |"_s;
     QTest::newRow("on a blank line between paragraphs")
         << u"One\n|\nTwo"_s << u"One\n\n"_s + table + u"\n\nTwo"_s;
 }
@@ -359,9 +379,9 @@ void TestMarkdownEdit::insertsTables()
 {
     QFETCH(QString, before);
     QFETCH(QString, after);
-    const qsizetype cursor = before.indexOf(u'|');
-    const QString text = QString(before).remove(cursor, 1);
-    const Edit edit = insertTable(text, cursor, cursor);
+    const Marked in = unmark(before);
+    const QString &text = in.text;
+    const Edit edit = insertTable(text, in.from, in.to);
     QString out = text;
     out.replace(edit.start, edit.end - edit.start, edit.text);
     out.insert(edit.selectionEnd, u']').insert(edit.selectionStart, u'[');
