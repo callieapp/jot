@@ -19,6 +19,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   title, the link names its folder too.
 - Ctrl+/ or the Source button shows a note's Markdown exactly as written, in the monospace font,
   with nothing folded away; again brings the styling back. Jot remembers which you prefer.
+- Code blocks are colored by their language, named after the opening fence (` ```python `,
+  ` ```rust `, ` ```sh ` and hundreds more), through KDE's syntax highlighting.
 
 ## 0.0.3 - 2026-10-15
 

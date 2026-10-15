@@ -8,8 +8,11 @@
 #include <QTextCharFormat>
 
 #include <functional>
+#include <memory>
 
 namespace jot {
+
+class CodeHighlighter;
 
 /// Styles Markdown as it is typed, in the manner of a live preview, without changing a
 /// character: headings grow, emphasis shows, and the marks that make them fade, folding
@@ -28,6 +31,8 @@ public:
         QColor faint;
         QColor accent;
         QColor codeBackground;
+        /// Code is colored for a dark editor, or a light one.
+        bool dark = true;
         QString family;
         QString monoFamily;
         QString displayFamily;
@@ -62,6 +67,7 @@ public:
     };
 
     explicit MarkdownHighlighter(QTextDocument *document);
+    ~MarkdownHighlighter() override;
 
     void setLook(const Look &look);
     void setResolver(Resolver resolver);
@@ -73,8 +79,12 @@ public:
 
     [[nodiscard]] Hit hitAt(int position) const;
 
-    /// Block states, kept so code fences and front matter carry from line to line.
+    /// Block states, kept so code fences and front matter carry from line to line. A code
+    /// line packs a hash of its language and parser state above these two bits, so a change
+    /// that reaches the next line makes it highlight again.
     enum State { Normal = 0, InFence = 1, InFrontMatter = 2 };
+    /// A block state without the code's own state packed above it.
+    [[nodiscard]] static int kindOf(int state) { return state < 0 ? Normal : state & 3; }
 
 protected:
     void highlightBlock(const QString &text) override;
@@ -91,6 +101,7 @@ private:
     int m_cursorBlock = -1;
     bool m_cursorHere = false;
     bool m_source = false;
+    std::unique_ptr<CodeHighlighter> m_code;
     Resolver m_resolver;
     QHash<QString, QSize> m_sizes;
     /// Where image links lead, worked out once each: a lookup can ask the whole vault.

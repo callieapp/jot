@@ -20,6 +20,7 @@ BuildRequires:  cmake(Qt6QuickControls2)
 BuildRequires:  cmake(Qt6Sql)
 BuildRequires:  cmake(Qt6Test)
 BuildRequires:  cmake(tomlplusplus)
+BuildRequires:  cmake(KF6SyntaxHighlighting)
 BuildRequires:  desktop-file-utils
 BuildRequires:  libappstream-glib
 
