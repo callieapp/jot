@@ -16,6 +16,10 @@ qt_add_qml_module(jotui
         WindowButtons.cpp
         LiveQml.h
         LiveQml.cpp
+        MarkdownHighlighter.h
+        MarkdownHighlighter.cpp
+        MarkdownStyler.h
+        MarkdownStyler.cpp
         NotebookModel.h
         NotebookModel.cpp
         NoteListModel.h
