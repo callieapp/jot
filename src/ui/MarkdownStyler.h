@@ -58,9 +58,14 @@ public:
     /// bullet, numbered, task, quote, h1, h2 or h3, or for the note as a whole todo, done,
     /// or due with `argument` a date or empty. In tables and lists, newline, indent and
     /// outdent do what Return, Tab and Shift+Tab do there, and give nothing elsewhere so the
-    /// key does its usual. table inserts a table, or lines up the one at the cursor.
+    /// key does its usual. table inserts a table, or lines up the one at the cursor. wikilink
+    /// puts `argument` in the wikilink being typed and closes it.
     Q_INVOKABLE QVariantMap format(const QString &action, int from, int to,
                                    const QString &argument = {});
+
+    /// The wikilink being typed at `position`: `{start, text}`, where `start` is just after
+    /// its `[[`. Empty when there is none.
+    Q_INVOKABLE QVariantMap wikilinkAt(int position) const;
 
 Q_SIGNALS:
     void documentChanged();

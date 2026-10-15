@@ -31,6 +31,10 @@ private Q_SLOTS:
     void addsAndEndsRows();
     void insertsTables_data();
     void insertsTables();
+    void findsTheWikilinkBeingTyped_data();
+    void findsTheWikilinkBeingTyped();
+    void completesWikilinks_data();
+    void completesWikilinks();
     void setsFrontMatterKeepingTheSelection();
     void editsAreAsSmallAsTheyCanBe();
 };
@@ -386,6 +390,60 @@ void TestMarkdownEdit::insertsTables()
     out.replace(edit.start, edit.end - edit.start, edit.text);
     out.insert(edit.selectionEnd, u']').insert(edit.selectionStart, u'[');
     QCOMPARE(out, after);
+}
+
+void TestMarkdownEdit::findsTheWikilinkBeingTyped_data()
+{
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("typed");
+    QTest::newRow("just opened") << u"see [[|"_s << QString();
+    QTest::newRow("some typed") << u"see [[Mara V|"_s << u"Mara V"_s;
+    QTest::newRow("a path") << u"[[Ashfall/Pl|"_s << u"Ashfall/Pl"_s;
+    QTest::newRow("inside a closed link") << u"[[Ma|ra]]"_s << u"Ma"_s;
+    QTest::newRow("after the link") << u"[[Mara]] and |"_s << u"-"_s;
+    QTest::newRow("in the label") << u"[[Mara|the cap|"_s << u"-"_s;
+    QTest::newRow("in the heading") << u"[[Mara#Ear|"_s << u"-"_s;
+    QTest::newRow("on another line") << u"[[Mara\nnext|"_s << u"-"_s;
+    QTest::newRow("in inline code") << u"`[[Ma|"_s << u"-"_s;
+    QTest::newRow("in a code block") << u"```\n[[Ma|\n```"_s << u"-"_s;
+}
+
+void TestMarkdownEdit::findsTheWikilinkBeingTyped()
+{
+    QFETCH(QString, before);
+    QFETCH(QString, typed);
+    // The cursor is the last bar, since a label's bar comes before it.
+    const qsizetype cursor = before.lastIndexOf(u'|');
+    const QString text = QString(before).remove(cursor, 1);
+    const std::optional<WikilinkQuery> query = wikilinkAt(text, cursor);
+    QCOMPARE(query ? query->text : u"-"_s, typed);
+    if (query)
+        QCOMPARE(text.mid(query->start - 2, 2), u"[["_s);
+}
+
+void TestMarkdownEdit::completesWikilinks_data()
+{
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("after");
+    QTest::newRow("closes it") << u"see [[Ma| now"_s << u"see [[Mara Vey]]| now"_s;
+    QTest::newRow("fills an open pair") << u"see [[Ma|]] now"_s << u"see [[Mara Vey]]| now"_s;
+    QTest::newRow("replaces the rest of the target") << u"[[Ma|rx]]"_s << u"[[Mara Vey]]|"_s;
+    QTest::newRow("keeps a later link")
+        << u"[[Ma| and [[Soren]]"_s << u"[[Mara Vey]]| and [[Soren]]"_s;
+}
+
+void TestMarkdownEdit::completesWikilinks()
+{
+    QFETCH(QString, before);
+    QFETCH(QString, after);
+    const qsizetype cursor = before.indexOf(u'|');
+    const QString text = QString(before).remove(cursor, 1);
+    const std::optional<Edit> edit = completeWikilink(text, cursor, u"Mara Vey"_s);
+    QVERIFY(edit);
+    QString out = text;
+    out.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(out.insert(edit->selectionStart, u'|'), after);
+    QVERIFY(!completeWikilink(u"no link here"_s, 3, u"Mara"_s));
 }
 
 void TestMarkdownEdit::setsFrontMatterKeepingTheSelection()

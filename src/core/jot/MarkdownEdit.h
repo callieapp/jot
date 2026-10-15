@@ -68,6 +68,22 @@ enum class LineStyle { Bullet, Numbered, Task, Quote, Heading1, Heading2, Headin
 /// A two-column table on lines of its own at the cursor, with its first heading selected.
 [[nodiscard]] Edit insertTable(const QString &text, qsizetype from, qsizetype to);
 
+/// A wikilink being typed: where its target starts, just after `[[`, and what is typed so far.
+struct WikilinkQuery
+{
+    qsizetype start = 0;
+    QString text;
+};
+
+/// The wikilink the cursor is typing, if it is after an unclosed `[[` on its line and
+/// before any `|` or `#` that ends the target. Nothing in code.
+[[nodiscard]] std::optional<WikilinkQuery> wikilinkAt(const QString &text, qsizetype cursor);
+
+/// Puts `target` in the wikilink being typed at the cursor, closing it with `]]` unless it
+/// is closed already, and leaves the cursor after the link.
+[[nodiscard]] std::optional<Edit> completeWikilink(const QString &text, qsizetype cursor,
+                                                   const QString &target);
+
 /// Sets front matter `key` to `value`, or removes it when `value` is null, keeping the
 /// selection on the same text.
 [[nodiscard]] Edit setKey(const QString &text, qsizetype from, qsizetype to, const QString &key,

@@ -816,6 +816,44 @@ Edit insertTable(const QString &text, qsizetype from, qsizetype to)
     return difference(text, changed, selection, selection + heading.size());
 }
 
+std::optional<WikilinkQuery> wikilinkAt(const QString &text, qsizetype cursor)
+{
+    cursor = std::clamp<qsizetype>(cursor, 0, text.size());
+    const qsizetype line = lineStartOf(text, cursor);
+    if (inCode(text, line))
+        return std::nullopt;
+    const qsizetype open = text.lastIndexOf(u"[["_s, cursor - 1);
+    if (open < line || open + 2 > cursor)
+        return std::nullopt;
+    const QString typed = text.mid(open + 2, cursor - open - 2);
+    static const QRegularExpression ends(uR"(\]\]|\||#|\[\[)"_s);
+    if (typed.contains(ends))
+        return std::nullopt;
+    // Backticks before it on the line, unpaired, put it in inline code.
+    if (text.mid(line, open - line).count(u'`') % 2 == 1)
+        return std::nullopt;
+    return WikilinkQuery{open + 2, typed};
+}
+
+std::optional<Edit> completeWikilink(const QString &text, qsizetype cursor, const QString &target)
+{
+    const std::optional<WikilinkQuery> query = wikilinkAt(text, cursor);
+    if (!query)
+        return std::nullopt;
+    // What is typed after the cursor, up to a closing `]]` on the line, is replaced too.
+    qsizetype end = cursor;
+    const qsizetype lineEnd = lineEndOf(text, cursor);
+    const qsizetype close = text.indexOf(u"]]"_s, cursor);
+    const bool closed =
+        close >= 0 && close <= lineEnd && !text.mid(cursor, close - cursor).contains(u"[["_s);
+    if (closed)
+        end = close;
+    const QString changed =
+        text.left(query->start) + target + (closed ? QString() : u"]]"_s) + text.mid(end);
+    const qsizetype after = query->start + target.size() + 2;
+    return difference(text, changed, after, after);
+}
+
 Edit setKey(const QString &text, qsizetype from, qsizetype to, const QString &key,
             const QVariant &value)
 {

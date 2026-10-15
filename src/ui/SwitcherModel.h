@@ -7,7 +7,8 @@
 
 namespace jot {
 
-/// The quick switcher's notes: every note, best fuzzy match first, by title, alias or path.
+/// The quick switcher's notes, and the notes offered while typing a wikilink: every note,
+/// best fuzzy match first, by title, alias or path.
 class SwitcherModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -36,6 +37,10 @@ public:
     [[nodiscard]] QString query() const { return m_query; }
     void setQuery(const QString &query);
     Q_INVOKABLE QString pathAt(int row) const;
+    /// The first `limit` matches as `{text, detail, target}` for a suggestion list, where
+    /// `target` is what a wikilink to the note says: its title, or its path without `.md`
+    /// when another note has the same title.
+    Q_INVOKABLE QVariantList suggestions(int limit) const;
 
     [[nodiscard]] int rowCount(const QModelIndex &parent = {}) const override;
     [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override;

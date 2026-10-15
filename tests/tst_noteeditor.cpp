@@ -40,6 +40,7 @@ private Q_SLOTS:
     void makesTheNoteATodoWithADueDate();
     void continuesAndNestsLists();
     void fillsInTablesWithTheKeys();
+    void completesWikilinksFromTheKeyboard();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -318,6 +319,29 @@ void TestNoteEditor::fillsInTablesWithTheKeys()
 
     QCOMPARE(body->property("text").toString().mid(before.size()),
              u"\n| Name | Role    |\n| ---- | ------- |\n| Mara | Captain |\nAfter"_s);
+}
+
+void TestNoteEditor::completesWikilinksFromTheKeyboard()
+{
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    body->forceActiveFocus();
+    body->setProperty("cursorPosition", body->property("length"));
+    const QString before = body->property("text").toString();
+    const auto type = [this](const QString &text) {
+        for (const QChar c : text)
+            QTest::keyClick(m_window.get(), c.toLatin1());
+    };
+
+    type(u"See [[sourd"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    type(u" and [[ferry"_s);
+    // Escape puts the notes away, so Return breaks the line instead.
+    QTest::keyClick(m_window.get(), Qt::Key_Escape);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+
+    QCOMPARE(body->property("text").toString().mid(before.size()),
+             u"See [[Sourdough]] and [[ferry\n"_s);
 }
 
 QTEST_MAIN(TestNoteEditor)

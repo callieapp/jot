@@ -14,6 +14,9 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   Shift+Tab move between cells, padding them so the columns align; Tab in the last cell and
   Return add a row, and Return on an empty last row ends the table. Tables show in a monospace
   font so the columns line up on screen too.
+- Typing `[[` offers your notes as you go, by title, alias or folder. Arrows choose one, Return
+  or Tab puts it in and closes the link, and Escape puts the list away. When two notes share a
+  title, the link names its folder too.
 
 ## 0.0.3 - 2026-10-15
 

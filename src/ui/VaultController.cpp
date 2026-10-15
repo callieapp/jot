@@ -541,11 +541,13 @@ void VaultController::reloadModels()
         m_notebooks.reload(m_vault.get(), m_index->noteCounts(), m_index->noteCount());
         m_notes.reload(m_index.get());
         m_switcher.reload(m_index.get());
+        m_linkSuggestions.reload(m_index.get());
         m_todos.reload(m_index.get());
     } else {
         m_notebooks.reload(nullptr, {}, 0);
         m_notes.reload(nullptr);
         m_switcher.reload(nullptr);
+        m_linkSuggestions.reload(nullptr);
         m_backlinks.reload(nullptr, nullptr, {});
         m_todos.reload(nullptr);
     }

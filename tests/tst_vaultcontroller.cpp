@@ -34,6 +34,7 @@ private Q_SLOTS:
     void ordersNotesAsAsked();
     void followsTheOrderInSettings();
     void switcherFindsByTitleAliasAndPath();
+    void suggestsLinksThatResolve();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
     void savesShortlyAfterTypingStops();
@@ -253,6 +254,34 @@ void TestVaultController::followsTheOrderInSettings()
     QCOMPARE(m_settings->noteSort(), u"title"_s);
     m_settings->reset();
     QCOMPARE(m_vault->notes()->order(), u"updated"_s);
+}
+
+void TestVaultController::suggestsLinksThatResolve()
+{
+    // A second Pancakes makes the title ambiguous, so links to both say their path.
+    QVERIFY(QDir().mkpath(m_root + u"/Breakfast"_s));
+    QFile twin(m_root + u"/Breakfast/Pancakes.md"_s);
+    QVERIFY(twin.open(QIODevice::WriteOnly));
+    twin.write("Another stack.\n");
+    twin.close();
+    QVERIFY(m_vault->openPath(m_root));
+    SwitcherModel &links = *m_vault->linkSuggestions();
+
+    links.setQuery(u"ferrywoman"_s);
+    const QVariantMap mara = links.suggestions(8).first().toMap();
+    QCOMPARE(mara.value(u"text"_s).toString(), u"Mara Vey"_s);
+    QCOMPARE(mara.value(u"detail"_s).toString(), u"the Ferrywoman"_s);
+    QCOMPARE(mara.value(u"target"_s).toString(), u"Mara Vey"_s);
+
+    links.setQuery(u"pancakes"_s);
+    QStringList targets;
+    for (const QVariant &item : links.suggestions(8))
+        targets.append(item.toMap().value(u"target"_s).toString());
+    QVERIFY(targets.contains(u"Recipes/Pancakes"_s));
+    QVERIFY(targets.contains(u"Breakfast/Pancakes"_s));
+    for (const QString &target : std::as_const(targets))
+        QCOMPARE(m_vault->index()->resolve(target, {}), target + u".md"_s);
+    QCOMPARE(links.suggestions(1).size(), 1);
 }
 
 void TestVaultController::switcherFindsByTitleAliasAndPath()
