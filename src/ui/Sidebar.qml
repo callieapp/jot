@@ -50,6 +50,43 @@ Rectangle {
         Column {
             width: parent.width
 
+            Entry {
+                id: todos
+
+                width: root.width
+                label: qsTr("To-dos")
+                selected: Vault.showingTodos
+                onClicked: Vault.showingTodos = true
+
+                contentItem: Item {
+                    Text {
+                        anchors {
+                            left: parent.left
+                            leftMargin: Theme.space5
+                            verticalCenter: parent.verticalCenter
+                        }
+                        text: todos.label
+                        color: todos.selected ? Theme.text : Theme.textMuted
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.textMd
+                        font.weight: todos.selected ? Theme.weightBold : Theme.weightStrong
+                    }
+                    Text {
+                        anchors {
+                            right: parent.right
+                            rightMargin: Theme.space5
+                            verticalCenter: parent.verticalCenter
+                        }
+                        visible: Vault.todos.count > 0
+                        text: Vault.todos.count
+                        color: Theme.accent
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.textXs
+                        font.weight: Theme.weightBold
+                    }
+                }
+            }
+
             Heading {
                 text: qsTr("Notebooks")
             }
@@ -69,8 +106,12 @@ Rectangle {
 
                     width: root.width
                     label: name
-                    selected: Vault.notes.tag === "" && Vault.notes.notebook === path
-                    onClicked: Vault.notes.notebook = path
+                    selected: !Vault.showingTodos && Vault.notes.tag === "" && Vault.notes.notebook
+                              === path
+                    onClicked: {
+                        Vault.showingTodos = false
+                        Vault.notes.notebook = path
+                    }
 
                     contentItem: Item {
                         AbstractButton {
@@ -142,8 +183,11 @@ Rectangle {
 
                     width: root.width
                     label: "#" + modelData
-                    selected: Vault.notes.tag === modelData
-                    onClicked: Vault.notes.tag = modelData
+                    selected: !Vault.showingTodos && Vault.notes.tag === modelData
+                    onClicked: {
+                        Vault.showingTodos = false
+                        Vault.notes.tag = modelData
+                    }
 
                     contentItem: Text {
                         leftPadding: Theme.space5 + tagRow.modelData.split("/").length

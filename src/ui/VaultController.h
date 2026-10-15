@@ -4,6 +4,7 @@
 #include "NoteListModel.h"
 #include "NotebookModel.h"
 #include "SwitcherModel.h"
+#include "TodoModel.h"
 
 #include "jot/Vault.h"
 #include "jot/VaultIndex.h"
@@ -15,7 +16,9 @@
 #include <QUrl>
 #include <QVariantMap>
 
+#include <functional>
 #include <memory>
+#include <optional>
 
 namespace jot {
 
@@ -41,6 +44,10 @@ class VaultController : public QObject
     Q_PROPERTY(jot::NotebookModel *notebooks READ notebooks CONSTANT)
     Q_PROPERTY(jot::NoteListModel *notes READ notes CONSTANT)
     Q_PROPERTY(jot::SwitcherModel *switcher READ switcher CONSTANT)
+    /// What is left to do across the vault.
+    Q_PROPERTY(jot::TodoModel *todos READ todos CONSTANT)
+    /// The middle column shows to-dos rather than notes.
+    Q_PROPERTY(bool showingTodos READ showingTodos WRITE setShowingTodos NOTIFY showingTodosChanged)
     /// What links to, or names, the note shown.
     Q_PROPERTY(jot::BacklinksModel *backlinks READ backlinks CONSTANT)
     /// The note shown, by vault path, and what it says.
@@ -98,6 +105,13 @@ public:
     /// What a link in the note shown leads to, for a preview: `{path, title, text}`, where
     /// `text` is the start of the note without its front matter. Empty when it leads to no note.
     Q_INVOKABLE QVariantMap preview(const QString &target) const;
+    /// Ticks or unticks the task on `line` of the note at `path`, in its file or, for the
+    /// note shown, in the editor's text.
+    Q_INVOKABLE bool setTaskDone(const QString &path, int line, bool done);
+    /// Marks a note that is a to-do as done, with when it was.
+    Q_INVOKABLE bool completeTodo(const QString &path);
+    /// Shows the note at `path` with the cursor on `line`.
+    Q_INVOKABLE void openAt(const QString &path, int line);
     /// How long typing must pause before edits are written, in ms.
     void setSaveDelay(int ms)
     {
@@ -118,6 +132,9 @@ public:
     [[nodiscard]] NoteListModel *notes() { return &m_notes; }
     [[nodiscard]] SwitcherModel *switcher() { return &m_switcher; }
     [[nodiscard]] BacklinksModel *backlinks() { return &m_backlinks; }
+    [[nodiscard]] TodoModel *todos() { return &m_todos; }
+    [[nodiscard]] bool showingTodos() const { return m_showingTodos; }
+    void setShowingTodos(bool showing);
     [[nodiscard]] QString current() const { return m_current; }
     void setCurrent(const QString &path);
     [[nodiscard]] QString currentTitle() const;
@@ -133,6 +150,9 @@ Q_SIGNALS:
     void currentChanged();
     void unsavedChanged();
     void problemChanged();
+    void showingTodosChanged();
+    /// The editor should put the cursor on this line of the note shown, counted from 1.
+    void revealLine(int line);
 
 private:
     void close();
@@ -145,6 +165,9 @@ private:
     /// After a rename that did not finish, shows whichever of the two paths now holds
     /// the note, so nothing writes to one that is gone.
     void resyncAfterRename(const QString &from, const QString &to);
+    /// Replaces the whole text of the note at `path`, through the editor's copy when shown.
+    bool rewriteNote(const QString &path,
+                     const std::function<std::optional<QString>(const QString &)> &change);
     /// Keeps what another program wrote to the note shown beside it, as the user's own
     /// edits are about to replace it.
     void keepConflict(const QString &theirs);
@@ -158,6 +181,8 @@ private:
     NoteListModel m_notes;
     SwitcherModel m_switcher;
     BacklinksModel m_backlinks;
+    TodoModel m_todos;
+    bool m_showingTodos = false;
     QString m_indexPath;
     QString m_error;
     QString m_current;

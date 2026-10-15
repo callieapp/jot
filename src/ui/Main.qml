@@ -185,10 +185,19 @@ ApplicationWindow {
                 }
                 width: Theme.sidebarWidth
             }
+            TodoList {
+                visible: Vault.isOpen && Vault.showingTodos
+                anchors {
+                    left: sidebar.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                width: Theme.noteListWidth
+            }
             NoteList {
                 id: noteList
 
-                visible: Vault.isOpen
+                visible: Vault.isOpen && !Vault.showingTodos
                 anchors {
                     left: sidebar.right
                     top: parent.top

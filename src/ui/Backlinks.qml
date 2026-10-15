@@ -8,6 +8,7 @@ import QtQuick.Controls
 Column {
     id: root
 
+    visible: Vault.backlinks.linked + Vault.backlinks.unlinked > 0
     spacing: Theme.space2
 
     component Heading: Text {

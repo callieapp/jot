@@ -46,6 +46,14 @@ Rectangle {
             if (Vault.currentText !== body.text || Vault.currentTitle !== title.text)
                 root.load()
         }
+        function onRevealLine(line) {
+            // Counted in the editor's own lines, which match the file's.
+            let position = 0
+            for (let n = 1; n < line && position >= 0; ++n)
+                position = body.text.indexOf("\n", position) + 1
+            body.forceActiveFocus()
+            body.cursorPosition = Math.max(0, position)
+        }
     }
     Component.onCompleted: load()
 
