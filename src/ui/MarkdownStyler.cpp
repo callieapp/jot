@@ -44,6 +44,7 @@ void MarkdownStyler::setDocument(QQuickTextDocument *document)
             return vault ? vault->attachmentPath(target, wiki) : QString();
         });
         applyLook();
+        m_highlighter->setSourceMode(m_sourceMode);
         m_highlighter->setCursorPosition(m_cursorPosition);
         connect(document->textDocument(), &QTextDocument::contentsChanged, this,
                 &MarkdownStyler::scheduleImages);
@@ -165,6 +166,18 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
         cursor.endEditBlock();
     }
     return {{u"start"_s, int(start)}, {u"end"_s, int(end)}};
+}
+
+void MarkdownStyler::setSourceMode(bool source)
+{
+    if (m_sourceMode == source)
+        return;
+    m_sourceMode = source;
+    if (m_highlighter)
+        m_highlighter->setSourceMode(source);
+    Q_EMIT sourceModeChanged();
+    // Images come and go with the styling.
+    scheduleImages();
 }
 
 void MarkdownStyler::setCursorPosition(int position)

@@ -36,7 +36,7 @@ Rectangle {
             right: parent.right
             verticalCenter: parent.verticalCenter
             leftMargin: Theme.space5
-            rightMargin: todoButton.width + 2 * Theme.space5
+            rightMargin: todoButton.width + sourceButton.width + Theme.space1 + 2 * Theme.space5
         }
         spacing: Theme.space1
 
@@ -118,6 +118,22 @@ Rectangle {
             format: "codeblock"
             tip: qsTr("Code block")
         }
+    }
+
+    // The Markdown as written, for when live preview gets in the way.
+    PillButton {
+        id: sourceButton
+
+        anchors {
+            right: todoButton.left
+            rightMargin: Theme.space1
+            top: row.top
+        }
+        label: qsTr("Source")
+        tip: qsTr("Show the Markdown as written (Ctrl+/)")
+        selected: Settings.sourceMode
+        focusPolicy: Qt.NoFocus
+        onClicked: root.formatRequested("source")
     }
 
     // A note that is a to-do shows in To-dos until it is done.

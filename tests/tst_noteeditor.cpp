@@ -1,3 +1,4 @@
+#include "SettingsForeign.h"
 #include "ThemeController.h"
 #include "VaultController.h"
 
@@ -41,10 +42,13 @@ private Q_SLOTS:
     void continuesAndNestsLists();
     void fillsInTablesWithTheKeys();
     void completesWikilinksFromTheKeyboard();
+    void togglesSourceMode();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
     int inkBelowTitle();
+    /// Pixels of the sample picture's lower half, a blue nothing else in the editor has.
+    int blueInk();
     QQuickItem *find(const QString &name, QQuickItem *from = nullptr) const;
 
     std::unique_ptr<QTemporaryDir> m_dir;
@@ -71,6 +75,8 @@ void TestNoteEditor::init()
         QVERIFY(QFile::copy(from, to));
     }
     m_settings = std::make_unique<Settings>(m_dir->filePath(u"settings.ini"_s));
+    // The editor reads the Settings singleton, which would otherwise be the user's own file.
+    SettingsForeign::s_instance = m_settings.get();
     m_vault = std::make_unique<VaultController>(*m_settings);
     m_vault->setIndexPath(m_dir->filePath(u"index.sqlite"_s));
     m_vault->setSaveDelay(50);
@@ -100,6 +106,7 @@ void TestNoteEditor::cleanup()
     m_engine.reset();
     VaultController::setInstance(nullptr);
     m_vault.reset();
+    SettingsForeign::s_instance = nullptr;
 }
 
 int TestNoteEditor::inkBelowTitle()
@@ -184,19 +191,20 @@ void TestNoteEditor::typingKeepsWindowsLineEndings()
 void TestNoteEditor::showsImagesInPlaceOfTheirLinks()
 {
     m_vault->setCurrent(u"Ashfall/Places/The Ferry.md"_s);
-    // The sample picture's lower half is a blue nothing else in the editor has.
-    const auto blue = [this] {
-        const QImage image = m_window->grabWindow();
-        int count = 0;
-        for (int y = 0; y < image.height(); y += 2) {
-            for (int x = 0; x < image.width(); x += 2) {
-                const QColor c = image.pixelColor(x, y);
-                count += c.blue() > 200 && c.red() < 140 && c.green() > 110 ? 1 : 0;
-            }
+    QTRY_VERIFY_WITH_TIMEOUT(blueInk() > 1000, 3000);
+}
+
+int TestNoteEditor::blueInk()
+{
+    const QImage image = m_window->grabWindow();
+    int count = 0;
+    for (int y = 0; y < image.height(); y += 2) {
+        for (int x = 0; x < image.width(); x += 2) {
+            const QColor c = image.pixelColor(x, y);
+            count += c.blue() > 200 && c.red() < 140 && c.green() > 110 ? 1 : 0;
         }
-        return count;
-    };
-    QTRY_VERIFY_WITH_TIMEOUT(blue() > 1000, 3000);
+    }
+    return count;
 }
 
 void TestNoteEditor::formatsAndUndoesInOneStep()
@@ -348,6 +356,21 @@ void TestNoteEditor::completesWikilinksFromTheKeyboard()
     body->setProperty("cursorPosition", inside);
     QTest::keyClick(m_window.get(), Qt::Key_Return);
     QVERIFY(body->property("text").toString().contains(u"[[So\nurdough]]"_s));
+}
+
+void TestNoteEditor::togglesSourceMode()
+{
+    m_vault->setCurrent(u"Ashfall/Places/The Ferry.md"_s);
+    find(u"body"_s)->forceActiveFocus();
+    QTRY_VERIFY_WITH_TIMEOUT(blueInk() > 1000, 3000);
+
+    // As written, the picture is its link again; Ctrl+/ again brings it back.
+    QTest::keyClick(m_window.get(), Qt::Key_Slash, Qt::ControlModifier);
+    QVERIFY(m_settings->sourceMode());
+    QTRY_VERIFY_WITH_TIMEOUT(blueInk() < 50, 3000);
+    QTest::keyClick(m_window.get(), Qt::Key_Slash, Qt::ControlModifier);
+    QVERIFY(!m_settings->sourceMode());
+    QTRY_VERIFY_WITH_TIMEOUT(blueInk() > 1000, 3000);
 }
 
 QTEST_MAIN(TestNoteEditor)

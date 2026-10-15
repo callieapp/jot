@@ -17,6 +17,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - Typing `[[` offers your notes as you go, by title, alias or folder. Arrows choose one, Return
   or Tab puts it in and closes the link, and Escape puts the list away. When two notes share a
   title, the link names its folder too.
+- Ctrl+/ or the Source button shows a note's Markdown exactly as written, in the monospace font,
+  with nothing folded away; again brings the styling back. Jot remembers which you prefer.
 
 ## 0.0.3 - 2026-10-15
 

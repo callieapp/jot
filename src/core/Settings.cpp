@@ -18,6 +18,7 @@ const QString kNoteSort = u"notes/sort"_s;
 const QString kCollapsedNotebooks = u"notes/collapsedNotebooks"_s;
 const QString kCheckForUpdates = u"updates/check"_s;
 const QString kLastSeenVersion = u"app/lastSeenVersion"_s;
+const QString kSourceMode = u"editor/sourceMode"_s;
 
 } // namespace
 
@@ -32,6 +33,7 @@ Settings::Settings(const QString &path, QObject *parent)
     m_collapsedNotebooks = m_store.value(kCollapsedNotebooks).toStringList();
     m_checkForUpdates = m_store.value(kCheckForUpdates, true).toBool();
     m_lastSeenVersion = m_store.value(kLastSeenVersion).toString();
+    m_sourceMode = m_store.value(kSourceMode, false).toBool();
 }
 
 QString Settings::defaultPath()
@@ -99,11 +101,21 @@ void Settings::setLastSeenVersion(const QString &version)
     Q_EMIT lastSeenVersionChanged();
 }
 
+void Settings::setSourceMode(bool source)
+{
+    if (m_sourceMode == source)
+        return;
+    m_sourceMode = source;
+    m_store.setValue(kSourceMode, source);
+    Q_EMIT sourceModeChanged();
+}
+
 void Settings::reset()
 {
     setTheme({});
     setNoteSort(noteSorts().first());
     setCheckForUpdates(true);
+    setSourceMode(false);
 }
 
 } // namespace jot

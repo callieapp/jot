@@ -67,6 +67,9 @@ public:
     void setResolver(Resolver resolver);
     /// The block the cursor is in shows its marks; others fold them away.
     void setCursorPosition(int position);
+    /// Shows the Markdown exactly as written, in the monospace font: nothing folded, styled
+    /// or shown as an image.
+    void setSourceMode(bool source);
 
     [[nodiscard]] Hit hitAt(int position) const;
 
@@ -87,6 +90,7 @@ private:
     Look m_look;
     int m_cursorBlock = -1;
     bool m_cursorHere = false;
+    bool m_source = false;
     Resolver m_resolver;
     QHash<QString, QSize> m_sizes;
     /// Where image links lead, worked out once each: a lookup can ask the whole vault.

@@ -76,6 +76,7 @@ void TestSettings::resetKeepsTheVault()
     settings.setTheme(u"paper"_s);
     settings.setNoteSort(u"title"_s);
     settings.setCheckForUpdates(false);
+    settings.setSourceMode(true);
     settings.setCollapsedNotebooks({u"Work"_s});
     QSignalSpy themeChanged(&settings, &Settings::themeChanged);
 
@@ -85,6 +86,7 @@ void TestSettings::resetKeepsTheVault()
     QCOMPARE(settings.theme(), QString());
     QCOMPARE(settings.noteSort(), u"updated"_s);
     QVERIFY(settings.checkForUpdates());
+    QVERIFY(!settings.sourceMode());
     QCOMPARE(settings.vaultPath(), u"/home/me/Notes"_s);
     QCOMPARE(settings.collapsedNotebooks(), QStringList{u"Work"_s});
     QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteSort(), u"updated"_s);

@@ -24,6 +24,10 @@ Rectangle {
     /// Formats the selection, or the word or line at the cursor, and keeps the cursor in
     /// the note. Says whether anything was done.
     function format(action, argument) {
+        if (action === "source") {
+            Settings.sourceMode = !Settings.sourceMode
+            return true
+        }
         if (body.readOnly)
             return false
         const from = body.selectionStart
@@ -90,6 +94,8 @@ Rectangle {
         const shift = (event.modifiers & Qt.ShiftModifier) !== 0
         if (!ctrl || (event.modifiers & Qt.AltModifier) !== 0)
             return ""
+        if (event.key === Qt.Key_Slash)
+            return "source"
         if (shift)
             return event.key === Qt.Key_X ? "strike" : ""
         switch (event.key) {
@@ -377,6 +383,7 @@ Rectangle {
                 MarkdownStyler {
                     id: styler
 
+                    sourceMode: Settings.sourceMode
                     cursorPosition: body.activeFocus ? body.cursorPosition : -1
                     pixelSize: body.font.pixelSize
                     width: body.width

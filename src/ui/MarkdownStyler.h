@@ -31,6 +31,8 @@ class MarkdownStyler : public QObject
     /// The images shown in place of their links, as `{position, source, width, height}`,
     /// where `position` is where the link's line starts.
     Q_PROPERTY(QVariantList images READ images NOTIFY imagesChanged)
+    /// The Markdown shown as written, without live preview.
+    Q_PROPERTY(bool sourceMode READ sourceMode WRITE setSourceMode NOTIFY sourceModeChanged)
     /// The note's front matter keys, as the text has them now.
     Q_PROPERTY(QVariantMap frontMatter READ frontMatter NOTIFY frontMatterChanged)
 
@@ -48,6 +50,8 @@ public:
     void setWidth(int width);
     [[nodiscard]] QVariantList images() const;
     [[nodiscard]] QVariantMap frontMatter() const { return m_frontMatter; }
+    [[nodiscard]] bool sourceMode() const { return m_sourceMode; }
+    void setSourceMode(bool source);
 
     /// What is at `position`: `{kind, target, position}`, where kind is "", "link",
     /// "wikilink", "url" or "task"; for a task, `position` is where its mark is.
@@ -74,6 +78,7 @@ Q_SIGNALS:
     void widthChanged();
     void imagesChanged();
     void frontMatterChanged();
+    void sourceModeChanged();
 
 private:
     void applyLook();
@@ -89,6 +94,7 @@ private:
     int m_width = 600;
     bool m_imagesPending = false;
     QVariantMap m_frontMatter;
+    bool m_sourceMode = false;
     /// Widths settle before images are fitted again, so a window being resized does
     /// not restyle the note on every frame.
     QTimer *m_widthSettle = nullptr;
