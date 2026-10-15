@@ -183,16 +183,17 @@ ApplicationWindow {
                     text: qsTr("Debug info copied")
                 }
 
-                // A newer release is out; the menu says which.
+                // A newer release is out; the menu says which. It sits on the corner,
+                // a fifth of it past the edge, ringed in the background color.
                 Rectangle {
                     visible: Release.update !== ""
-                    x: parent.width - width + 2
-                    y: -2
-                    width: 10
-                    height: 10
-                    radius: 5
+                    width: Theme.badgeSize
+                    height: Theme.badgeSize
+                    x: parent.width - width * 0.8
+                    y: -height * 0.2
+                    radius: width / 2
                     color: Theme.accent
-                    border.width: 2
+                    border.width: width / 5
                     border.color: Theme.bg
                 }
 

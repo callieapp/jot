@@ -28,6 +28,7 @@ private Q_SLOTS:
     void opensAFolderAndRemembersIt();
     void refusesWhatIsNotAFolder();
     void switchesToAnotherFolder();
+    void staysWhenTheNoteShownCannotBeSaved();
     void listsNotebooksThatFold();
     void listsNotesByNotebookTagAndSearch();
     void ordersNotesAsAsked();
@@ -151,6 +152,29 @@ void TestVaultController::switchesToAnotherFolder()
     QString error;
     QVERIFY(notefile::read(m_root + u"/Welcome.md"_s, &error)
                 ->endsWith(u"Typed just before switching.\n"_s));
+}
+
+void TestVaultController::staysWhenTheNoteShownCannotBeSaved()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Inbox/Groceries.md"_s);
+    // The folder taken away, as a drive that drops out: no user, root included, can save.
+    QVERIFY(QDir().rename(m_root + u"/Inbox"_s, m_root + u"/.away"_s));
+    const QString typed = m_vault->currentText() + u"- [ ] eggs\n"_s;
+    m_vault->edit(typed);
+    const QString other = m_dir->filePath(u"Other"_s);
+    QVERIFY(QDir().mkpath(other));
+
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not save.*"_s));
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u"could not open the vault.*"_s));
+    QVERIFY(!m_vault->openPath(other));
+
+    QCOMPARE(m_vault->root(), m_root);
+    QCOMPARE(m_vault->current(), u"Inbox/Groceries.md"_s);
+    QCOMPARE(m_vault->currentText(), typed);
+    QVERIFY(m_vault->unsaved());
+    QVERIFY(!m_vault->error().isEmpty());
+    QCOMPARE(m_settings->vaultPath(), m_root);
 }
 
 void TestVaultController::listsNotebooksThatFold()
