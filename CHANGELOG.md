@@ -10,6 +10,10 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - Lists carry on as you type: Return starts the next bullet, number or unticked box, Return on an
   empty item ends the list, and Tab and Shift+Tab nest and unnest items. Shift+Return breaks the
   line without a new item.
+- Tables: the format bar's table button adds one, or lines up the one you are in. Tab and
+  Shift+Tab move between cells, padding them so the columns align; Tab in the last cell and
+  Return add a row, and Return on an empty last row ends the table. Tables show in a monospace
+  font so the columns line up on screen too.
 
 ## 0.0.3 - 2026-10-15
 

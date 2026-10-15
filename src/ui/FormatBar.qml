@@ -108,6 +108,11 @@ Rectangle {
             tip: qsTr("Quote")
         }
         FormatButton {
+            glyph: "table"
+            format: "table"
+            tip: qsTr("Table, or line up the one here")
+        }
+        FormatButton {
             label: "{ }"
             mono: true
             format: "codeblock"

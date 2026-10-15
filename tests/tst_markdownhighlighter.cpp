@@ -24,6 +24,7 @@ private Q_SLOTS:
     void fencedCodeCarriesAcrossLines();
     void frontMatterIsNotMarkdown();
     void doneTasksAreStruckThrough();
+    void tablesAreMonospaceAndKeepTheirMarks();
     void saysWhatIsUnderAPosition();
     void neverChangesTheText();
     void reservesRoomForImagesOnTheirOwnLines();
@@ -166,6 +167,20 @@ void TestMarkdownHighlighter::doneTasksAreStruckThrough()
     QVERIFY(!formatAt(find(u"open task"_s)).fontStrikeOut());
     QVERIFY(formatAt(find(u"done task"_s)).fontStrikeOut());
     QCOMPARE(formatAt(find(u"[x]"_s)).foreground().color(), m_look.accent);
+}
+
+void TestMarkdownHighlighter::tablesAreMonospaceAndKeepTheirMarks()
+{
+    setText(u"| Name     | Kind |\n| -------- | ---- |\n| **Mara** | hero |\nAfter\n"_s);
+    const QStringList mono{u"Mono Sample"_s};
+    QCOMPARE(formatAt(find(u"Name"_s)).fontFamilies().toStringList(), mono);
+    QCOMPARE(formatAt(find(u"hero"_s)).fontFamilies().toStringList(), mono);
+    QCOMPARE(formatAt(find(u"| Name"_s)).foreground().color(), m_look.faint);
+    QCOMPARE(formatAt(find(u"----"_s)).foreground().color(), m_look.faint);
+    // Folding the marks would pull the pipes out of line, so they stay, faded.
+    QCOMPARE(formatAt(find(u"**Mara"_s)).foreground().color(), m_look.faint);
+    QCOMPARE(formatAt(find(u"Mara"_s)).fontWeight(), m_look.boldWeight);
+    QVERIFY(formatAt(find(u"After"_s)).fontFamilies().toStringList() != mono);
 }
 
 void TestMarkdownHighlighter::saysWhatIsUnderAPosition()

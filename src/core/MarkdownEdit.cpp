@@ -3,6 +3,7 @@
 #include "jot/FrontMatter.h"
 
 #include <QList>
+#include <QObject>
 #include <QRegularExpression>
 
 #include <algorithm>
@@ -240,6 +241,182 @@ qsizetype openFenceBefore(const QString &text, qsizetype start)
 bool inCode(const QString &text, qsizetype start)
 {
     return isFence(text, start) || openFenceBefore(text, start) >= 0;
+}
+
+/// A cell of a table row: the text between its pipes, and its text without the spaces
+/// around it, as positions in the line.
+struct Cell
+{
+    qsizetype start;
+    qsizetype end;
+    qsizetype textStart;
+    qsizetype textEnd;
+};
+
+/// The cells of a table row. Pipes in backticks or after a backslash belong to the text.
+QList<Cell> cellsOf(const QString &line)
+{
+    QList<qsizetype> cuts;
+    bool code = false;
+    for (qsizetype i = 0; i < line.size(); ++i) {
+        const QChar c = line.at(i);
+        if (c == u'\\') {
+            ++i;
+        } else if (c == u'`') {
+            code = !code;
+        } else if (c == u'|' && !code) {
+            cuts.append(i);
+        }
+    }
+    const QString trimmed = line.trimmed();
+    qsizetype indent = 0;
+    while (indent < line.size() && line.at(indent).isSpace())
+        ++indent;
+    // Outer pipes are optional; without them the row runs to the line's ends.
+    if (!trimmed.startsWith(u'|'))
+        cuts.prepend(indent - 1);
+    if (!trimmed.endsWith(u'|') || cuts.size() < 2)
+        cuts.append(line.size());
+    QList<Cell> cells;
+    for (qsizetype k = 0; k + 1 < cuts.size(); ++k) {
+        Cell cell{cuts[k] + 1, cuts[k + 1], cuts[k] + 1, cuts[k + 1]};
+        while (cell.textStart < cell.textEnd && line.at(cell.textStart).isSpace())
+            ++cell.textStart;
+        while (cell.textEnd > cell.textStart && line.at(cell.textEnd - 1).isSpace())
+            --cell.textEnd;
+        cells.append(cell);
+    }
+    return cells;
+}
+
+bool isDelimiterRow(const QString &line)
+{
+    static const QRegularExpression delimiter(uR"(^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$)"_s);
+    return line.contains(u'-') && delimiter.match(line).hasMatch();
+}
+
+/// The table a position is in: its lines, from the heading row down, and where they are.
+struct Table
+{
+    qsizetype start = 0;
+    qsizetype end = 0;
+    QString indent;
+    QStringList lines;
+    /// Each row's cells as text, the delimiter row's included.
+    QList<QStringList> rows;
+    /// The row and column the position is in, and how far into the cell's text.
+    qsizetype row = 0;
+    qsizetype column = 0;
+    qsizetype offset = 0;
+};
+
+std::optional<Table> tableAt(const QString &text, qsizetype position)
+{
+    const auto isRow = [&](qsizetype start) {
+        const QString line = text.mid(start, lineEndOf(text, start) - start);
+        return line.contains(u'|') && !line.trimmed().isEmpty() && !inCode(text, start);
+    };
+    const qsizetype here = lineStartOf(text, position);
+    if (!isRow(here))
+        return std::nullopt;
+    Table table;
+    table.start = here;
+    while (table.start > 0 && isRow(lineStartOf(text, table.start - 1)))
+        table.start = lineStartOf(text, table.start - 1);
+    table.end = lineEndOf(text, here);
+    while (table.end < text.size() && isRow(table.end + 1))
+        table.end = lineEndOf(text, table.end + 1);
+    table.lines = text.mid(table.start, table.end - table.start).split(u'\n');
+    if (table.lines.size() < 2 || !isDelimiterRow(table.lines[1]))
+        return std::nullopt;
+
+    const QString &first = table.lines.front();
+    table.indent = first.left(first.indexOf(first.trimmed()));
+    qsizetype lineStart = table.start;
+    for (qsizetype r = 0; r < table.lines.size(); ++r) {
+        const QString &line = table.lines[r];
+        const QList<Cell> cells = cellsOf(line);
+        QStringList row;
+        for (const Cell &cell : cells)
+            row.append(line.mid(cell.textStart, cell.textEnd - cell.textStart));
+        table.rows.append(row);
+        if (here == lineStart) {
+            table.row = r;
+            const qsizetype at = position - lineStart;
+            for (qsizetype c = 0; c < cells.size(); ++c) {
+                if (at <= cells[c].end || c + 1 == cells.size()) {
+                    table.column = c;
+                    table.offset = std::clamp(at - cells[c].textStart, qsizetype(0),
+                                              cells[c].textEnd - cells[c].textStart);
+                    break;
+                }
+            }
+        }
+        lineStart += line.size() + 1;
+    }
+    return table;
+}
+
+/// A table's lines, padded so the pipes align, and where each cell's text starts in them,
+/// measured from the table's start.
+struct Laid
+{
+    QString text;
+    QList<QList<qsizetype>> cells;
+};
+
+Laid layOut(const QString &indent, const QList<QStringList> &rows)
+{
+    qsizetype columns = 0;
+    for (const QStringList &row : rows)
+        columns = std::max(columns, row.size());
+    QList<qsizetype> widths(columns, 3);
+    for (qsizetype r = 0; r < rows.size(); ++r) {
+        if (r == 1)
+            continue;
+        for (qsizetype c = 0; c < rows[r].size(); ++c)
+            widths[c] = std::max(widths[c], rows[r][c].size());
+    }
+    // A colon at either end of a delimiter cell sets its column's alignment.
+    QList<QString> aligns(columns);
+    for (qsizetype c = 0; c < rows[1].size(); ++c) {
+        const QString &cell = rows[1][c];
+        aligns[c] = QString(cell.startsWith(u':') ? u"l"_s : u""_s) +
+                    QString(cell.endsWith(u':') ? u"r"_s : u""_s);
+    }
+
+    Laid laid;
+    QStringList lines;
+    qsizetype at = 0;
+    for (qsizetype r = 0; r < rows.size(); ++r) {
+        QString line = indent + u'|';
+        QList<qsizetype> starts;
+        for (qsizetype c = 0; c < columns; ++c) {
+            const qsizetype width = widths[c];
+            QString cell;
+            qsizetype lead = 0;
+            if (r == 1) {
+                const bool left = aligns[c].contains(u'l');
+                const bool right = aligns[c].contains(u'r');
+                cell = (left ? u":"_s : QString()) +
+                       QString(width - (left ? 1 : 0) - (right ? 1 : 0), u'-') +
+                       (right ? u":"_s : QString());
+            } else {
+                const QString value = rows[r].value(c);
+                const qsizetype room = width - value.size();
+                lead = aligns[c] == u"r" ? room : aligns[c] == u"lr" ? room / 2 : 0;
+                cell = QString(lead, u' ') + value + QString(room - lead, u' ');
+            }
+            line += u' ';
+            starts.append(at + line.size() + lead);
+            line += cell + u" |"_s;
+        }
+        laid.cells.append(starts);
+        lines.append(line);
+        at += line.size() + 1;
+    }
+    laid.text = lines.join(u'\n');
+    return laid;
 }
 
 } // namespace
@@ -521,6 +698,111 @@ std::optional<Edit> indentList(const QString &text, qsizetype from, qsizetype to
     // A selection from the start of its first line keeps the indent it gains.
     const qsizetype start = from < to && from == first ? from : map(from);
     return difference(text, changed, start, map(to));
+}
+
+std::optional<Edit> formatTable(const QString &text, qsizetype from, qsizetype to)
+{
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    to = std::clamp<qsizetype>(to, 0, text.size());
+    const std::optional<Table> table = tableAt(text, from);
+    if (!table || lineStartOf(text, to) != lineStartOf(text, from))
+        return std::nullopt;
+    const Laid laid = layOut(table->indent, table->rows);
+    const QString changed = text.left(table->start) + laid.text + text.mid(table->end);
+    const qsizetype cursor = table->start + laid.cells[table->row][table->column] + table->offset;
+    return difference(text, changed, cursor, cursor + (to - from));
+}
+
+std::optional<Edit> moveInTable(const QString &text, qsizetype from, bool backwards)
+{
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    const std::optional<Table> table = tableAt(text, from);
+    if (!table)
+        return std::nullopt;
+    QList<QStringList> rows = table->rows;
+    qsizetype columns = 0;
+    for (const QStringList &row : rows)
+        columns = std::max(columns, row.size());
+    qsizetype row = table->row, column = table->column;
+    if (backwards) {
+        if (--column < 0) {
+            column = columns - 1;
+            row = row == 2 ? 0 : row - 1;
+        }
+        if (row < 0) {
+            row = 0;
+            column = 0;
+        }
+    } else {
+        if (++column >= columns) {
+            column = 0;
+            row = row == 0 ? 2 : row + 1;
+        }
+        if (row >= rows.size())
+            rows.append(QStringList(columns, QString()));
+    }
+    if (row == 1)
+        row = backwards ? 0 : 2;
+    const Laid laid = layOut(table->indent, rows);
+    const QString changed = text.left(table->start) + laid.text + text.mid(table->end);
+    const qsizetype start = table->start + laid.cells[row][column];
+    return difference(text, changed, start, start + rows[row].value(column).size());
+}
+
+std::optional<Edit> newTableRow(const QString &text, qsizetype from)
+{
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    const std::optional<Table> table = tableAt(text, from);
+    if (!table)
+        return std::nullopt;
+    QList<QStringList> rows = table->rows;
+    const bool last = table->row == rows.size() - 1;
+    const bool empty = table->row >= 2 && std::ranges::all_of(rows[table->row], &QString::isEmpty);
+    if (last && empty) {
+        // An empty last row ends the table, becoming the blank line after it.
+        rows.removeLast();
+        const Laid laid = layOut(table->indent, rows);
+        const QString changed = text.left(table->start) + laid.text + u'\n' + text.mid(table->end);
+        const qsizetype cursor = table->start + laid.text.size() + 1;
+        return difference(text, changed, cursor, cursor);
+    }
+    qsizetype columns = 0;
+    for (const QStringList &row : std::as_const(rows))
+        columns = std::max(columns, row.size());
+    // Under the heading, the new row goes below the delimiter.
+    const qsizetype at = std::max<qsizetype>(table->row + 1, 2);
+    rows.insert(at, QStringList(columns, QString()));
+    const Laid laid = layOut(table->indent, rows);
+    const QString changed = text.left(table->start) + laid.text + text.mid(table->end);
+    const qsizetype cursor = table->start + laid.cells[at][0];
+    return difference(text, changed, cursor, cursor);
+}
+
+Edit insertTable(const QString &text, qsizetype from, qsizetype to)
+{
+    from = std::clamp<qsizetype>(from, 0, text.size());
+    to = std::clamp<qsizetype>(to, 0, text.size());
+    if (from > to)
+        std::swap(from, to);
+    const auto blankLine = [&](qsizetype lineStart) {
+        return text.mid(lineStart, lineEndOf(text, lineStart) - lineStart).trimmed().isEmpty();
+    };
+    const QString heading = QObject::tr("Column");
+    const Laid laid = layOut({}, {{heading, heading}, {u"---"_s, u"---"_s}, {{}, {}}});
+
+    // On a blank line the table takes its place; otherwise it goes after the line. Either
+    // way a blank line keeps it apart from the text around it.
+    const qsizetype start = lineStartOf(text, from);
+    const qsizetype end = lineEndOf(text, to);
+    const bool blank = blankLine(start);
+    const qsizetype at = blank ? start : end;
+    const bool textBefore = blank ? start > 0 && !blankLine(lineStartOf(text, start - 1)) : true;
+    const bool textAfter = end < text.size() && !blankLine(end + 1);
+    const QString before = !textBefore ? QString() : blank ? u"\n"_s : u"\n\n"_s;
+    const QString changed =
+        text.left(at) + before + laid.text + (textAfter ? u"\n"_s : QString()) + text.mid(end);
+    const qsizetype selection = at + before.size() + laid.cells[0][0];
+    return difference(text, changed, selection, selection + heading.size());
 }
 
 Edit setKey(const QString &text, qsizetype from, qsizetype to, const QString &key,

@@ -24,6 +24,12 @@ private Q_SLOTS:
     void continuesLists();
     void indentsLists_data();
     void indentsLists();
+    void linesUpTables_data();
+    void linesUpTables();
+    void movesThroughCells();
+    void addsAndEndsRows();
+    void insertsTables_data();
+    void insertsTables();
     void setsFrontMatterKeepingTheSelection();
     void editsAreAsSmallAsTheyCanBe();
 };
@@ -242,6 +248,124 @@ void TestMarkdownEdit::indentsLists()
     const Marked in = unmark(before);
     const std::optional<Edit> edit = indentList(in.text, in.from, in.to, outdent);
     QCOMPARE(edit ? applied(in.text, *edit) : QString(), after);
+}
+
+// Tables mark the cursor with ^, since their cells are full of pipes. A cursor before a
+// row's first pipe lands at the start of its first cell.
+void TestMarkdownEdit::linesUpTables_data()
+{
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("after");
+    QTest::newRow("pads to the widest cell")
+        << u"^|a|bee|\n|-|-|\n|cc|d|"_s << u"| ^a   | bee |\n| --- | --- |\n| cc  | d   |"_s;
+    QTest::newRow("keeps the cursor in its cell")
+        << u"| name | x |\n|--|--|\n| Ma^ra | 1 |"_s
+        << u"| name | x   |\n| ---- | --- |\n| Ma^ra | 1   |"_s;
+    QTest::newRow("alignment from the delimiter")
+        << u"^| a | b | c |\n|:-|:-:|-:|\n| one | two | three |"_s
+        << u"| ^a   |  b  |     c |\n| :-- | :-: | ----: |\n| one | two | three |"_s;
+    QTest::newRow("without outer pipes")
+        << u"a | b\n- | -\n1 | 2^"_s << u"| a   | b   |\n| --- | --- |\n| 1   | 2^   |"_s;
+    QTest::newRow("escaped and code pipes stay in the cell")
+        << u"^| a \\| b | `c|d` |\n|-|-|"_s << u"| ^a \\| b | `c|d` |\n| ------ | ----- |"_s;
+    QTest::newRow("short rows get their cells")
+        << u"^| a | b |\n|-|-|\n| 1 |"_s << u"| ^a   | b   |\n| --- | --- |\n| 1   |     |"_s;
+}
+
+void TestMarkdownEdit::linesUpTables()
+{
+    QFETCH(QString, before);
+    QFETCH(QString, after);
+    const qsizetype cursor = before.indexOf(u'^');
+    const QString text = QString(before).remove(cursor, 1);
+    const std::optional<Edit> edit = formatTable(text, cursor, cursor);
+    QVERIFY(edit);
+    QString out = text;
+    out.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(out.insert(edit->selectionStart, u'^'), after);
+}
+
+void TestMarkdownEdit::movesThroughCells()
+{
+    const QString text = u"| a | b |\n|-|-|\n| c | d |"_s;
+    // From "a", Tab selects "b", then skips the delimiter row to "c".
+    std::optional<Edit> edit = moveInTable(text, 2, false);
+    QVERIFY(edit);
+    QString out = text;
+    out.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(out.mid(edit->selectionStart, edit->selectionEnd - edit->selectionStart), u"b"_s);
+    edit = moveInTable(out, edit->selectionStart, false);
+    QString next = out;
+    next.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(next.mid(edit->selectionStart, edit->selectionEnd - edit->selectionStart), u"c"_s);
+
+    // Shift+Tab from "c" goes back over the delimiter to "b".
+    edit = moveInTable(next, edit->selectionStart, true);
+    QString back = next;
+    back.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(back.mid(edit->selectionStart, edit->selectionEnd - edit->selectionStart), u"b"_s);
+
+    // Tab in the last cell adds a row and lands in its first cell.
+    const qsizetype last = back.lastIndexOf(u'd');
+    edit = moveInTable(back, last, false);
+    QString added = back;
+    added.replace(edit->start, edit->end - edit->start, edit->text);
+    QCOMPARE(added, u"| a   | b   |\n| --- | --- |\n| c   | d   |\n|     |     |"_s);
+    QCOMPARE(edit->selectionStart, added.lastIndexOf(u'\n') + 3);
+
+    QVERIFY(!moveInTable(u"no table | here"_s, 3, false));
+}
+
+void TestMarkdownEdit::addsAndEndsRows()
+{
+    const QString text = u"| a | b |\n|-|-|\n| c | d |\n\nAfter."_s;
+    const std::optional<Edit> row = newTableRow(text, 18);
+    QVERIFY(row);
+    QString added = text;
+    added.replace(row->start, row->end - row->start, row->text);
+    QCOMPARE(added, u"| a   | b   |\n| --- | --- |\n| c   | d   |\n|     |     |\n\nAfter."_s);
+
+    // Return on that empty row ends the table, leaving the cursor on the blank line.
+    const std::optional<Edit> ended = newTableRow(added, row->selectionStart);
+    QVERIFY(ended);
+    QString done = added;
+    done.replace(ended->start, ended->end - ended->start, ended->text);
+    QCOMPARE(done, u"| a   | b   |\n| --- | --- |\n| c   | d   |\n\n\nAfter."_s);
+    QCOMPARE(ended->selectionStart, done.indexOf(u"\n\n"_s) + 1);
+
+    // Return on the heading adds the row under the delimiter.
+    const std::optional<Edit> top = newTableRow(text, 2);
+    QString under = text;
+    under.replace(top->start, top->end - top->start, top->text);
+    QVERIFY(under.startsWith(u"| a   | b   |\n| --- | --- |\n|     |     |\n| c   | d   |"_s));
+
+    QVERIFY(!newTableRow(u"a | b"_s, 1));
+    QVERIFY(!newTableRow(u"```\n| a | b |\n|-|-|\n```"_s, 6));
+}
+
+void TestMarkdownEdit::insertsTables_data()
+{
+    QTest::addColumn<QString>("before");
+    QTest::addColumn<QString>("after");
+    const QString table = u"| [Column] | Column |\n| ------ | ------ |\n|        |        |"_s;
+    QTest::newRow("on an empty note") << u"|"_s << table;
+    QTest::newRow("after a line of text")
+        << u"Some te|xt\nMore"_s << u"Some text\n\n"_s + table + u"\n\nMore"_s;
+    QTest::newRow("on a blank line between paragraphs")
+        << u"One\n|\nTwo"_s << u"One\n\n"_s + table + u"\n\nTwo"_s;
+}
+
+void TestMarkdownEdit::insertsTables()
+{
+    QFETCH(QString, before);
+    QFETCH(QString, after);
+    const qsizetype cursor = before.indexOf(u'|');
+    const QString text = QString(before).remove(cursor, 1);
+    const Edit edit = insertTable(text, cursor, cursor);
+    QString out = text;
+    out.replace(edit.start, edit.end - edit.start, edit.text);
+    out.insert(edit.selectionEnd, u']').insert(edit.selectionStart, u'[');
+    QCOMPARE(out, after);
 }
 
 void TestMarkdownEdit::setsFrontMatterKeepingTheSelection()

@@ -240,6 +240,20 @@ void MarkdownHighlighter::highlightBlock(const QString &text)
     } else if (rule.match(text).hasMatch()) {
         setFormat(0, int(text.size()), faint);
         return;
+    } else if (trimmed.startsWith(u'|')) {
+        // Table rows are monospace so their padded columns line up, and keep their marks,
+        // since folding them away would pull the pipes out of line.
+        m_cursorHere = true;
+        QTextCharFormat mono;
+        mono.setFontFamilies({m_look.monoFamily.isEmpty() ? u"monospace"_s : m_look.monoFamily});
+        merge(0, int(text.size()), mono);
+        for (qsizetype i = text.indexOf(u'|'); i >= 0; i = text.indexOf(u'|', i + 1))
+            merge(int(i), 1, faint);
+        static const QRegularExpression delimiter(uR"(^\s*\|[\s:|-]*$)"_s);
+        if (delimiter.match(text).hasMatch()) {
+            merge(0, int(text.size()), faint);
+            return;
+        }
     } else if (const QRegularExpressionMatch m = quote.match(text); m.hasMatch()) {
         QTextCharFormat format;
         format.setForeground(m_look.muted);

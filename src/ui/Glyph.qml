@@ -5,7 +5,7 @@ import QtQuick
 /// A small line icon drawn from rounded bars, so icons need no image files and
 /// take the text color: chevron-left, chevron-right, chevron-down, minimize, maximize,
 /// restore, close, check, plus, refresh, bell, search, settings, menu, video, more,
-/// list-bullet, list-number, task or quote.
+/// list-bullet, list-number, task, quote or table.
 Item {
     id: root
 
@@ -58,6 +58,10 @@ Item {
             return [[0.76, 0, 0.5, 0.12], [0.76, 0, 0.5, 0.88], [0.76, 90, 0.12, 0.5], [0.76, 90,
                                                                                         0.88, 0.5],
                     [0.24, 45, 0.37, 0.55], [0.4, -50, 0.57, 0.46]]
+        case "table":
+            return [[0.76, 0, 0.5, 0.12], [0.76, 0, 0.5, 0.88], [0.76, 90, 0.12, 0.5], [0.76, 90,
+                                                                                        0.88, 0.5],
+                    [0.76, 0, 0.5, 0.5], [0.76, 90, 0.5, 0.5]]
         case "quote":
             return [[0.8, 90, 0.14, 0.5], [0.56, 0, 0.64, 0.22], [0.56, 0, 0.64, 0.5], [0.4, 0, 0.56,
                                                                                         0.78]]

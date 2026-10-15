@@ -39,6 +39,7 @@ private Q_SLOTS:
     void formatsFromTheKeyboard();
     void makesTheNoteATodoWithADueDate();
     void continuesAndNestsLists();
+    void fillsInTablesWithTheKeys();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -286,6 +287,37 @@ void TestNoteEditor::continuesAndNestsLists()
     // Shift+Return is a plain line break, even in a list.
     QTest::keyClick(m_window.get(), Qt::Key_Return, Qt::ShiftModifier);
     QVERIFY(body->property("text").toString().endsWith(u"done\n"_s));
+}
+
+void TestNoteEditor::fillsInTablesWithTheKeys()
+{
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    body->forceActiveFocus();
+    body->setProperty("cursorPosition", body->property("length"));
+    const QString before = body->property("text").toString();
+    const auto type = [this](const QString &text) {
+        for (const QChar c : text)
+            QTest::keyClick(m_window.get(), c.toLatin1());
+    };
+
+    // The note ends in a line break, so one more leaves a blank line above the table. The
+    // table button selects the first heading, so typing replaces it.
+    QMetaObject::invokeMethod(m_editor.get(), "format", Q_ARG(QVariant, u"table"_s),
+                              Q_ARG(QVariant, QString()));
+    type(u"Name"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Tab);
+    type(u"Role"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Tab);
+    type(u"Mara"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Tab);
+    type(u"Captain"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    type(u"After"_s);
+
+    QCOMPARE(body->property("text").toString().mid(before.size()),
+             u"\n| Name | Role    |\n| ---- | ------- |\n| Mara | Captain |\nAfter"_s);
 }
 
 QTEST_MAIN(TestNoteEditor)

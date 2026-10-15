@@ -457,6 +457,16 @@ ApplicationWindow {
             "inNote": true
         },
         {
+            "keys": ["Tab", "Shift+Tab"],
+            "label": qsTr("Next or previous table cell"),
+            "inNote": true
+        },
+        {
+            "keys": ["Enter"],
+            "label": qsTr("New table row, or end the table"),
+            "inNote": true
+        },
+        {
             "keys": ["Ctrl+Click"],
             "label": qsTr("Follow a link"),
             "inNote": true
