@@ -79,6 +79,12 @@ bool VaultController::openFolder(const QUrl &folder)
 
 bool VaultController::openPath(const QString &path)
 {
+    // Closing drops the note shown, so edits that cannot be written keep this vault open.
+    saveNow();
+    if (m_unsaved) {
+        fail(tr("The note shown could not be saved, so the folder was not changed."));
+        return false;
+    }
     QString error;
     const std::optional<Vault> created = Vault::create(QDir(path).absolutePath(), &error);
     if (!created) {
