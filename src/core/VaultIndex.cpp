@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QHash>
+#include <QRegularExpression>
 #include <QSet>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -372,18 +373,6 @@ public:
                 return path;
         }
 
-        // An attachment by name alone, as ![[map.png]] writes it, is looked for beside the
-        // note: in its own attachments first.
-        const QString suffix = QFileInfo(target).suffix();
-        if (!suffix.isEmpty() && suffix.compare(u"md"_s, Qt::CaseInsensitive) != 0 &&
-            !target.contains(u'/')) {
-            for (const QString &folder : {Vault::assetsFolderFor(from), folderOf(from)}) {
-                const QString path = folder.isEmpty() ? target : folder + u'/' + target;
-                if (QFileInfo(m_vault.absolute(path)).isFile())
-                    return path;
-            }
-        }
-
         // By name: a note whose path ends with what was written, nearest then shortest.
         QString wanted = target;
         if (wanted.endsWith(kNoteSuffix, Qt::CaseInsensitive))
@@ -407,7 +396,21 @@ public:
             });
             return matches.first();
         }
-        return m_byAlias.value(wanted.toLower());
+        if (const QString alias = m_byAlias.value(wanted.toLower()); !alias.isEmpty())
+            return alias;
+
+        // An attachment by name alone, as ![[map.png]] writes it, is looked for beside the
+        // note, in its own attachments first. Only a name that ends like a file's does, so
+        // a note called "v1.2 plan" never sends Jot to the disk.
+        static const QRegularExpression extension(u"\\.[A-Za-z0-9]{1,5}$"_s);
+        if (!target.contains(u'/') && extension.match(target).hasMatch()) {
+            for (const QString &folder : {Vault::assetsFolderFor(from), folderOf(from)}) {
+                const QString path = folder.isEmpty() ? target : folder + u'/' + target;
+                if (QFileInfo(m_vault.absolute(path)).isFile())
+                    return path;
+            }
+        }
+        return {};
     }
 
 private:

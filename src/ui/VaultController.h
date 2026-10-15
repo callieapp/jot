@@ -84,6 +84,11 @@ public:
     /// Copies files dropped on the note into its attachments and gives the Markdown that
     /// shows images and links the rest, a line each.
     Q_INVOKABLE QString attachFiles(const QList<QUrl> &files);
+    /// Where to put `markdown` so it sits on lines of its own at `position` in `text`:
+    /// `{position, text, cursor}`, the text padded with the line breaks it needs and the
+    /// cursor just after it.
+    Q_INVOKABLE QVariantMap placeBlock(const QString &text, int position,
+                                       const QString &markdown) const;
     /// The file an image link in the note shown reaches, or empty for none.
     Q_INVOKABLE QString attachmentPath(const QString &target, bool wiki) const;
     /// How long typing must pause before edits are written, in ms.

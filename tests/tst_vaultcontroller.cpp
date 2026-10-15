@@ -434,6 +434,22 @@ void TestVaultController::attachesDroppedFilesAndPastedImages()
              m_root + u"/Ashfall/Characters/Mara Vey.assets/map of the river.png"_s);
     QCOMPARE(m_vault->attachmentPath(u"https://example.org/x.png"_s, false), QString());
 
+    // A file that cannot be read, or is not on this computer, is said so, not skipped.
+    QCOMPARE(m_vault->attachFiles({QUrl::fromLocalFile(m_dir->filePath(u"missing.png"_s)),
+                                   QUrl(u"smb://server/share/x.png"_s)}),
+             QString());
+    QVERIFY(m_vault->problem().contains(u"missing.png cannot be read"_s));
+    QVERIFY(m_vault->problem().contains(u"not a file on this computer"_s));
+
+    // Dropped mid-line, a block gets lines of its own.
+    const QVariantMap place = m_vault->placeBlock(u"one two\nthree"_s, 3, u"![](x.png)"_s);
+    QCOMPARE(place.value(u"text"_s).toString(), u"\n![](x.png)\n"_s);
+    QCOMPARE(place.value(u"cursor"_s).toInt(), 3 + 12);
+    QCOMPARE(m_vault->placeBlock(u"one\n"_s, 4, u"![](x.png)"_s).value(u"text"_s).toString(),
+             u"![](x.png)\n"_s);
+    QCOMPARE(m_vault->placeBlock(u"one\ntwo"_s, 3, u"![](x.png)"_s).value(u"text"_s).toString(),
+             u"\n![](x.png)"_s);
+
     QGuiApplication::clipboard()->setImage(picture);
     const QString pasted = m_vault->pasteImage();
     QVERIFY2(pasted.startsWith(u"![](Mara%20Vey.assets/Pasted%20"_s), qPrintable(pasted));

@@ -204,27 +204,61 @@ QString Vault::assetsFolderFor(const QString &notePath)
     return stem + kAssetsSuffix;
 }
 
-std::optional<QString> Vault::addAttachment(const QString &notePath, const QString &fileName,
-                                            const QByteArray &bytes, QString *error) const
+namespace {
+
+/// Where an attachment called `fileName` of the note at `notePath` can go without taking
+/// another's place, its folder made.
+std::optional<QString> attachmentPath(const Vault &vault, const QString &notePath,
+                                      const QString &fileName, QString *error)
 {
-    if (!writable()) {
+    if (!vault.writable()) {
         *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
         return std::nullopt;
     }
-    const QString folder = assetsFolderFor(notePath);
-    if (!QDir().mkpath(absolute(folder))) {
+    const QString folder = Vault::assetsFolderFor(notePath);
+    if (!QDir().mkpath(vault.absolute(folder))) {
         *error = QObject::tr("could not create %1").arg(folder);
         return std::nullopt;
     }
     // Only the name: a path in it could reach outside the folder.
     const QFileInfo name(fileName.section(u'/', -1));
-    const QString base = fileNameFor(name.completeBaseName());
+    const QString base = Vault::fileNameFor(name.completeBaseName());
     const QString suffix = name.suffix().isEmpty() ? QString() : u'.' + name.suffix();
     QString path = folder + u'/' + base + suffix;
-    for (int n = 2; QFileInfo::exists(absolute(path)); ++n)
+    for (int n = 2; QFileInfo::exists(vault.absolute(path)); ++n)
         path = folder + u'/' + u"%1 %2"_s.arg(base).arg(n) + suffix;
-    QSaveFile file(absolute(path));
+    return path;
+}
+
+} // namespace
+
+std::optional<QString> Vault::addAttachment(const QString &notePath, const QString &fileName,
+                                            const QByteArray &bytes, QString *error) const
+{
+    const std::optional<QString> path = attachmentPath(*this, notePath, fileName, error);
+    if (!path)
+        return std::nullopt;
+    QSaveFile file(absolute(*path));
     if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) {
+        *error = file.errorString();
+        return std::nullopt;
+    }
+    return path;
+}
+
+std::optional<QString> Vault::copyAttachment(const QString &notePath, const QString &source,
+                                             QString *error) const
+{
+    if (!QFileInfo(source).isFile() || !QFileInfo(source).isReadable()) {
+        *error = QObject::tr("%1 cannot be read").arg(QFileInfo(source).fileName());
+        return std::nullopt;
+    }
+    const std::optional<QString> path =
+        attachmentPath(*this, notePath, QFileInfo(source).fileName(), error);
+    if (!path)
+        return std::nullopt;
+    QFile file(source);
+    if (!file.copy(absolute(*path))) {
         *error = file.errorString();
         return std::nullopt;
     }

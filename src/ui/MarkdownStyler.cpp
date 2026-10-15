@@ -13,8 +13,11 @@ using namespace Qt::StringLiterals;
 
 namespace jot {
 
-MarkdownStyler::MarkdownStyler(QObject *parent) : QObject(parent)
+MarkdownStyler::MarkdownStyler(QObject *parent) : QObject(parent), m_widthSettle(new QTimer(this))
 {
+    m_widthSettle->setSingleShot(true);
+    m_widthSettle->setInterval(150);
+    connect(m_widthSettle, &QTimer::timeout, this, &MarkdownStyler::applyLook);
     connect(ThemeController::instance(), &ThemeController::changed, this,
             &MarkdownStyler::applyLook);
 }
@@ -68,7 +71,7 @@ void MarkdownStyler::setWidth(int width)
     if (m_width == width)
         return;
     m_width = width;
-    applyLook();
+    m_widthSettle->start();
     Q_EMIT widthChanged();
 }
 

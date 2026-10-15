@@ -7,6 +7,8 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+class QTimer;
+
 namespace jot {
 
 class MarkdownHighlighter;
@@ -67,6 +69,9 @@ private:
     int m_pixelSize = 16;
     int m_width = 600;
     bool m_imagesPending = false;
+    /// Widths settle before images are fitted again, so a window being resized does
+    /// not restyle the note on every frame.
+    QTimer *m_widthSettle = nullptr;
 };
 
 } // namespace jot
