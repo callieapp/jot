@@ -18,6 +18,8 @@ private Q_SLOTS:
     void findsTasks();
     void countsLinesFromTheTopOfTheFile();
     void ticksATaskAndNothingElse();
+    void findsATaskThatMoved();
+    void findsWhereLinesStart();
 };
 
 void TestNoteScan::findsEveryKindOfLink()
@@ -112,6 +114,26 @@ void TestNoteScan::ticksATaskAndNothingElse()
              std::optional(u"---\na: 1\n---\n- [ ] one\r\n  * [X] two\nplain\n3. [x] three"_s));
     QVERIFY(!setTaskDone(note, 6, true));
     QVERIFY(!setTaskDone(note, 99, true));
+}
+
+void TestNoteScan::findsATaskThatMoved()
+{
+    // Read when "- [ ] buy" was line 1; a line has since gone in above it.
+    const QString note = u"new line\n- [ ] buy\n- [ ] sell\n"_s;
+    QCOMPARE(setTaskDone(note, 1, true, u"buy"_s),
+             std::optional(u"new line\n- [x] buy\n- [ ] sell\n"_s));
+    // The line it names says something else, and nothing says "buy": nothing changes.
+    QVERIFY(!setTaskDone(u"- [ ] sell\n"_s, 1, true, u"buy"_s));
+    // Two tasks say it, so which one moved cannot be told.
+    QVERIFY(!setTaskDone(u"x\n- [ ] buy\n- [ ] buy\n"_s, 1, true, u"buy"_s));
+    QCOMPARE(setTaskDone(u"- [ ] buy\n"_s, 1, true, u"buy"_s), std::optional(u"- [x] buy\n"_s));
+}
+
+void TestNoteScan::findsWhereLinesStart()
+{
+    QCOMPARE(lineStart(u"a\nbb\nccc", 1), 0);
+    QCOMPARE(lineStart(u"a\nbb\nccc", 3), 5);
+    QCOMPARE(lineStart(u"a\nbb\nccc", 9), 8);
 }
 
 QTEST_GUILESS_MAIN(TestNoteScan)

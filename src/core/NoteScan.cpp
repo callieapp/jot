@@ -186,24 +186,52 @@ rewriteLinks(QStringView body,
     return result;
 }
 
-std::optional<QString> setTaskDone(const QString &note, int line, bool done)
+qsizetype lineStart(QStringView text, int line)
 {
-    static const QRegularExpression task(uR"(^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\])"_s);
     qsizetype start = 0;
     for (int number = 1; number < line; ++number) {
-        start = note.indexOf(u'\n', start);
-        if (start < 0)
-            return std::nullopt;
-        ++start;
+        const qsizetype next = text.indexOf(u'\n', start);
+        if (next < 0)
+            return text.size();
+        start = next + 1;
     }
-    qsizetype end = note.indexOf(u'\n', start);
-    if (end < 0)
-        end = note.size();
-    const QRegularExpressionMatch m = task.matchView(QStringView(note).sliced(start, end - start));
-    if (!m.hasMatch())
+    return start;
+}
+
+std::optional<QString> setTaskDone(const QString &note, int line, bool done, const QString &text)
+{
+    static const QRegularExpression task(uR"(^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]\s*(.*?)\s*$)"_s);
+    // The mark's place in the note, if `number` is a task that says `text` (when given).
+    const auto markOn = [&](int number) -> qsizetype {
+        const qsizetype start = lineStart(note, number);
+        if (start >= note.size() && number > 1)
+            return -1;
+        qsizetype end = note.indexOf(u'\n', start);
+        if (end < 0)
+            end = note.size();
+        const QRegularExpressionMatch m =
+            task.matchView(QStringView(note).sliced(start, end - start));
+        if (!m.hasMatch() || (!text.isEmpty() && m.captured(2) != text.trimmed()))
+            return -1;
+        return start + m.capturedStart(1);
+    };
+    qsizetype mark = markOn(line);
+    if (mark < 0 && !text.isEmpty()) {
+        // Lines moved: the task is the one, and only one, that says the same.
+        const int lines = int(note.count(u'\n')) + 1;
+        for (int number = 1; number <= lines; ++number) {
+            const qsizetype found = markOn(number);
+            if (found < 0)
+                continue;
+            if (mark >= 0)
+                return std::nullopt;
+            mark = found;
+        }
+    }
+    if (mark < 0)
         return std::nullopt;
     QString changed = note;
-    changed[start + m.capturedStart(1)] = done ? u'x' : u' ';
+    changed[mark] = done ? u'x' : u' ';
     return changed;
 }
 

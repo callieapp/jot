@@ -107,7 +107,8 @@ public:
     Q_INVOKABLE QVariantMap preview(const QString &target) const;
     /// Ticks or unticks the task on `line` of the note at `path`, in its file or, for the
     /// note shown, in the editor's text.
-    Q_INVOKABLE bool setTaskDone(const QString &path, int line, bool done);
+    Q_INVOKABLE bool setTaskDone(const QString &path, int line, bool done,
+                                 const QString &text = {});
     /// Marks a note that is a to-do as done, with when it was.
     Q_INVOKABLE bool completeTodo(const QString &path);
     /// Shows the note at `path` with the cursor on `line`.
@@ -151,8 +152,9 @@ Q_SIGNALS:
     void unsavedChanged();
     void problemChanged();
     void showingTodosChanged();
-    /// The editor should put the cursor on this line of the note shown, counted from 1.
-    void revealLine(int line);
+    /// The editor should put the cursor here in the note shown, as the editor counts
+    /// characters: line breaks as one, without a byte order mark.
+    void revealPosition(int position);
 
 private:
     void close();

@@ -518,8 +518,13 @@ void TestVaultController::listsAndTicksWhatIsLeftToDo()
 
     // One in the note shown goes through the editor's text, unsaved edits and all.
     m_vault->setCurrent(u"Inbox/Groceries.md"_s);
-    m_vault->edit(m_vault->currentText() + u"- [ ] eggs\n"_s);
-    QVERIFY(m_vault->setTaskDone(u"Inbox/Groceries.md"_s, lines.at(2).toInt(), true));
+    // Unsaved: a line put in above the tasks, so the index's line numbers are one short.
+    m_vault->setSaveDelay(60000);
+    QString edited = m_vault->currentText();
+    edited.insert(edited.indexOf(u"- [ ] watercolor"_s), u"Shop on Friday.\n"_s);
+    m_vault->edit(edited + u"- [ ] eggs\n"_s);
+    QVERIFY(m_vault->setTaskDone(u"Inbox/Groceries.md"_s, lines.at(2).toInt(), true,
+                                 u"watercolor paper"_s));
     QVERIFY(m_vault->currentText().contains(u"- [x] watercolor paper"_s));
     QVERIFY(m_vault->currentText().contains(u"- [ ] eggs"_s));
     QVERIFY(!m_vault->unsaved());
@@ -530,10 +535,10 @@ void TestVaultController::listsAndTicksWhatIsLeftToDo()
     QVERIFY(m_vault->currentText().contains(u"\ndone: 20"_s));
     QCOMPARE(column(todos, "kind"), (QStringList{u"task"_s, u"task"_s}));
 
-    QSignalSpy reveal(m_vault.get(), &VaultController::revealLine);
+    QSignalSpy reveal(m_vault.get(), &VaultController::revealPosition);
     m_vault->openAt(u"Ashfall/Characters/Soren.md"_s, 7);
     QCOMPARE(m_vault->current(), u"Ashfall/Characters/Soren.md"_s);
-    QCOMPARE(reveal.first().first().toInt(), 7);
+    QCOMPARE(m_vault->currentText().mid(reveal.first().first().toInt(), 9), u"- [x] dec"_s);
 }
 
 QTEST_MAIN(TestVaultController)
