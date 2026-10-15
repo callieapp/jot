@@ -30,6 +30,10 @@ jot_add_test(tst_vaultcontroller)
 target_link_libraries(tst_vaultcontroller PRIVATE jotui)
 target_compile_definitions(tst_vaultcontroller PRIVATE
     JOT_SAMPLE_VAULT="${CMAKE_CURRENT_SOURCE_DIR}/data/sample-vault")
+jot_add_test(tst_noteeditor)
+target_link_libraries(tst_noteeditor PRIVATE jotui jotuiplugin Qt6::QuickControls2)
+target_compile_definitions(tst_noteeditor PRIVATE
+    JOT_SAMPLE_VAULT="${CMAKE_CURRENT_SOURCE_DIR}/data/sample-vault")
 jot_add_test(tst_markdownhighlighter)
 target_link_libraries(tst_markdownhighlighter PRIVATE jotui)
 jot_add_test(tst_dropdown)

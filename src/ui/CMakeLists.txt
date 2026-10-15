@@ -40,8 +40,8 @@ qt_add_qml_module(jotui
         Logo.qml
         MenuCard.qml
         MenuEntry.qml
+        NoteEditor.qml
         NoteList.qml
-        NoteView.qml
         PickerButton.qml
         PillButton.qml
         QuickSwitcher.qml

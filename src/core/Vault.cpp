@@ -236,12 +236,23 @@ std::optional<QString> Vault::createNote(const QString &folder, const QString &t
 
 bool Vault::trashNote(const QString &path, QString *error) const
 {
-    const QString assets = absolute(assetsFolderFor(path));
-    if (!QFile::moveToTrash(absolute(path))) {
+    // Where the desktop has no trash, as on some removable or network drives, the vault
+    // keeps its own, so a note is never deleted outright.
+    const auto toTrash = [this](const QString &relative) {
+        const QString file = absolute(relative);
+        if (QFile::moveToTrash(file))
+            return true;
+        const QString folder =
+            absolute(kSettingsFolder + u"/trash/"_s +
+                     QDateTime::currentDateTime().toString(u"yyyyMMdd-HHmmss"_s));
+        return QDir().mkpath(folder) &&
+               QDir().rename(file, folder + u'/' + relative.section(u'/', -1));
+    };
+    if (!toTrash(path)) {
         *error = QObject::tr("could not move %1 to the trash").arg(path);
         return false;
     }
-    if (QFileInfo(assets).isDir() && !QFile::moveToTrash(assets)) {
+    if (QFileInfo(absolute(assetsFolderFor(path))).isDir() && !toTrash(assetsFolderFor(path))) {
         *error = QObject::tr("could not move %1 to the trash").arg(assetsFolderFor(path));
         return false;
     }

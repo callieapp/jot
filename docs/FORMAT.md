@@ -134,7 +134,7 @@ Mara.assets/
 - The folder is created when the first file is added, and removed when it is empty.
 - Renaming or moving a note renames or moves its `.assets` folder with it.
 - Deleting a note moves its `.assets` folder to the system trash with it, unless another note
-  links into it. Jot then asks.
+  links into it. Jot then asks. On a drive without a trash, both go to `.jot/trash/` in the vault.
 - Pasted images are named `Pasted <date> <time>.<ext>` and can be renamed in the app.
 - A name already in the folder gets a number: `sketch 2.png`. Jot never overwrites an attachment.
 - Any file can be an attachment. Images, audio, video and PDFs are shown inline; other files as a
