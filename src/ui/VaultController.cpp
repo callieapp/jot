@@ -140,6 +140,8 @@ void VaultController::notesChangedOnDisk(const QStringList &paths)
     }
     m_index->update(paths);
     reloadModels();
+    // Other notes changing is what changes what links here; saving this one does not.
+    m_backlinks.reload(m_vault.get(), m_index.get(), m_current);
 }
 
 void VaultController::keepConflict(const QString &theirs)
@@ -460,7 +462,6 @@ void VaultController::reloadModels()
         m_notebooks.reload(m_vault.get(), m_index->noteCounts(), m_index->noteCount());
         m_notes.reload(m_index.get());
         m_switcher.reload(m_index.get());
-        m_backlinks.reload(m_vault.get(), m_index.get(), m_current);
     } else {
         m_notebooks.reload(nullptr, {}, 0);
         m_notes.reload(nullptr);
