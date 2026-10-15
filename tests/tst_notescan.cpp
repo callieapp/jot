@@ -17,6 +17,7 @@ private Q_SLOTS:
     void skipsCode();
     void findsTasks();
     void countsLinesFromTheTopOfTheFile();
+    void ticksATaskAndNothingElse();
 };
 
 void TestNoteScan::findsEveryKindOfLink()
@@ -98,6 +99,19 @@ void TestNoteScan::countsLinesFromTheTopOfTheFile()
     QCOMPARE(scan.links.first().line, 4);
     QCOMPARE(scan.tasks.first().line, 5);
     QCOMPARE(scan.tasks.first().text, u"five"_s);
+}
+
+void TestNoteScan::ticksATaskAndNothingElse()
+{
+    const QString note = u"---\na: 1\n---\n- [ ] one\r\n  * [X] two\nplain\n3. [ ] three"_s;
+    QCOMPARE(setTaskDone(note, 4, true),
+             std::optional(u"---\na: 1\n---\n- [x] one\r\n  * [X] two\nplain\n3. [ ] three"_s));
+    QCOMPARE(setTaskDone(note, 5, false),
+             std::optional(u"---\na: 1\n---\n- [ ] one\r\n  * [ ] two\nplain\n3. [ ] three"_s));
+    QCOMPARE(setTaskDone(note, 7, true),
+             std::optional(u"---\na: 1\n---\n- [ ] one\r\n  * [X] two\nplain\n3. [x] three"_s));
+    QVERIFY(!setTaskDone(note, 6, true));
+    QVERIFY(!setTaskDone(note, 99, true));
 }
 
 QTEST_GUILESS_MAIN(TestNoteScan)

@@ -186,6 +186,27 @@ rewriteLinks(QStringView body,
     return result;
 }
 
+std::optional<QString> setTaskDone(const QString &note, int line, bool done)
+{
+    static const QRegularExpression task(uR"(^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\])"_s);
+    qsizetype start = 0;
+    for (int number = 1; number < line; ++number) {
+        start = note.indexOf(u'\n', start);
+        if (start < 0)
+            return std::nullopt;
+        ++start;
+    }
+    qsizetype end = note.indexOf(u'\n', start);
+    if (end < 0)
+        end = note.size();
+    const QRegularExpressionMatch m = task.matchView(QStringView(note).sliced(start, end - start));
+    if (!m.hasMatch())
+        return std::nullopt;
+    QString changed = note;
+    changed[start + m.capturedStart(1)] = done ? u'x' : u' ';
+    return changed;
+}
+
 int bodyFirstLine(QStringView note, QStringView body)
 {
     const qsizetype offset = body.data() - note.data();

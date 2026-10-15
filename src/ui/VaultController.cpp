@@ -2,6 +2,7 @@
 
 #include "jot/FrontMatter.h"
 #include "jot/Logging.h"
+#include "jot/NoteScan.h"
 #include "jot/Rename.h"
 #include "jot/Settings.h"
 
@@ -396,6 +397,69 @@ QVariantMap VaultController::preview(const QString &target) const
     return {{u"path"_s, path}, {u"title"_s, info->title}, {u"text"_s, body}};
 }
 
+void VaultController::setShowingTodos(bool showing)
+{
+    if (m_showingTodos == showing)
+        return;
+    m_showingTodos = showing;
+    Q_EMIT showingTodosChanged();
+}
+
+bool VaultController::rewriteNote(
+    const QString &path, const std::function<std::optional<QString>(const QString &)> &change)
+{
+    if (!m_vault || !m_vault->writable())
+        return false;
+    if (path == m_current) {
+        const std::optional<QString> changed = change(m_currentText);
+        if (!changed)
+            return false;
+        m_currentText = *changed;
+        setUnsaved(true);
+        saveNow();
+        Q_EMIT currentChanged();
+        reloadModels();
+        return true;
+    }
+    QString error;
+    const std::optional<QString> text = notefile::read(m_vault->absolute(path), &error);
+    const std::optional<QString> changed = text ? change(*text) : std::nullopt;
+    if (!changed)
+        return false;
+    if (m_watcher)
+        m_watcher->expectWrite(path, *changed);
+    if (!notefile::write(m_vault->absolute(path), *changed, &error)) {
+        qCWarning(lcVault) << "could not change" << path << error;
+        return false;
+    }
+    m_index->update({path});
+    reloadModels();
+    return true;
+}
+
+bool VaultController::setTaskDone(const QString &path, int line, bool done)
+{
+    return rewriteNote(
+        path, [line, done](const QString &text) { return jot::setTaskDone(text, line, done); });
+}
+
+bool VaultController::completeTodo(const QString &path)
+{
+    return rewriteNote(path, [](const QString &text) {
+        QString changed = setFrontMatterKey(text, u"todo"_s, u"done"_s);
+        changed = setFrontMatterKey(changed, u"done"_s,
+                                    QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+        return std::optional(changed);
+    });
+}
+
+void VaultController::openAt(const QString &path, int line)
+{
+    setCurrent(path);
+    if (line > 0)
+        Q_EMIT revealLine(line);
+}
+
 void VaultController::resyncAfterRename(const QString &from, const QString &to)
 {
     if (!QFileInfo::exists(m_vault->absolute(from)) && QFileInfo::exists(m_vault->absolute(to))) {
@@ -462,11 +526,13 @@ void VaultController::reloadModels()
         m_notebooks.reload(m_vault.get(), m_index->noteCounts(), m_index->noteCount());
         m_notes.reload(m_index.get());
         m_switcher.reload(m_index.get());
+        m_todos.reload(m_index.get());
     } else {
         m_notebooks.reload(nullptr, {}, 0);
         m_notes.reload(nullptr);
         m_switcher.reload(nullptr);
         m_backlinks.reload(nullptr, nullptr, {});
+        m_todos.reload(nullptr);
     }
     Q_EMIT notesChanged();
 }

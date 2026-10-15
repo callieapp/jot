@@ -28,6 +28,8 @@ qt_add_qml_module(jotui
         NoteListModel.cpp
         SwitcherModel.h
         SwitcherModel.cpp
+        TodoModel.h
+        TodoModel.cpp
         VaultController.h
         VaultController.cpp
     QML_FILES
@@ -56,6 +58,7 @@ qt_add_qml_module(jotui
         StickerButton.qml
         SuggestionPopup.qml
         Tip.qml
+        TodoList.qml
         Toggle.qml
         Welcome.qml
         WindowControls.qml

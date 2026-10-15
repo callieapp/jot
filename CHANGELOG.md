@@ -18,6 +18,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   on a line of its own shows in place of its link.
 - Under each note, the lines that link to it, and the notes that name it without a link. Resting the
   pointer on a link shows the start of the note it leads to.
+- To-dos, in the sidebar: notes that are to-dos, soonest due first, and every unticked box in the
+  vault. Ticking one changes its note; choosing one opens the note on that line.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 

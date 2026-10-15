@@ -50,6 +50,10 @@ struct NoteScan
 rewriteLinks(QStringView body,
              const std::function<std::optional<QString>(const QString &raw, bool wiki)> &replace);
 
+/// `note` with the task on `line` (counted from 1, in the whole file) ticked or unticked,
+/// and nothing else changed. Nothing when that line is not a task.
+[[nodiscard]] std::optional<QString> setTaskDone(const QString &note, int line, bool done);
+
 /// The number of the file's line that `body` starts on, given the whole note.
 [[nodiscard]] int bodyFirstLine(QStringView note, QStringView body);
 
