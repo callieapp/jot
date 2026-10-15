@@ -3,10 +3,12 @@
 #include "Palette.h"
 #include "UpdateHint.h"
 #include "Upgrade.h"
+#include "VaultCommands.h"
 
 #include "jot/Diagnostics.h"
 #include "jot/Identity.h"
 #include "jot/LogFile.h"
+#include "jot/Settings.h"
 #include "jot/UpdateCheck.h"
 
 #include <QCommandLineParser>
@@ -14,6 +16,7 @@
 #include <QDir>
 #include <QFile>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QTextStream>
 
 #include <optional>
@@ -42,6 +45,13 @@ const cli::Paint &paintFor(int fd)
 
 /// The commands, for --help and for completion.
 const QList<std::pair<QString, QString>> kCommands = {
+    {u"status"_s, u"The vault, how many notes it holds, and what is left to do"_s},
+    {u"ls"_s, u"List notes, newest first, in a notebook or all: jot ls Recipes"_s},
+    {u"search"_s, u"Search notes: jot search ferry tag:ashfall in:Notes"_s},
+    {u"new"_s, u"Make a note: jot new \"Idea\"; its body is read from a pipe"_s},
+    {u"show"_s, u"Print a note, by its title, an alias or its path"_s},
+    {u"open"_s, u"Open a note in the app"_s},
+    {u"todo"_s, u"To-do notes and unticked tasks"_s},
     {u"logs"_s, u"Show, follow (-f) or open (--open) the log files"_s},
     {u"doctor"_s, u"Details for a bug report; --report opens a new issue"_s},
     {u"upgrade"_s, u"Install the latest release, or the one given: jot upgrade 0.1.0"_s},
@@ -126,6 +136,46 @@ int runLogs(bool follow, bool open)
     return 0;
 }
 
+/// The vault given with --vault, else the one the app opened last, made ready to read.
+struct OpenVault
+{
+    std::unique_ptr<Vault> vault;
+    std::unique_ptr<VaultIndex> index;
+};
+
+std::optional<OpenVault> openVault(const QString &given)
+{
+    const QString path = given.isEmpty() ? Settings(Settings::defaultPath()).vaultPath() : given;
+    if (path.isEmpty() || !QFileInfo(path).isDir()) {
+        err << (path.isEmpty() ? QObject::tr("jot: no vault yet; open one in the app, or give "
+                                             "--vault <folder>")
+                               : QObject::tr("jot: %1 is not a folder").arg(path))
+            << "\n";
+        return std::nullopt;
+    }
+    OpenVault open;
+    open.vault = std::make_unique<Vault>(QDir(path).absolutePath());
+    open.index = std::make_unique<VaultIndex>(*open.vault);
+    QString error;
+    if (!open.index->open(&error)) {
+        err << QObject::tr("jot: could not open the index: %1").arg(error) << "\n";
+        return std::nullopt;
+    }
+    open.index->refresh();
+    return open;
+}
+
+/// jot-gui beside this jot, as in a build, else on the PATH.
+QString guiProgram()
+{
+    const QString here = QCoreApplication::applicationDirPath();
+    for (const QString &candidate : {here + u"/jot-gui"_s, here + u"/../gui/jot-gui"_s}) {
+        if (QFileInfo(candidate).isExecutable())
+            return QFileInfo(candidate).absoluteFilePath();
+    }
+    return QStandardPaths::findExecutable(u"jot-gui"_s);
+}
+
 int runCompletions(const QString &shell)
 {
     const QHash<QString, QString> files = {
@@ -174,6 +224,18 @@ int main(int argc, char *argv[])
     const QCommandLineOption forceOption(
         u"force"_s, u"With upgrade: install the release even when it is the one installed."_s);
     addOption(forceOption);
+    const QCommandLineOption vaultOption(u"vault"_s, u"The vault to use, rather than the app's."_s,
+                                         u"folder"_s);
+    addOption(vaultOption);
+    const QCommandLineOption notebookOption(u"notebook"_s,
+                                            u"With new: the notebook to put it in."_s, u"name"_s);
+    addOption(notebookOption);
+    const QCommandLineOption orderOption(u"order"_s, u"With ls: updated (the default) or title."_s,
+                                         u"order"_s);
+    addOption(orderOption);
+    const QCommandLineOption jsonOption(
+        u"json"_s, u"With status, ls, search, new and todo: print JSON for scripts."_s);
+    addOption(jsonOption);
     const QCommandLineOption dryRunOption(
         u"dry-run"_s, u"With upgrade and downgrade: say what would happen, and change nothing."_s);
     addOption(dryRunOption);
@@ -193,10 +255,49 @@ int main(int argc, char *argv[])
             for (const QString &name : option.names())
                 named.append({name, option.description(), !option.valueName().isEmpty()});
         }
+        // Notebooks and notes come from the vault, read only when a command wants them.
+        std::optional<OpenVault> vault;
+        const auto opened = [&]() -> OpenVault * {
+            if (!vault) {
+                const qsizetype at = words.indexOf(u"--vault"_s);
+                vault = openVault(at >= 0 ? words.value(at + 1) : QString());
+            }
+            return vault ? &*vault : nullptr;
+        };
+        const auto notebooks = [&opened] {
+            QList<cli::Candidate> found;
+            if (OpenVault *open = opened()) {
+                for (const VaultEntry &entry : open->vault->entries()) {
+                    if (entry.folder)
+                        found.append({entry.path, {}});
+                }
+            }
+            return found;
+        };
+        const auto titles = [&opened] {
+            QList<cli::Candidate> found;
+            if (OpenVault *open = opened()) {
+                for (const NoteInfo &note : open->index->notesIn({}))
+                    found.append({note.title, note.path});
+            }
+            return found;
+        };
         cli::Completion::Sources sources;
-        sources.arguments = [](const QStringList &positional, const QString &) {
-            if (positional == QStringList{u"completions"_s})
+        sources.arguments = [&](const QStringList &positional, const QString &) {
+            const QString command = positional.first();
+            if (positional.size() == 1 && command == u"completions")
                 return cli::Completion::plain({u"bash"_s, u"zsh"_s, u"fish"_s});
+            if (positional.size() == 1 && command == u"ls")
+                return notebooks();
+            if (positional.size() == 1 && (command == u"show" || command == u"open"))
+                return titles();
+            return QList<cli::Candidate>();
+        };
+        sources.values = [&](const QString &option) {
+            if (option == u"notebook")
+                return notebooks();
+            if (option == u"order")
+                return cli::Completion::plain({u"updated"_s, u"title"_s});
             return QList<cli::Candidate>();
         };
         const cli::Completion completion(commands, named, sources);
@@ -230,6 +331,51 @@ int main(int argc, char *argv[])
 
     if (command == u"completions" && args.size() == 2)
         return runCompletions(args.at(1));
+
+    static const QStringList kVaultCommands = {u"status"_s, u"ls"_s,   u"search"_s, u"new"_s,
+                                               u"show"_s,   u"open"_s, u"todo"_s};
+    if (kVaultCommands.contains(command)) {
+        std::optional<OpenVault> open = openVault(parser.value(vaultOption));
+        if (!open)
+            return 1;
+        cli::VaultCommands commands(*open->vault, *open->index, out, err);
+        commands.setPaint(paintFor(STDOUT_FILENO));
+        const bool json = parser.isSet(jsonOption);
+        const QString rest = args.mid(1).join(u' ');
+        if (command == u"status")
+            return commands.status(VaultIndex::defaultPath(*open->vault), json);
+        if (command == u"ls")
+            return commands.list(rest, parser.value(orderOption), json);
+        if (command == u"search")
+            return commands.search(rest, json);
+        if (command == u"show")
+            return commands.show(rest);
+        if (command == u"todo")
+            return commands.todo(json);
+        if (command == u"new") {
+            // Piped in, the text becomes the note's body.
+            QString body;
+            if (!::isatty(STDIN_FILENO)) {
+                QTextStream in(stdin);
+                body = in.readAll();
+            }
+            return commands.create(rest, parser.value(notebookOption), body, json);
+        }
+        // open
+        const QString path = commands.find(rest);
+        if (path.isEmpty()) {
+            err << QObject::tr("jot: no note called %1").arg(rest) << "\n";
+            return 1;
+        }
+        const QString gui = guiProgram();
+        if (gui.isEmpty()) {
+            err << QObject::tr("jot: jot-gui is not installed") << "\n";
+            return 1;
+        }
+        return QProcess::startDetached(gui, {u"--vault"_s, open->vault->root(), u"--note"_s, path})
+                   ? 0
+                   : 1;
+    }
     if (command == u"doctor" && args.size() == 1)
         return runDoctor(parser.isSet(reportOption));
     if (command == u"logs" && args.size() == 1)

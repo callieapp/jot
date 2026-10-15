@@ -1,0 +1,157 @@
+#include "VaultCommands.h"
+
+#include <QDir>
+#include <QDirIterator>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTemporaryDir>
+#include <QTest>
+
+using namespace jot;
+using namespace Qt::StringLiterals;
+
+class TestVaultCommands : public QObject
+{
+    Q_OBJECT
+
+private Q_SLOTS:
+    void init();
+    void cleanup();
+
+    void statusSaysWhatTheVaultHolds();
+    void listsNotesNewestOrByTitle();
+    void searchesWithFilters();
+    void makesNotesWithAPipedBody();
+    void showsANoteByTitleAliasOrPath();
+    void listsWhatIsLeftToDo();
+
+private:
+    int run(const std::function<int(cli::VaultCommands &)> &command);
+    QJsonDocument json() const { return QJsonDocument::fromJson(m_out.toUtf8()); }
+
+    std::unique_ptr<QTemporaryDir> m_dir;
+    std::unique_ptr<Vault> m_vault;
+    std::unique_ptr<VaultIndex> m_index;
+    QString m_out;
+    QString m_err;
+};
+
+void TestVaultCommands::init()
+{
+    m_dir = std::make_unique<QTemporaryDir>();
+    const QString root = m_dir->filePath(u"Notes"_s);
+    const QString sample = QStringLiteral(JOT_SAMPLE_VAULT);
+    QDirIterator files(sample, QDir::Files, QDirIterator::Subdirectories);
+    while (files.hasNext()) {
+        const QString from = files.next();
+        const QString to = root + from.mid(sample.size());
+        QVERIFY(QDir().mkpath(QFileInfo(to).path()));
+        QVERIFY(QFile::copy(from, to));
+    }
+    m_vault = std::make_unique<Vault>(root);
+    m_index = std::make_unique<VaultIndex>(*m_vault, m_dir->filePath(u"index.sqlite"_s));
+    QString error;
+    QVERIFY(m_index->open(&error));
+    m_index->refresh();
+}
+
+void TestVaultCommands::cleanup()
+{
+    m_index.reset();
+}
+
+int TestVaultCommands::run(const std::function<int(cli::VaultCommands &)> &command)
+{
+    m_out.clear();
+    m_err.clear();
+    QTextStream out(&m_out);
+    QTextStream err(&m_err);
+    cli::VaultCommands commands(*m_vault, *m_index, out, err);
+    const int code = command(commands);
+    out.flush();
+    err.flush();
+    return code;
+}
+
+void TestVaultCommands::statusSaysWhatTheVaultHolds()
+{
+    QCOMPARE(run([](auto &c) { return c.status(u"/cache/index.sqlite"_s, true); }), 0);
+    const QJsonObject status = json().object();
+    QCOMPARE(status.value(u"notes"_s).toInt(), 8);
+    QCOMPARE(status.value(u"notebooks"_s).toInt(), 5);
+    QCOMPARE(status.value(u"openTasks"_s).toInt(), 3);
+    QCOMPARE(status.value(u"openTodoNotes"_s).toInt(), 1);
+    QVERIFY(status.value(u"writable"_s).toBool());
+
+    QCOMPARE(run([](auto &c) { return c.status(u"/cache/index.sqlite"_s, false); }), 0);
+    QVERIFY2(m_out.contains(u"8 notes in 5 notebooks"_s), qPrintable(m_out));
+    QVERIFY(m_out.contains(u"1 to-do note, 3 tasks"_s));
+}
+
+void TestVaultCommands::listsNotesNewestOrByTitle()
+{
+    QCOMPARE(run([](auto &c) { return c.list(u"Recipes"_s, u"title"_s, true); }), 0);
+    const QJsonArray notes = json().array();
+    QCOMPARE(notes.size(), 2);
+    QCOMPARE(notes.at(0).toObject().value(u"title"_s).toString(), u"Pancakes"_s);
+    QCOMPARE(notes.at(0).toObject().value(u"tags"_s).toArray().first().toString(), u"food"_s);
+
+    QCOMPARE(run([](auto &c) { return c.list({}, {}, false); }), 0);
+    QCOMPARE(m_out.count(u'\n'), 8);
+    QCOMPARE(run([](auto &c) { return c.list(u"Nowhere"_s, {}, false); }), 1);
+    QVERIFY(m_err.contains(u"no notebook called Nowhere"_s));
+}
+
+void TestVaultCommands::searchesWithFilters()
+{
+    QCOMPARE(run([](auto &c) { return c.search(u"ferry in:Ashfall/Characters"_s, true); }), 0);
+    const QJsonArray hits = json().array();
+    QCOMPARE(hits.size(), 1);
+    QCOMPARE(hits.first().toObject().value(u"path"_s).toString(),
+             u"Ashfall/Characters/Mara Vey.md"_s);
+    QVERIFY(!hits.first().toObject().value(u"snippet"_s).toString().contains(u"<mark>"_s));
+
+    QCOMPARE(run([](auto &c) { return c.search(u"zzzz"_s, false); }), 0);
+    QVERIFY(m_err.contains(u"Nothing matches."_s));
+    QCOMPARE(run([](auto &c) { return c.search(QString(), false); }), 2);
+}
+
+void TestVaultCommands::makesNotesWithAPipedBody()
+{
+    QCOMPARE(run([](auto &c) {
+                 return c.create(u"Ferry checklist"_s, u"Ashfall"_s, u"Bring a lantern."_s, true);
+             }),
+             0);
+    QCOMPARE(json().object().value(u"path"_s).toString(), u"Ashfall/Ferry checklist.md"_s);
+    QString error;
+    const QString text =
+        *notefile::read(m_vault->absolute(u"Ashfall/Ferry checklist.md"_s), &error);
+    QVERIFY(text.startsWith(u"---\ncreated: "_s));
+    QVERIFY(text.endsWith(u"---\nBring a lantern.\n"_s));
+    QCOMPARE(m_index->search(u"lantern"_s).size(), 1);
+    QCOMPARE(run([](auto &c) { return c.create(u"  "_s, {}, {}, false); }), 2);
+}
+
+void TestVaultCommands::showsANoteByTitleAliasOrPath()
+{
+    for (const QString &name :
+         {u"Mara Vey"_s, u"the Ferrywoman"_s, u"mara v"_s, u"Ashfall/Characters/Mara Vey.md"_s}) {
+        QCOMPARE(run([&name](auto &c) { return c.show(name); }), 0);
+        QVERIFY2(m_out.contains(u"waxed ledger"_s), qPrintable(name));
+    }
+    QCOMPARE(run([](auto &c) { return c.show(u"qqqq"_s); }), 1);
+}
+
+void TestVaultCommands::listsWhatIsLeftToDo()
+{
+    QCOMPARE(run([](auto &c) { return c.todo(true); }), 0);
+    const QJsonArray todos = json().array();
+    QCOMPARE(todos.size(), 4);
+    QCOMPARE(todos.first().toObject().value(u"kind"_s).toString(), u"note"_s);
+    QCOMPARE(todos.last().toObject().value(u"text"_s).toString(), u"oat milk"_s);
+    QCOMPARE(todos.last().toObject().value(u"line"_s).toInt(), 6);
+}
+
+QTEST_GUILESS_MAIN(TestVaultCommands)
+#include "tst_vaultcommands.moc"

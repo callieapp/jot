@@ -34,6 +34,22 @@ This installs the `Jot` desktop app and the `jot` command. `jot upgrade` install
 build from `make run` is called Jot Devel and keeps its own settings and folders, so it runs beside
 an installed Jot.
 
+## The command line
+
+`jot` works on the vault the app has open, or the one given with `--vault <folder>`:
+
+```sh
+jot status                       # the vault, its notes and what is left to do
+jot ls Recipes --order title     # notes in a notebook, or all of them
+jot search ferry tag:ashfall     # search, with tag:, in:, todo: and type: filters
+echo "Bring a lantern." | jot new "Ferry checklist" --notebook Ashfall
+jot show "mara"                  # print a note, by title, alias or path
+jot open "mara"                  # or open it in the app
+jot todo                         # to-do notes and unticked tasks
+```
+
+`--json` gives scripts the same, and the shell completions know your notebooks and notes.
+
 ## Development
 
 On Fedora 44+, Debian 13+ or Ubuntu 26.04+:

@@ -10,6 +10,8 @@ add_library(jotcli STATIC
     UpdateHint.cpp
     Upgrade.h
     Upgrade.cpp
+    VaultCommands.h
+    VaultCommands.cpp
 )
 target_include_directories(jotcli PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(jotcli PUBLIC Qt6::Core Qt6::Network jotcore)

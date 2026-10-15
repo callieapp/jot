@@ -34,4 +34,7 @@ cp -r "$(dirname "$0")/data/sample-vault" "$vault"
 QT_QPA_PLATFORM=offscreen jot-gui --vault "$vault" --note "Ashfall/Characters/Mara Vey.md" \
     --size 1280x840 --screenshot "$shots/installed-vault.png"
 test -s "$shots/installed-vault.png"
+# The command line reads the same vault.
+jot status --vault "$vault" | grep -q "notes in"
+jot search ferry --vault "$vault" | grep -q "Mara Vey"
 echo "the installed app runs"
