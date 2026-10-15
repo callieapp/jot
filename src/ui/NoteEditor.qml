@@ -173,12 +173,9 @@ Rectangle {
 
                 /// Puts `markdown` on lines of its own at `position`.
                 function insertBlock(position, markdown) {
-                    const before = position > 0 && getText(position - 1, position) !== "\n" ? "\n" :
-                                                                                              ""
-
-                    const after = getText(position, position + 1) === "\n" ? "" : "\n"
-                    insert(position, before + markdown + after)
-                    cursorPosition = position + before.length + markdown.length + after.length
+                    const place = Vault.placeBlock(text, position, markdown)
+                    insert(place.position, place.text)
+                    cursorPosition = place.cursor
                 }
 
                 Keys.onPressed: event => {

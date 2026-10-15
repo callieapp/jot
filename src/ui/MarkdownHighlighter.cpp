@@ -70,6 +70,7 @@ void MarkdownHighlighter::setResolver(Resolver resolver)
 {
     m_resolver = std::move(resolver);
     m_sizes.clear();
+    m_resolved.clear();
     rehighlight();
 }
 
@@ -95,7 +96,14 @@ bool MarkdownHighlighter::imageLine(const QString &text)
     QString target = wiki ? m.captured(3).trimmed() : m.captured(2);
     if (target.startsWith(u'<'))
         target = target.mid(1, target.size() - 2);
-    const QString path = m_resolver(target, wiki);
+    const QString key = (wiki ? u"w:"_s : u"m:"_s) + target;
+    QString path = m_resolved.value(key);
+    if (path.isEmpty()) {
+        path = m_resolver(target, wiki);
+        // Only what was found is kept, so a file added later is still found.
+        if (!path.isEmpty())
+            m_resolved.insert(key, path);
+    }
     const QSize natural = path.isEmpty() ? QSize() : imageSize(path);
     if (!natural.isValid() || natural.isEmpty())
         return false;

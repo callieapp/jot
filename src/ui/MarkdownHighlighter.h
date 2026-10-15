@@ -89,6 +89,8 @@ private:
     bool m_cursorHere = false;
     Resolver m_resolver;
     QHash<QString, QSize> m_sizes;
+    /// Where image links lead, worked out once each: a lookup can ask the whole vault.
+    QHash<QString, QString> m_resolved;
 };
 
 } // namespace jot

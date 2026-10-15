@@ -65,6 +65,9 @@ public:
     /// as `fileName` or, when that is taken, "name 2.ext". Gives the attachment's vault path.
     std::optional<QString> addAttachment(const QString &notePath, const QString &fileName,
                                          const QByteArray &bytes, QString *error) const;
+    /// As addAttachment(), copying the file at `source` rather than holding it in memory.
+    std::optional<QString> copyAttachment(const QString &notePath, const QString &source,
+                                          QString *error) const;
     /// A Markdown link target for `to` written in the note at `from`: relative to the note's
     /// folder, with spaces as %20, and in angle brackets when it holds a parenthesis.
     [[nodiscard]] static QString linkTarget(const QString &from, const QString &to);

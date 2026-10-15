@@ -318,28 +318,54 @@ QString VaultController::attachFiles(const QList<QUrl> &files)
     if (!m_vault || m_current.isEmpty())
         return {};
     QStringList lines;
+    QStringList refused;
     for (const QUrl &url : files) {
-        QFile file(url.toLocalFile());
-        if (!url.isLocalFile() || !file.open(QIODevice::ReadOnly))
-            continue;
         QString error;
         const std::optional<QString> path =
-            m_vault->addAttachment(m_current, QFileInfo(file).fileName(), file.readAll(), &error);
+            url.isLocalFile() ? m_vault->copyAttachment(m_current, url.toLocalFile(), &error)
+                              : std::nullopt;
         if (!path) {
-            setProblem(tr("Could not attach %1: %2").arg(QFileInfo(file).fileName(), error));
+            refused.append(
+                url.isLocalFile()
+                    ? error
+                    : tr("%1 is not a file on this computer").arg(url.toDisplayString()));
             continue;
         }
         const bool image = !QImageReader::imageFormat(m_vault->absolute(*path)).isEmpty();
         lines.append((image ? u"![](%1)"_s : u"[%2](%1)"_s)
                          .arg(Vault::linkTarget(m_current, *path), QFileInfo(*path).fileName()));
     }
+    if (!refused.isEmpty())
+        setProblem(tr("Not attached: %1").arg(refused.join(u"; "_s)));
     return lines.join(u'\n');
+}
+
+QVariantMap VaultController::placeBlock(const QString &text, int position,
+                                        const QString &markdown) const
+{
+    position = std::clamp(position, 0, int(text.size()));
+    const QString before = position > 0 && text.at(position - 1) != u'\n' ? u"\n"_s : QString();
+    const QString after =
+        position < text.size() && text.at(position) == u'\n' ? QString() : u"\n"_s;
+    const QString inserted = before + markdown + after;
+    return {{u"position"_s, position},
+            {u"text"_s, inserted},
+            {u"cursor"_s, position + int(inserted.size())}};
 }
 
 QString VaultController::attachmentPath(const QString &target, bool wiki) const
 {
     if (!m_vault || !m_index || m_current.isEmpty())
         return {};
+    // A path written in a Markdown link names the file outright, so the disk answers it.
+    if (!wiki && !target.contains(u':')) {
+        const QString folder =
+            m_current.contains(u'/') ? m_current.section(u'/', 0, -2) : QString();
+        const QString decoded = QUrl::fromPercentEncoding(target.section(u'#', 0, 0).toUtf8());
+        const QString path = QDir::cleanPath(folder.isEmpty() ? decoded : folder + u'/' + decoded);
+        if (!path.startsWith(u"../"_s) && QFileInfo(m_vault->absolute(path)).isFile())
+            return m_vault->absolute(path);
+    }
     const QString path = m_index->resolve(target, m_current);
     if (path.isEmpty() || path.endsWith(u".md"_s) || !(wiki || !target.contains(u':')))
         return {};

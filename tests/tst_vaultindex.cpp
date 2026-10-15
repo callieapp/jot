@@ -214,6 +214,11 @@ void TestVaultIndex::resolvesLinksTheWayObsidianDoes()
     QCOMPARE(m_index->resolve(u"../Places/The%20Ferry.md"_s, from), u"Places/The Ferry.md"_s);
     QCOMPARE(m_index->resolve(u"The Ferry"_s, from), u"Places/The Ferry.md"_s);
     QCOMPARE(m_index->resolve(u"Mara.assets/sketch.png"_s, from), u"Cast/Mara.assets/sketch.png"_s);
+    // A dotted note name is a note, even beside a file of that name.
+    write(u"Cast/v1.2 plan.md"_s, u"plan\n"_s);
+    write(u"Cast/v1.2 plan"_s, u"stray\n"_s);
+    m_index->update({u"Cast/v1.2 plan.md"_s});
+    QCOMPARE(m_index->resolve(u"v1.2 plan"_s, from), u"Cast/v1.2 plan.md"_s);
     // An attachment by name alone, from its own note.
     QCOMPARE(m_index->resolve(u"sketch.png"_s, u"Cast/Mara.md"_s),
              u"Cast/Mara.assets/sketch.png"_s);
