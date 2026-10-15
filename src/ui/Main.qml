@@ -137,8 +137,8 @@ ApplicationWindow {
                 id: searchButton
 
                 anchors {
-                    right: rightControls.left
-                    rightMargin: Theme.space4
+                    right: settingsButton.left
+                    rightMargin: Theme.space3
                     verticalCenter: parent.verticalCenter
                 }
                 visible: Vault.isOpen
@@ -146,6 +146,115 @@ ApplicationWindow {
                 Accessible.name: qsTr("Go to a note")
                 tip: qsTr("Go to a note (Ctrl+P)")
                 onClicked: switcher.open()
+            }
+
+            StickerButton {
+                id: settingsButton
+
+                anchors {
+                    right: helpButton.left
+                    rightMargin: Theme.space3
+                    verticalCenter: parent.verticalCenter
+                }
+                glyph: "settings"
+                glyphStroke: Theme.fineGlyphStroke
+                Accessible.name: qsTr("Settings")
+                tip: qsTr("Settings (Ctrl+,)")
+                onClicked: settingsDialog.open()
+            }
+
+            // Help: debug info, logs and bug reports.
+            StickerButton {
+                id: helpButton
+
+                anchors {
+                    right: rightControls.left
+                    rightMargin: Theme.space4
+                    verticalCenter: parent.verticalCenter
+                }
+                text: "?"
+                Accessible.name: qsTr("Help")
+                // Not beside its own open menu, which leaves the button hovered.
+                tip: helpMenu.visible ? "" : qsTr("Help, shortcuts and about")
+                onClicked: helpMenu.popup(helpButton, 0, helpButton.height + Theme.space3)
+
+                Tip {
+                    visible: copiedTip.running
+                    text: qsTr("Debug info copied")
+                }
+
+                // A newer release is out; the menu says which.
+                Rectangle {
+                    visible: Release.update !== ""
+                    x: parent.width - width + 2
+                    y: -2
+                    width: 10
+                    height: 10
+                    radius: 5
+                    color: Theme.accent
+                    border.width: 2
+                    border.color: Theme.bg
+                }
+
+                Timer {
+                    id: copiedTip
+                    interval: 2000
+                }
+
+                Connections {
+                    target: Support
+                    function onCopied() {
+                        copiedTip.restart()
+                    }
+                }
+
+                MenuCard {
+                    id: helpMenu
+                    minimumWidth: 200
+
+                    MenuEntry {
+                        text: qsTr("Update to Jot %1...").arg(Release.update)
+                        visible: Release.update !== ""
+                        height: visible ? implicitHeight : 0
+                        onTriggered: updateDialog.open()
+                    }
+                    MenuEntry {
+                        text: qsTr("Copy debug info")
+                        onTriggered: Support.copyDebugInfo()
+                    }
+                    MenuEntry {
+                        text: qsTr("Open logs folder")
+                        onTriggered: Support.openLogs()
+                    }
+                    MenuEntry {
+                        text: qsTr("Report a bug...")
+                        onTriggered: Support.reportBug()
+                    }
+                    MenuSeparator {
+                        contentItem: Rectangle {
+                            implicitHeight: 1
+                            color: Theme.border
+                        }
+                    }
+                    MenuEntry {
+                        text: qsTr("Keyboard shortcuts")
+                        onTriggered: keyHelp.open()
+                    }
+                    MenuEntry {
+                        text: qsTr("What's new")
+                        visible: Release.notes !== ""
+                        height: visible ? implicitHeight : 0
+                        onTriggered: whatsNew.open()
+                    }
+                    MenuEntry {
+                        text: qsTr("About Jot")
+                        onTriggered: about.open()
+                    }
+                    MenuEntry {
+                        text: qsTr("Support Jot on Ko-fi")
+                        onTriggered: Qt.openUrlExternally(Release.support)
+                    }
+                }
             }
 
             WindowControls {
@@ -223,6 +332,80 @@ ApplicationWindow {
         id: switcher
     }
 
+    LazyPopup {
+        id: settingsDialog
+        sourceComponent: SettingsDialog {}
+    }
+    LazyPopup {
+        id: keyHelp
+        sourceComponent: KeyHelp {
+            actions: window.shortcuts
+        }
+    }
+    LazyPopup {
+        id: about
+        sourceComponent: AboutDialog {
+            onWhatsNewRequested: whatsNew.open()
+        }
+    }
+    LazyPopup {
+        id: whatsNew
+        sourceComponent: WhatsNewDialog {}
+    }
+    LazyPopup {
+        id: updateDialog
+        sourceComponent: UpdateDialog {}
+    }
+
+    // After an update, says what changed, once the window has settled.
+    Timer {
+        interval: 400
+        running: true
+        onTriggered: {
+            if (Release.takeUpdateNotice())
+                whatsNew.open()
+        }
+    }
+
+    /// What the keyboard shortcuts dialog lists.
+    readonly property var shortcuts: [
+        {
+            "keys": ["Ctrl+N"],
+            "label": qsTr("New note")
+        },
+        {
+            "keys": ["Ctrl+P"],
+            "label": qsTr("Go to a note")
+        },
+        {
+            "keys": ["Ctrl+F"],
+            "label": qsTr("Search notes")
+        },
+        {
+            "keys": ["Ctrl+,"],
+            "label": qsTr("Settings")
+        },
+        {
+            "keys": ["F1"],
+            "label": qsTr("Keyboard shortcuts")
+        },
+        {
+            "keys": ["Ctrl+S"],
+            "label": qsTr("Save now"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+Click"],
+            "label": qsTr("Follow a link"),
+            "inNote": true
+        },
+        {
+            "keys": ["Ctrl+V"],
+            "label": qsTr("Paste an image"),
+            "inNote": true
+        }
+    ]
+
     Shortcut {
         sequences: [StandardKey.New]
         enabled: Vault.isOpen && Vault.writable
@@ -240,6 +423,14 @@ ApplicationWindow {
         sequence: "Ctrl+P"
         enabled: Vault.isOpen
         onActivated: switcher.open()
+    }
+    Shortcut {
+        sequences: [StandardKey.Preferences, "Ctrl+,"]
+        onActivated: settingsDialog.open()
+    }
+    Shortcut {
+        sequences: [StandardKey.HelpContents]
+        onActivated: keyHelp.open()
     }
     Shortcut {
         sequences: [StandardKey.Find]

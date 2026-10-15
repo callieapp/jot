@@ -39,6 +39,8 @@ VaultController::VaultController(Settings &settings, QObject *parent)
     m_notes.setOrder(settings.noteSort());
     connect(&m_notes, &NoteListModel::orderChanged, this,
             [this] { m_settings.setNoteSort(m_notes.order()); });
+    connect(&settings, &Settings::noteSortChanged, this,
+            [this] { m_notes.setOrder(m_settings.noteSort()); });
 }
 
 VaultController::~VaultController()
@@ -113,11 +115,12 @@ bool VaultController::openPath(const QString &path)
 void VaultController::close()
 {
     saveNow();
+    // Clears the editor and any problem with the note, which belonged to this vault.
+    m_current.clear();
+    readCurrent();
     m_watcher.reset();
     m_index.reset();
     m_vault.reset();
-    m_current.clear();
-    m_currentText.clear();
 }
 
 void VaultController::fail(const QString &error)

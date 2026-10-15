@@ -22,6 +22,9 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   vault. Ticking one changes its note; choosing one opens the note on that line.
 - `jot status`, `ls`, `search`, `new`, `show`, `open` and `todo` work on your vault from a terminal,
   with `--json` for scripts; `jot new` takes a note's body from a pipe.
+- Settings, under the title bar's slider button or Ctrl+,: change the notes folder, pick, import or
+  export a theme, and turn off the daily check for new releases. The ? menu copies debug info,
+  reports a bug, lists the keyboard shortcuts, says what is new, and tells you when an update is out.
 - `jot upgrade` and `jot downgrade` install another release, `jot logs` and `jot doctor` help with
   bug reports, and the `jot` command completes in bash, zsh and fish.
 

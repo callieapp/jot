@@ -34,6 +34,8 @@ class VaultController : public QObject
 
     Q_PROPERTY(bool isOpen READ isOpen NOTIFY openChanged)
     Q_PROPERTY(QString root READ root NOTIFY openChanged)
+    /// The same folder, for a folder dialog to start in.
+    Q_PROPERTY(QUrl rootUrl READ rootUrl NOTIFY openChanged)
     /// The vault's folder name, for the title bar.
     Q_PROPERTY(QString name READ name NOTIFY openChanged)
     Q_PROPERTY(bool writable READ writable NOTIFY openChanged)
@@ -124,6 +126,7 @@ public:
 
     [[nodiscard]] bool isOpen() const { return m_vault != nullptr; }
     [[nodiscard]] QString root() const;
+    [[nodiscard]] QUrl rootUrl() const { return isOpen() ? QUrl::fromLocalFile(root()) : QUrl(); }
     [[nodiscard]] QString name() const;
     [[nodiscard]] bool writable() const;
     [[nodiscard]] QString error() const { return m_error; }

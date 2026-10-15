@@ -32,8 +32,16 @@ qt_add_qml_module(jotui
         TodoModel.cpp
         VaultController.h
         VaultController.cpp
+        ReleaseInfo.h
+        ReleaseInfo.cpp
+        SettingsForeign.h
+        SupportActions.h
+        SupportActions.cpp
+        ThemesController.h
+        ThemesController.cpp
     QML_FILES
         Main.qml
+        AboutDialog.qml
         Backlinks.qml
         DangerButton.qml
         Dropdown.qml
@@ -41,6 +49,7 @@ qt_add_qml_module(jotui
         FormRow.qml
         Glyph.qml
         KeyCap.qml
+        KeyHelp.qml
         LazyPopup.qml
         LinkPreview.qml
         Logo.qml
@@ -52,6 +61,7 @@ qt_add_qml_module(jotui
         PillButton.qml
         QuickSwitcher.qml
         ResizeFrame.qml
+        SettingsDialog.qml
         Scrim.qml
         Sidebar.qml
         SoftShadow.qml
@@ -60,7 +70,9 @@ qt_add_qml_module(jotui
         Tip.qml
         TodoList.qml
         Toggle.qml
+        UpdateDialog.qml
         Welcome.qml
+        WhatsNewDialog.qml
         WindowControls.qml
 )
 

@@ -36,6 +36,8 @@ add_library(jotcore STATIC
     ThemeLibrary.cpp
     jot/Releases.h
     Releases.cpp
+    jot/ReleaseNotes.h
+    ReleaseNotes.cpp
     jot/UpdateCheck.h
     UpdateCheck.cpp
     jot/Diagnostics.h
@@ -56,6 +58,7 @@ qt_add_resources(jotcore "jot_themes"
         "${PROJECT_SOURCE_DIR}/themes/paper.toml"
         "${PROJECT_SOURCE_DIR}/themes/tomorrow.toml"
         "${PROJECT_SOURCE_DIR}/themes/tomorrow-night.toml"
+        "${PROJECT_SOURCE_DIR}/CHANGELOG.md"
 )
 
 # Both are under the SIL Open Font License; the license files sit beside them.
@@ -82,3 +85,7 @@ target_compile_definitions(jotcore PRIVATE
     JOT_APP_ID="${JOT_APP_ID}"
     JOT_DEVEL_BUILD=$<BOOL:${JOT_DEVEL}>
 )
+
+# The QML module in src/ui exposes Settings as a foreign type. Its registrar
+# can only describe the type if this target publishes its metatypes.
+qt_extract_metatypes(jotcore)
