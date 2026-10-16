@@ -24,6 +24,10 @@ class Settings : public QObject
     /// Looks for newer releases once a day.
     Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY
                    checkForUpdatesChanged)
+    /// The sidebar's and the note list's widths in pixels, as dragged; 0 is the theme's own.
+    Q_PROPERTY(int sidebarWidth READ sidebarWidth WRITE setSidebarWidth NOTIFY sidebarWidthChanged)
+    Q_PROPERTY(
+        int noteListWidth READ noteListWidth WRITE setNoteListWidth NOTIFY noteListWidthChanged)
     /// The font notes are written in: "" for the theme's, "serif" or "mono".
     Q_PROPERTY(QString noteFont READ noteFont WRITE setNoteFont NOTIFY noteFontChanged)
     /// Notes show their Markdown as written rather than styled.
@@ -49,6 +53,12 @@ public:
     void setCollapsedNotebooks(const QStringList &paths);
     [[nodiscard]] bool checkForUpdates() const { return m_checkForUpdates; }
     void setCheckForUpdates(bool check);
+    [[nodiscard]] int sidebarWidth() const { return m_sidebarWidth; }
+    /// Kept between 180 and 480, or 0 for the theme's width.
+    void setSidebarWidth(int width);
+    [[nodiscard]] int noteListWidth() const { return m_noteListWidth; }
+    /// Kept between 220 and 640, or 0 for the theme's width.
+    void setNoteListWidth(int width);
     [[nodiscard]] static QStringList noteFonts();
     [[nodiscard]] QString noteFont() const { return m_noteFont; }
     void setNoteFont(const QString &font);
@@ -68,6 +78,8 @@ Q_SIGNALS:
     void collapsedNotebooksChanged();
     void checkForUpdatesChanged();
     void noteFontChanged();
+    void sidebarWidthChanged();
+    void noteListWidthChanged();
     void sourceModeChanged();
     void lastSeenVersionChanged();
 
@@ -79,6 +91,8 @@ private:
     QStringList m_collapsedNotebooks;
     bool m_checkForUpdates = true;
     QString m_noteFont;
+    int m_sidebarWidth = 0;
+    int m_noteListWidth = 0;
     bool m_sourceMode = false;
     QString m_lastSeenVersion;
 };

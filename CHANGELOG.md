@@ -16,6 +16,12 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - Right-click a note for Open, Rename, Move to, Copy link, Show in Files, Make a task and Move
   to trash, or a notebook for a new note or notebook inside it, Rename and Show in Files. The
   Menu key opens the selected note's.
+- The sidebar and the note list can be made wider or narrower by dragging their edges; a
+  double-click puts one back. While a note or notebook is dragged, a copy of it follows the
+  pointer.
+- The format row's Formatted and Source buttons switch between styled and as-written Markdown,
+  its Task switch makes the note a task, and its H button holds the three heading sizes. Done is
+  a checkbox.
 
 ### Changed
 
@@ -26,6 +32,7 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 ### Fixed
 
 - The keyboard shortcuts dialog shows again.
+- The fold arrow beside a notebook comes to a clean point.
 - A long note opens at its title, not scrolled part way down.
 - The sidebar leaves room under the title bar.
 - `jot upgrade` on a computer without Jot's package names Jot's installer, not Callie's.
