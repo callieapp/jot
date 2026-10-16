@@ -39,6 +39,7 @@ private Q_SLOTS:
     void makesRenamesAndMovesNotebooks();
     void movesANoteToAnotherNotebook();
     void followsANotebookThatMovedThoughALinkCouldNotBeRewritten();
+    void actsOnNotesThatAreNotShown();
     void suggestsLinksThatResolve();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
@@ -66,6 +67,16 @@ private:
     QString m_root;
 };
 
+namespace {
+
+QString readFile(const QString &path)
+{
+    QString error;
+    return notefile::read(path, &error).value_or(error);
+}
+
+} // namespace
+
 void TestVaultController::init()
 {
     m_dir = std::make_unique<QTemporaryDir>();
@@ -81,6 +92,7 @@ void TestVaultController::init()
     m_settings = std::make_unique<Settings>(m_dir->filePath(u"settings.ini"_s));
     m_vault = std::make_unique<VaultController>(*m_settings);
     m_vault->setIndexPath(m_dir->filePath(u"index.sqlite"_s));
+    m_vault->setSystemTrash(false);
 }
 
 void TestVaultController::cleanup()
@@ -371,6 +383,27 @@ void TestVaultController::movesANoteToAnotherNotebook()
     QVERIFY(!m_vault->moveNoteTo(u"Inbox/The Ferry.md"_s, u"Inbox"_s));
 }
 
+void TestVaultController::actsOnNotesThatAreNotShown()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Welcome.md"_s);
+
+    QVERIFY(!m_vault->isTodo(u"Recipes/Pancakes.md"_s));
+    QVERIFY(m_vault->setTodo(u"Recipes/Pancakes.md"_s, true));
+    QVERIFY(m_vault->isTodo(u"Recipes/Pancakes.md"_s));
+    QVERIFY(m_vault->setTodo(u"Inbox/Groceries.md"_s, false));
+    const QString groceries = readFile(m_root + u"/Inbox/Groceries.md"_s);
+    QVERIFY(!groceries.contains(u"todo:"_s) && !groceries.contains(u"due:"_s));
+
+    QCOMPARE(m_vault->linkTo(u"Ashfall/Characters/Soren.md"_s), u"[[Soren]]"_s);
+    QVERIFY(m_vault->notebookPaths().contains(u"Ashfall/Places"_s));
+    QVERIFY(!m_vault->notebookPaths().contains(QString()));
+
+    QVERIFY(m_vault->trashNote(u"Recipes/Sourdough.md"_s));
+    QVERIFY(!QFileInfo::exists(m_root + u"/Recipes/Sourdough.md"_s));
+    QCOMPARE(m_vault->current(), u"Welcome.md"_s);
+}
+
 void TestVaultController::switcherFindsByTitleAliasAndPath()
 {
     QVERIFY(m_vault->openPath(m_root));
@@ -418,16 +451,6 @@ void TestVaultController::followsChangesOnDisk()
     QTRY_VERIFY_WITH_TIMEOUT(m_vault->currentText().contains(u"Rewritten"_s), 3000);
     QVERIFY(!changed.isEmpty());
 }
-
-namespace {
-
-QString readFile(const QString &path)
-{
-    QString error;
-    return notefile::read(path, &error).value_or(error);
-}
-
-} // namespace
 
 void TestVaultController::savesShortlyAfterTypingStops()
 {

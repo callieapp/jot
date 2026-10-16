@@ -8,6 +8,18 @@ import QtQuick.Controls
 Rectangle {
     id: root
 
+    /// Rename was chosen for the note now shown, whose title should take the typing.
+    signal titleEditRequested
+
+    /// Opens the menu of what can be done with the note at `path`, at `x`, `y` in `item`.
+    /// The point is given rather than read from the cursor, which Wayland does not share.
+    function showMenu(path, item, x, y) {
+        noteMenu.path = path
+        noteMenu.notebooks = [""].concat(Vault.notebookPaths())
+        noteMenu.todo = Vault.isTodo(path)
+        noteMenu.popup(item, x, y)
+    }
+
     /// Puts the cursor in the search box.
     function focusSearch() {
         search.forceActiveFocus()
@@ -83,6 +95,17 @@ Rectangle {
     ListView {
         id: list
 
+        Keys.onPressed: event => {
+            // The Menu key, or Shift+F10, opens the selected note's menu.
+            const menu = event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers
+                                                                                    & Qt.ShiftModifier))
+            if (menu && currentItem) {
+                root.showMenu(Vault.notes.pathAt(currentIndex), currentItem, Theme.space5,
+                              currentItem.height / 2)
+                event.accepted = true
+            }
+        }
+
         anchors {
             left: parent.left
             right: parent.right
@@ -115,6 +138,12 @@ Rectangle {
             height: card.implicitHeight + Theme.space2
             hoverEnabled: true
             Accessible.name: title
+
+            TapHandler {
+                acceptedButtons: Qt.RightButton
+                onTapped: eventPoint => root.showMenu(note.path, note, eventPoint.position.x,
+                                                      eventPoint.position.y)
+            }
 
             // A note drags onto a notebook in the sidebar to move there.
             DragHandler {
@@ -206,5 +235,72 @@ Rectangle {
         }
         width: 1
         color: Theme.hairline
+    }
+
+    MenuCard {
+        id: noteMenu
+
+        property string path
+        property var notebooks: []
+        property bool todo: false
+        readonly property string folder: path.includes("/") ? path.slice(0, path.lastIndexOf("/")) :
+                                                              ""
+
+        MenuEntry {
+            text: qsTr("Open")
+            onTriggered: Vault.current = noteMenu.path
+        }
+        MenuEntry {
+            text: qsTr("Rename")
+            enabled: Vault.writable
+            onTriggered: {
+                Vault.current = noteMenu.path
+                root.titleEditRequested()
+            }
+        }
+        MenuCard {
+            id: moveMenu
+
+            title: qsTr("Move to")
+            enabled: Vault.writable
+
+            Instantiator {
+                model: noteMenu.notebooks
+
+                MenuEntry {
+                    required property string modelData
+                    text: modelData === "" ? qsTr("Top of the vault") : modelData
+                    enabled: modelData !== noteMenu.folder
+                    onTriggered: Vault.moveNoteTo(noteMenu.path, modelData)
+                }
+                onObjectAdded: (index, object) => moveMenu.insertItem(index, object)
+                onObjectRemoved: (index, object) => moveMenu.removeItem(object)
+            }
+        }
+        MenuEntry {
+            text: qsTr("Copy link")
+            onTriggered: Support.copyText(Vault.linkTo(noteMenu.path))
+        }
+        MenuEntry {
+            text: qsTr("Show in Files")
+            onTriggered: Vault.showInFiles(noteMenu.path)
+        }
+        MenuSeparator {
+            contentItem: Rectangle {
+                implicitHeight: 1
+                color: Theme.border
+            }
+        }
+        MenuEntry {
+            text: noteMenu.todo ? qsTr("Not a to-do") : qsTr("Make a to-do")
+            enabled: Vault.writable
+            onTriggered: Vault.setTodo(noteMenu.path, !noteMenu.todo)
+        }
+        // The system trash keeps it, so this needs no second click.
+        MenuEntry {
+            text: qsTr("Move to trash")
+            enabled: Vault.writable
+            onTriggered: Vault.trashNote(noteMenu.path)
+        }
     }
 }

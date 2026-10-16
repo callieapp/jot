@@ -13,6 +13,9 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - Notebooks can be made, renamed and moved without a file manager: the + beside Notebooks makes
   one, a double-click renames one, and dragging a note or a notebook onto another moves it there.
   Links to the notes inside keep working.
+- Right-click a note for Open, Rename, Move to, Copy link, Show in Files, Make a to-do and Move
+  to trash, or a notebook for a new note or notebook inside it, Rename and Show in Files. The
+  Menu key opens the selected note's.
 
 ### Fixed
 

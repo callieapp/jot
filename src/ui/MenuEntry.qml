@@ -30,6 +30,18 @@ MenuItem {
         verticalAlignment: Text.AlignVCenter
     }
 
+    // A submenu's entry points to where it opens.
+    arrow: Glyph {
+        x: root.width - width - Theme.space3
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.subMenu !== null
+        name: "chevron-right"
+        color: Theme.textFaint
+        stroke: Theme.smallGlyphStroke
+        implicitWidth: Theme.smallGlyphSize
+        implicitHeight: Theme.smallGlyphSize
+    }
+
     indicator: Glyph {
         x: root.width - width - Theme.space4
         anchors.verticalCenter: parent.verticalCenter

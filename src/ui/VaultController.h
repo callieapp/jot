@@ -90,6 +90,18 @@ public:
     Q_INVOKABLE bool renameCurrent(const QString &title);
     /// Moves the note shown, and its attachments, to the system trash.
     Q_INVOKABLE bool trashCurrent();
+    /// Moves the note at `path`, and its attachments, to the system trash.
+    Q_INVOKABLE bool trashNote(const QString &path);
+    /// Makes the note at `path` a to-do, or no longer one, dropping its due and done dates.
+    Q_INVOKABLE bool setTodo(const QString &path, bool todo);
+    /// Whether the note at `path` is a to-do, done or not.
+    Q_INVOKABLE bool isTodo(const QString &path) const;
+    /// A wikilink to the note at `path`: by its name, or its path when another note shares it.
+    Q_INVOKABLE QString linkTo(const QString &path) const;
+    /// Opens the folder holding the note at `path`, or the notebook at `path`, in Files.
+    Q_INVOKABLE void showInFiles(const QString &path) const;
+    /// Every notebook's path, folded or not, in the order the sidebar lists them.
+    Q_INVOKABLE QStringList notebookPaths() const;
     /// Makes a notebook in `parent`, or at the top for none, and gives its path.
     Q_INVOKABLE QString newNotebook(const QString &parent = {});
     /// Renames the notebook at `path`, rewriting links to the notes in it.
@@ -134,6 +146,13 @@ public:
     }
     /// Index the database at `path` rather than the default one, as tests do.
     void setIndexPath(const QString &path) { m_indexPath = path; }
+    /// Trashes notes into the vault's own trash rather than the desktop's, as tests do.
+    void setSystemTrash(bool use)
+    {
+        m_systemTrash = use;
+        if (m_vault)
+            m_vault->setSystemTrash(use);
+    }
 
     [[nodiscard]] bool isOpen() const { return m_vault != nullptr; }
     [[nodiscard]] QString root() const;
@@ -212,6 +231,7 @@ private:
     TodoModel m_todos;
     bool m_showingTodos = false;
     QString m_indexPath;
+    bool m_systemTrash = true;
     QString m_error;
     QString m_current;
     QString m_currentText;
