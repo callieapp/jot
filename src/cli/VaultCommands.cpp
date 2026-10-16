@@ -49,7 +49,7 @@ int VaultCommands::status(const QString &indexPath, bool json)
     const QList<NoteInfo> notes = m_index.notesIn({});
     const int notebooks = int(std::ranges::count_if(m_vault.entries(), &VaultEntry::folder));
     const int tasks = int(m_index.openTasks().size());
-    const int todoNotes = int(m_index.openTodoNotes().size());
+    const int taskNotes = int(m_index.openTaskNotes().size());
     if (json) {
         print(m_out, QJsonObject{{u"vault"_s, m_vault.root()},
                                  {u"writable"_s, m_vault.writable()},
@@ -57,7 +57,7 @@ int VaultCommands::status(const QString &indexPath, bool json)
                                  {u"notebooks"_s, notebooks},
                                  {u"tags"_s, int(m_index.tags().size())},
                                  {u"openTasks"_s, tasks},
-                                 {u"openTodoNotes"_s, todoNotes},
+                                 {u"openTaskNotes"_s, taskNotes},
                                  {u"index"_s, indexPath}});
         return 0;
     }
@@ -69,7 +69,7 @@ int VaultCommands::status(const QString &indexPath, bool json)
         (notes.size() == 1 ? tr("1 note") : tr("%1 notes").arg(notes.size())) +
             (notebooks == 1 ? tr(" in 1 notebook") : tr(" in %1 notebooks").arg(notebooks)));
     row(tr("Tags"), QString::number(m_index.tags().size()));
-    row(tr("To do"), (todoNotes == 1 ? tr("1 to-do note") : tr("%1 to-do notes").arg(todoNotes)) +
+    row(tr("Tasks"), (taskNotes == 1 ? tr("1 task note") : tr("%1 task notes").arg(taskNotes)) +
                          u", "_s + (tasks == 1 ? tr("1 task") : tr("%1 tasks").arg(tasks)));
     row(tr("Index"), indexPath);
     return 0;
@@ -116,7 +116,7 @@ int VaultCommands::list(const QString &notebook, const QString &order, bool json
 int VaultCommands::search(const QString &query, bool json)
 {
     if (query.trimmed().isEmpty()) {
-        m_err << tr("usage: jot search <words> [tag:name] [in:notebook] [todo:open]") << "\n";
+        m_err << tr("usage: jot search <words> [tag:name] [in:notebook] [task:open]") << "\n";
         return 2;
     }
     const QList<SearchHit> hits = m_index.search(query);
@@ -228,9 +228,9 @@ int VaultCommands::show(const QString &name)
     return 0;
 }
 
-int VaultCommands::todo(bool json)
+int VaultCommands::listTasks(bool json)
 {
-    const QList<NoteInfo> notes = m_index.openTodoNotes();
+    const QList<NoteInfo> notes = m_index.openTaskNotes();
     const QList<NoteTask> tasks = m_index.openTasks();
     if (json) {
         QJsonArray array;

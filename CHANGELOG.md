@@ -13,12 +13,19 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - Notebooks can be made, renamed and moved without a file manager: the + beside Notebooks makes
   one, a double-click renames one, and dragging a note or a notebook onto another moves it there.
   Links to the notes inside keep working.
-- Right-click a note for Open, Rename, Move to, Copy link, Show in Files, Make a to-do and Move
+- Right-click a note for Open, Rename, Move to, Copy link, Show in Files, Make a task and Move
   to trash, or a notebook for a new note or notebook inside it, Rename and Show in Files. The
   Menu key opens the selected note's.
 
+### Changed
+
+- To-dos are now tasks, everywhere: the sidebar's Tasks, the Task button, and `jot tasks`. A
+  note that is a task says `task: open` or `task: done` in its front matter; `todo:` is no longer
+  read.
+
 ### Fixed
 
+- The keyboard shortcuts dialog shows again.
 - A long note opens at its title, not scrolled part way down.
 - The sidebar leaves room under the title bar.
 - `jot upgrade` on a computer without Jot's package names Jot's installer, not Callie's.

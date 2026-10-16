@@ -21,18 +21,18 @@ private Q_SLOTS:
     void init();
     void cleanup();
 
-    void readsTitlesTagsAndTodos();
+    void readsTitlesTagsAndTasks();
     void refreshReadsOnlyWhatChanged();
     void dropsNotesThatAreGone();
     void searchesWordsAtTheStartOfWords();
-    void searchFiltersByTagFolderTodoAndType();
+    void searchFiltersByTagFolderTaskAndType();
     void searchRanksTitlesFirst();
     void searchTakesAwkwardInput();
     void resolvesLinksTheWayObsidianDoes();
     void backlinksFollowRenames();
     void listsUnresolvedLinks();
     void nestedTagsCountForTheirParents();
-    void listsOpenTasksAndTodoNotes();
+    void listsOpenTasksAndTaskNotes();
     void rebuildsAnIndexFromAnotherSchema();
 
 private:
@@ -74,12 +74,12 @@ void TestVaultIndex::open()
     m_index->refresh();
 }
 
-void TestVaultIndex::readsTitlesTagsAndTodos()
+void TestVaultIndex::readsTitlesTagsAndTasks()
 {
     write(u"Cast/Mara.md"_s, u"---\ntitle: Mara Vey\ntags: [ashfall, \"#cast/lead\"]\n"
                              u"aliases:\n  - the Ferrywoman\ntype: character\n---\n"
                              u"Keeps the #ferry log.\n"_s);
-    write(u"Errand.md"_s, u"---\ntodo: Open\ndue: 2026-10-20\n---\nBuy paper\n"_s);
+    write(u"Errand.md"_s, u"---\ntask: Open\ndue: 2026-10-20\n---\nBuy paper\n"_s);
     write(u"Plain.md"_s, u"Just text\n"_s);
     open();
 
@@ -90,7 +90,7 @@ void TestVaultIndex::readsTitlesTagsAndTodos()
     QCOMPARE(mara.aliases, QStringList{u"the Ferrywoman"_s});
     QCOMPARE(mara.type, u"character"_s);
     const NoteInfo errand = *m_index->note(u"Errand.md"_s);
-    QCOMPARE(errand.todo, u"open"_s);
+    QCOMPARE(errand.task, u"open"_s);
     QCOMPARE(errand.due, u"2026-10-20"_s);
     QCOMPARE(m_index->note(u"Plain.md"_s)->title, u"Plain"_s);
     QVERIFY(m_index->note(u"Plain.md"_s)->modified > 0);
@@ -148,11 +148,11 @@ void TestVaultIndex::searchesWordsAtTheStartOfWords()
     QVERIFY2(hit.snippet.contains(u"<mark>dawn</mark>"_s), qPrintable(hit.snippet));
 }
 
-void TestVaultIndex::searchFiltersByTagFolderTodoAndType()
+void TestVaultIndex::searchFiltersByTagFolderTaskAndType()
 {
     write(u"Ashfall/Mara.md"_s, u"---\ntype: Character\ntags: [cast/lead]\n---\nferry\n"_s);
     write(u"Ashfall/Soren.md"_s, u"---\ntype: character\n---\nferry #cast\n"_s);
-    write(u"Notes/Errand.md"_s, u"---\ntodo: open\n---\nferry ticket\n"_s);
+    write(u"Notes/Errand.md"_s, u"---\ntask: open\n---\nferry ticket\n"_s);
     open();
 
     const auto paths = [this](const QString &query) {
@@ -166,7 +166,7 @@ void TestVaultIndex::searchFiltersByTagFolderTodoAndType()
              (QStringList{u"Ashfall/Mara.md"_s, u"Ashfall/Soren.md"_s}));
     QCOMPARE(paths(u"tag:cast/lead"_s), QStringList{u"Ashfall/Mara.md"_s});
     QCOMPARE(paths(u"ferry in:Notes"_s), QStringList{u"Notes/Errand.md"_s});
-    QCOMPARE(paths(u"todo:open"_s), QStringList{u"Notes/Errand.md"_s});
+    QCOMPARE(paths(u"task:open"_s), QStringList{u"Notes/Errand.md"_s});
     QCOMPARE(paths(u"type:character"_s),
              (QStringList{u"Ashfall/Mara.md"_s, u"Ashfall/Soren.md"_s}));
     QCOMPARE(paths(u"in:Ash"_s), QStringList());
@@ -281,20 +281,20 @@ void TestVaultIndex::nestedTagsCountForTheirParents()
     QCOMPARE(m_index->tagged(u"NOVEL/ch1"_s), QStringList{u"A.md"_s});
 }
 
-void TestVaultIndex::listsOpenTasksAndTodoNotes()
+void TestVaultIndex::listsOpenTasksAndTaskNotes()
 {
     write(u"Shop.md"_s, u"- [ ] paper\n- [x] pens\n- [ ] ink\n"_s);
-    write(u"Later.md"_s, u"---\ntodo: open\n---\n"_s);
-    write(u"Soon.md"_s, u"---\ntodo: open\ndue: 2026-10-15\n---\n"_s);
-    write(u"Done.md"_s, u"---\ntodo: done\n---\n"_s);
+    write(u"Later.md"_s, u"---\ntask: open\n---\n"_s);
+    write(u"Soon.md"_s, u"---\ntask: open\ndue: 2026-10-15\n---\n"_s);
+    write(u"Done.md"_s, u"---\ntask: done\n---\n"_s);
     open();
 
     QCOMPARE(m_index->openTasks(), (QList<NoteTask>{{u"Shop.md"_s, 1, false, u"paper"_s},
                                                     {u"Shop.md"_s, 3, false, u"ink"_s}}));
-    QStringList todos;
-    for (const NoteInfo &note : m_index->openTodoNotes())
-        todos.append(note.path);
-    QCOMPARE(todos, (QStringList{u"Soon.md"_s, u"Later.md"_s}));
+    QStringList tasks;
+    for (const NoteInfo &note : m_index->openTaskNotes())
+        tasks.append(note.path);
+    QCOMPARE(tasks, (QStringList{u"Soon.md"_s, u"Later.md"_s}));
 }
 
 void TestVaultIndex::rebuildsAnIndexFromAnotherSchema()

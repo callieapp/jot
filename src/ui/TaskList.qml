@@ -3,7 +3,7 @@ import Jot.Ui
 import QtQuick
 import QtQuick.Controls
 
-/// The middle column when To-dos is chosen: notes that are to-dos, then every unticked
+/// The middle column when Tasks is chosen: notes that are tasks, then every unticked
 /// checkbox in the vault. Ticking one changes its note; choosing one opens it there.
 Rectangle {
     id: root
@@ -19,10 +19,10 @@ Rectangle {
             top: parent.top
             margins: Theme.space5
         }
-        text: Vault.todos.count === 0 ? qsTr("Nothing left to do.") : Vault.todos.count === 1 ? qsTr(
+        text: Vault.tasks.count === 0 ? qsTr("Nothing left to do.") : Vault.tasks.count === 1 ? qsTr(
                                                                                                     "1 thing to do") :
                                                                                                 qsTr("%1 things to do").arg(
-                                                                                                    Vault.todos.count)
+                                                                                                    Vault.tasks.count)
         color: Theme.textMuted
         font.family: Theme.fontFamily
         font.pixelSize: Theme.textMd
@@ -40,7 +40,7 @@ Rectangle {
             topMargin: Theme.space3
         }
         clip: true
-        model: Vault.todos
+        model: Vault.tasks
         spacing: Theme.space1
         ScrollBar.vertical: ScrollBar {}
 
@@ -98,7 +98,7 @@ Rectangle {
                     enabled: Vault.writable
                     Accessible.name: qsTr("Done")
                     Accessible.role: Accessible.CheckBox
-                    onClicked: item.kind === "note" ? Vault.completeTodo(item.path) : Vault.setTaskDone(
+                    onClicked: item.kind === "note" ? Vault.completeTask(item.path) : Vault.setTaskDone(
                                                           item.path, item.line, true)
 
                     background: Rectangle {

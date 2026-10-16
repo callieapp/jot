@@ -43,11 +43,11 @@ an installed Jot.
 ```sh
 jot status                       # the vault, its notes and what is left to do
 jot ls Recipes --order title     # notes in a notebook, or all of them
-jot search ferry tag:ashfall     # search, with tag:, in:, todo: and type: filters
+jot search ferry tag:ashfall     # search, with tag:, in:, task: and type: filters
 echo "Bring a lantern." | jot new "Ferry checklist" --notebook Ashfall
 jot show "mara"                  # print a note, by title, alias or path
 jot open "mara"                  # or open it in the app
-jot todo                         # to-do notes and unticked tasks
+jot tasks                        # task notes and unticked boxes
 ```
 
 `--json` gives scripts the same, and the shell completions know your notebooks and notes.

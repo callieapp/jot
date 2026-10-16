@@ -296,8 +296,8 @@ ApplicationWindow {
                 }
                 width: Theme.sidebarWidth
             }
-            TodoList {
-                visible: Vault.isOpen && Vault.showingTodos
+            TaskList {
+                visible: Vault.isOpen && Vault.showingTasks
                 anchors {
                     left: sidebar.right
                     top: parent.top
@@ -309,7 +309,7 @@ ApplicationWindow {
                 id: noteList
 
                 onTitleEditRequested: editor.editTitle()
-                visible: Vault.isOpen && !Vault.showingTodos
+                visible: Vault.isOpen && !Vault.showingTasks
                 anchors {
                     left: sidebar.right
                     top: parent.top

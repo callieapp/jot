@@ -4,7 +4,7 @@
 #include "NoteListModel.h"
 #include "NotebookModel.h"
 #include "SwitcherModel.h"
-#include "TodoModel.h"
+#include "TaskModel.h"
 
 #include "jot/Vault.h"
 #include "jot/VaultIndex.h"
@@ -49,9 +49,9 @@ class VaultController : public QObject
     /// The notes offered while typing a wikilink.
     Q_PROPERTY(jot::SwitcherModel *linkSuggestions READ linkSuggestions CONSTANT)
     /// What is left to do across the vault.
-    Q_PROPERTY(jot::TodoModel *todos READ todos CONSTANT)
-    /// The middle column shows to-dos rather than notes.
-    Q_PROPERTY(bool showingTodos READ showingTodos WRITE setShowingTodos NOTIFY showingTodosChanged)
+    Q_PROPERTY(jot::TaskModel *tasks READ tasks CONSTANT)
+    /// The middle column shows tasks rather than notes.
+    Q_PROPERTY(bool showingTasks READ showingTasks WRITE setShowingTasks NOTIFY showingTasksChanged)
     /// What links to, or names, the note shown.
     Q_PROPERTY(jot::BacklinksModel *backlinks READ backlinks CONSTANT)
     /// The note shown, by vault path, and what it says.
@@ -92,10 +92,10 @@ public:
     Q_INVOKABLE bool trashCurrent();
     /// Moves the note at `path`, and its attachments, to the system trash.
     Q_INVOKABLE bool trashNote(const QString &path);
-    /// Makes the note at `path` a to-do, or no longer one. Its due date stays either way.
-    Q_INVOKABLE bool setTodo(const QString &path, bool todo);
-    /// Whether the note at `path` is a to-do, done or not.
-    Q_INVOKABLE bool isTodo(const QString &path) const;
+    /// Makes the note at `path` a task, or no longer one. Its due date stays either way.
+    Q_INVOKABLE bool setTask(const QString &path, bool task);
+    /// Whether the note at `path` is a task, done or not.
+    Q_INVOKABLE bool isTask(const QString &path) const;
     /// A wikilink to the note at `path`: by its name, or its path when another note shares it.
     Q_INVOKABLE QString linkTo(const QString &path) const;
     /// Opens the folder holding the note at `path`, or the notebook at `path`, in Files.
@@ -138,8 +138,8 @@ public:
     /// note shown, in the editor's text.
     Q_INVOKABLE bool setTaskDone(const QString &path, int line, bool done,
                                  const QString &text = {});
-    /// Marks a note that is a to-do as done, with when it was.
-    Q_INVOKABLE bool completeTodo(const QString &path);
+    /// Marks a note that is a task as done, with when it was.
+    Q_INVOKABLE bool completeTask(const QString &path);
     /// Shows the note at `path` with the cursor on `line`.
     Q_INVOKABLE void openAt(const QString &path, int line);
     /// How long typing must pause before edits are written, in ms.
@@ -171,9 +171,9 @@ public:
     [[nodiscard]] SwitcherModel *switcher() { return &m_switcher; }
     [[nodiscard]] SwitcherModel *linkSuggestions() { return &m_linkSuggestions; }
     [[nodiscard]] BacklinksModel *backlinks() { return &m_backlinks; }
-    [[nodiscard]] TodoModel *todos() { return &m_todos; }
-    [[nodiscard]] bool showingTodos() const { return m_showingTodos; }
-    void setShowingTodos(bool showing);
+    [[nodiscard]] TaskModel *tasks() { return &m_tasks; }
+    [[nodiscard]] bool showingTasks() const { return m_showingTasks; }
+    void setShowingTasks(bool showing);
     [[nodiscard]] QString current() const { return m_current; }
     void setCurrent(const QString &path);
     [[nodiscard]] QString currentTitle() const;
@@ -192,7 +192,7 @@ Q_SIGNALS:
     void opening();
     void unsavedChanged();
     void problemChanged();
-    void showingTodosChanged();
+    void showingTasksChanged();
     /// The editor should put the cursor here in the note shown, as the editor counts
     /// characters: line breaks as one, without a byte order mark.
     void revealPosition(int position);
@@ -232,8 +232,8 @@ private:
     SwitcherModel m_switcher;
     SwitcherModel m_linkSuggestions;
     BacklinksModel m_backlinks;
-    TodoModel m_todos;
-    bool m_showingTodos = false;
+    TaskModel m_tasks;
+    bool m_showingTasks = false;
     QString m_indexPath;
     bool m_systemTrash = true;
     QString m_error;

@@ -70,12 +70,12 @@ Rectangle {
             topPadding: Theme.space3
 
             Entry {
-                id: todos
+                id: tasks
 
                 width: root.width
-                label: qsTr("To-dos")
-                selected: Vault.showingTodos
-                onClicked: Vault.showingTodos = true
+                label: qsTr("Tasks")
+                selected: Vault.showingTasks
+                onClicked: Vault.showingTasks = true
 
                 contentItem: Item {
                     Text {
@@ -84,11 +84,11 @@ Rectangle {
                             leftMargin: Theme.space5
                             verticalCenter: parent.verticalCenter
                         }
-                        text: todos.label
-                        color: todos.selected ? Theme.text : Theme.textMuted
+                        text: tasks.label
+                        color: tasks.selected ? Theme.text : Theme.textMuted
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.textMd
-                        font.weight: todos.selected ? Theme.weightBold : Theme.weightStrong
+                        font.weight: tasks.selected ? Theme.weightBold : Theme.weightStrong
                     }
                     Text {
                         anchors {
@@ -96,8 +96,8 @@ Rectangle {
                             rightMargin: Theme.space5
                             verticalCenter: parent.verticalCenter
                         }
-                        visible: Vault.todos.count > 0
-                        text: Vault.todos.count
+                        visible: Vault.tasks.count > 0
+                        text: Vault.tasks.count
                         color: Theme.accent
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.textXs
@@ -176,10 +176,10 @@ Rectangle {
 
                     width: root.width
                     label: name
-                    selected: !Vault.showingTodos && Vault.notes.tag === "" && Vault.notes.notebook
+                    selected: !Vault.showingTasks && Vault.notes.tag === "" && Vault.notes.notebook
                               === path
                     onClicked: {
-                        Vault.showingTodos = false
+                        Vault.showingTasks = false
                         Vault.notes.notebook = path
                     }
                     TapHandler {
@@ -343,9 +343,9 @@ Rectangle {
 
                     width: root.width
                     label: "#" + modelData
-                    selected: !Vault.showingTodos && Vault.notes.tag === modelData
+                    selected: !Vault.showingTasks && Vault.notes.tag === modelData
                     onClicked: {
-                        Vault.showingTodos = false
+                        Vault.showingTasks = false
                         Vault.notes.tag = modelData
                     }
 
@@ -385,7 +385,7 @@ Rectangle {
             text: qsTr("New note")
             enabled: Vault.writable
             onTriggered: {
-                Vault.showingTodos = false
+                Vault.showingTasks = false
                 Vault.notes.tag = ""
                 Vault.notes.notebook = notebookMenu.path
                 if (Vault.newNote() !== "")

@@ -7,9 +7,9 @@
 
 namespace jot {
 
-/// Everything left to do in the vault: notes that are to-dos, soonest due first, then the
+/// Everything left to do in the vault: notes that are tasks, soonest due first, then the
 /// unticked checkboxes in every note, note by note.
-class TodoModel : public QAbstractListModel
+class TaskModel : public QAbstractListModel
 {
     Q_OBJECT
     QML_ELEMENT
@@ -18,23 +18,23 @@ class TodoModel : public QAbstractListModel
 
 public:
     enum Role {
-        /// "note" for a note that is a to-do, "task" for a checkbox in a note.
+        /// "note" for a note that is a task, "task" for a checkbox in a note.
         KindRole = Qt::UserRole + 1,
         PathRole,
-        /// The note's title: what a to-do note says, or where a task is written.
+        /// The note's title: what a task note says, or where a task is written.
         TitleRole,
-        /// A task's own words; empty for a to-do note.
+        /// A task's own words; empty for a task note.
         TaskRole,
         LineRole,
-        /// When a to-do note is due, as written, or empty.
+        /// When a task note is due, as written, or empty.
         DueRole,
         /// The due date is past.
         OverdueRole,
-        /// The heading it is listed under: "To-do notes", or a task's note.
+        /// The heading it is listed under: "Task notes", or a task's note.
         GroupRole,
     };
 
-    explicit TodoModel(QObject *parent = nullptr);
+    explicit TaskModel(QObject *parent = nullptr);
 
     void reload(const VaultIndex *index);
 

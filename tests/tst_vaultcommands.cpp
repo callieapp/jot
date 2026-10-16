@@ -82,12 +82,12 @@ void TestVaultCommands::statusSaysWhatTheVaultHolds()
     QCOMPARE(status.value(u"notes"_s).toInt(), 8);
     QCOMPARE(status.value(u"notebooks"_s).toInt(), 5);
     QCOMPARE(status.value(u"openTasks"_s).toInt(), 3);
-    QCOMPARE(status.value(u"openTodoNotes"_s).toInt(), 1);
+    QCOMPARE(status.value(u"openTaskNotes"_s).toInt(), 1);
     QVERIFY(status.value(u"writable"_s).toBool());
 
     QCOMPARE(run([](auto &c) { return c.status(u"/cache/index.sqlite"_s, false); }), 0);
     QVERIFY2(m_out.contains(u"8 notes in 5 notebooks"_s), qPrintable(m_out));
-    QVERIFY(m_out.contains(u"1 to-do note, 3 tasks"_s));
+    QVERIFY(m_out.contains(u"1 task note, 3 tasks"_s));
 }
 
 void TestVaultCommands::listsNotesNewestOrByTitle()
@@ -152,20 +152,20 @@ void TestVaultCommands::showsANoteByTitleAliasOrPath()
 
 void TestVaultCommands::listsWhatIsLeftToDo()
 {
-    QCOMPARE(run([](auto &c) { return c.todo(true); }), 0);
-    const QJsonArray todos = json().array();
-    QCOMPARE(todos.size(), 4);
-    QCOMPARE(todos.first().toObject().value(u"kind"_s).toString(), u"note"_s);
-    QCOMPARE(todos.last().toObject().value(u"text"_s).toString(), u"oat milk"_s);
-    QCOMPARE(todos.last().toObject().value(u"line"_s).toInt(), 6);
+    QCOMPARE(run([](auto &c) { return c.listTasks(true); }), 0);
+    const QJsonArray tasks = json().array();
+    QCOMPARE(tasks.size(), 4);
+    QCOMPARE(tasks.first().toObject().value(u"kind"_s).toString(), u"note"_s);
+    QCOMPARE(tasks.last().toObject().value(u"text"_s).toString(), u"oat milk"_s);
+    QCOMPARE(tasks.last().toObject().value(u"line"_s).toInt(), 6);
 
     // A due that is not a date is never overdue.
     QString error;
     QVERIFY(notefile::write(m_vault->absolute(u"Someday.md"_s),
-                            u"---\ntodo: open\ndue: someday\n---\n"_s, &error));
+                            u"---\ntask: open\ndue: someday\n---\n"_s, &error));
     m_index->update({u"Someday.md"_s});
     m_index->update({u"Inbox/Groceries.md"_s});
-    QCOMPARE(run([](auto &c) { return c.todo(false); }), 0);
+    QCOMPARE(run([](auto &c) { return c.listTasks(false); }), 0);
     QVERIFY(m_out.contains(u"[ ] Someday  someday"_s));
     QVERIFY(!isOverdue(u"someday"_s, QDate(2026, 10, 15)));
     QVERIFY(isOverdue(u"2026-10-14T09:00:00Z"_s, QDate(2026, 10, 15)));

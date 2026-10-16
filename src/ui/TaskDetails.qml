@@ -1,7 +1,7 @@
 import Jot.Ui
 import QtQuick
 
-/// Under the title of a note that is a to-do: whether it is done, and when it is due.
+/// Under the title of a note that is a task: whether it is done, and when it is due.
 Row {
     id: root
 
@@ -11,7 +11,7 @@ Row {
     /// Asks for `action` (done or due), with `argument` the due date or empty.
     signal formatRequested(string action, string argument)
 
-    readonly property bool done: frontMatter.todo === "done"
+    readonly property bool done: frontMatter.task === "done"
     readonly property date due: {
         const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(frontMatter.due || "")
         return match ? new Date(match[1], match[2] - 1, match[3]) : new Date(NaN)

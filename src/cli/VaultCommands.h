@@ -12,7 +12,7 @@
 
 namespace jot::cli {
 
-/// The commands that work on a vault: status, ls, search, new, show and todo. Each
+/// The commands that work on a vault: status, ls, search, new, show and tasks. Each
 /// writes what it found to `out` and problems to `err`, and gives an exit code: 0 for
 /// success, 1 for a failure, 2 for a mistake in how it was asked.
 class VaultCommands
@@ -33,7 +33,7 @@ public:
     int create(const QString &title, const QString &notebook, const QString &body, bool json);
     /// Prints the note `name` names: a path, a title or an alias.
     int show(const QString &name);
-    int todo(bool json);
+    int listTasks(bool json);
     /// Starts `program`, as the app, with these arguments; says whether it started.
     using Launcher = std::function<bool(const QString &program, const QStringList &arguments)>;
     /// Opens the note `name` names in the app at `program`, through `launch`.

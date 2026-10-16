@@ -1,5 +1,5 @@
 ---
-todo: open
+task: open
 due: 2026-10-20
 ---
 - [ ] watercolor paper
