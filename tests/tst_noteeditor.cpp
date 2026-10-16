@@ -33,6 +33,7 @@ private Q_SLOTS:
     void cleanup();
 
     void drawsTheNoteAndKeepsDrawingItAcrossSwitches();
+    void opensALongNoteAtTheTop();
     void typingIsDrawnAndSaved();
     void typingKeepsWindowsLineEndings();
     void showsImagesInPlaceOfTheirLinks();
@@ -147,6 +148,22 @@ void TestNoteEditor::drawsTheNoteAndKeepsDrawingItAcrossSwitches()
     QTRY_VERIFY_WITH_TIMEOUT(inkBelowTitle() > 200, 3000);
     m_vault->setCurrent(u"Recipes/Pancakes.md"_s);
     QTRY_VERIFY_WITH_TIMEOUT(inkBelowTitle() > 100, 3000);
+}
+
+void TestNoteEditor::opensALongNoteAtTheTop()
+{
+    // Mara Vey, with her backlinks and mentions, runs past this window, and the editor is
+    // laid out with no height before the window gives it one.
+    QQuickItem *scroll = find(u"scroll"_s);
+    QVERIFY(scroll);
+    QTest::qWait(200);
+    QVERIFY(scroll->property("contentHeight").toReal() > scroll->height());
+    QCOMPARE(scroll->property("contentY").toReal(), 0.0);
+
+    m_vault->setCurrent(u"Ashfall/Pitch.md"_s);
+    m_vault->setCurrent(u"Ashfall/Characters/Mara Vey.md"_s);
+    QTest::qWait(200);
+    QCOMPARE(scroll->property("contentY").toReal(), 0.0);
 }
 
 void TestNoteEditor::typingIsDrawnAndSaved()

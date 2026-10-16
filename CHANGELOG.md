@@ -3,6 +3,13 @@
 What changed in each version of Jot, for the people using it. Notes collect under Unreleased
 as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md).
 
+## Unreleased
+
+### Fixed
+
+- A long note opens at its title, not scrolled part way down.
+- `jot upgrade` on a computer without Jot's package names Jot's installer, not Callie's.
+
 ## 0.0.4 - 2026-10-15
 
 ### New
