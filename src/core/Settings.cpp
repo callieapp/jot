@@ -25,11 +25,15 @@ const QString kNoteFont = u"editor/font"_s;
 const QString kSidebarWidth = u"layout/sidebarWidth"_s;
 const QString kNoteListWidth = u"layout/noteListWidth"_s;
 
-/// A dragged width within its bounds; 0 stays 0, the theme's own.
+/// A saved width within its bounds; 0 stays 0, the theme's own.
 int bounded(int width, int lowest, int highest)
 {
     return width <= 0 ? 0 : std::clamp(width, lowest, highest);
 }
+
+constexpr int kMinSidebarWidth = 180;
+constexpr int kMaxSidebarWidth = 480;
+constexpr int kMaxNoteListWidth = 640;
 
 } // namespace
 
@@ -46,8 +50,10 @@ Settings::Settings(const QString &path, QObject *parent)
     m_lastSeenVersion = m_store.value(kLastSeenVersion).toString();
     m_sourceMode = m_store.value(kSourceMode, false).toBool();
     m_noteFont = m_store.value(kNoteFont).toString();
-    m_sidebarWidth = bounded(m_store.value(kSidebarWidth, 0).toInt(), 180, 480);
-    m_noteListWidth = bounded(m_store.value(kNoteListWidth, 0).toInt(), 220, 640);
+    m_sidebarWidth =
+        bounded(m_store.value(kSidebarWidth, 0).toInt(), kMinSidebarWidth, kMaxSidebarWidth);
+    m_noteListWidth =
+        bounded(m_store.value(kNoteListWidth, 0).toInt(), kMinNoteListWidth, kMaxNoteListWidth);
     if (!noteFonts().contains(m_noteFont))
         m_noteFont.clear();
 }
@@ -119,7 +125,8 @@ void Settings::setLastSeenVersion(const QString &version)
 
 void Settings::setSidebarWidth(int width)
 {
-    width = bounded(width, 180, 480);
+    // A drag past the edge stops at the narrowest; only a reset means the theme's width.
+    width = std::clamp(width, kMinSidebarWidth, kMaxSidebarWidth);
     if (m_sidebarWidth == width)
         return;
     m_sidebarWidth = width;
@@ -129,11 +136,29 @@ void Settings::setSidebarWidth(int width)
 
 void Settings::setNoteListWidth(int width)
 {
-    width = bounded(width, 220, 640);
+    width = std::clamp(width, kMinNoteListWidth, kMaxNoteListWidth);
     if (m_noteListWidth == width)
         return;
     m_noteListWidth = width;
     m_store.setValue(kNoteListWidth, width);
+    Q_EMIT noteListWidthChanged();
+}
+
+void Settings::resetSidebarWidth()
+{
+    if (m_sidebarWidth == 0)
+        return;
+    m_sidebarWidth = 0;
+    m_store.setValue(kSidebarWidth, 0);
+    Q_EMIT sidebarWidthChanged();
+}
+
+void Settings::resetNoteListWidth()
+{
+    if (m_noteListWidth == 0)
+        return;
+    m_noteListWidth = 0;
+    m_store.setValue(kNoteListWidth, 0);
     Q_EMIT noteListWidthChanged();
 }
 
@@ -167,8 +192,8 @@ void Settings::reset()
     setCheckForUpdates(true);
     setSourceMode(false);
     setNoteFont({});
-    setSidebarWidth(0);
-    setNoteListWidth(0);
+    resetSidebarWidth();
+    resetNoteListWidth();
 }
 
 } // namespace jot

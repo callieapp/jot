@@ -304,10 +304,16 @@ void TestLists::trashAsksFirst()
 void TestLists::columnBordersDragToResize()
 {
     QQmlComponent component(m_engine.get());
+    // A row under the border that drags too, as the note list's rows do.
     component.setData("import Jot.Ui\nimport QtQuick\n"
-                      "Item { property int asked: -1\n"
+                      "Item { property int asked: -1; property bool reset: false\n"
+                      "  property bool rowDragged: false\n"
+                      "  Item { width: 400; height: 200\n"
+                      "    DragHandler { target: null\n"
+                      "      onActiveChanged: if (active) parent.parent.rowDragged = true } }\n"
                       "  ColumnSplitter { objectName: 'splitter'; x: 100; height: 200\n"
-                      "    columnWidth: 100; onResized: width => parent.asked = width } }\n",
+                      "    columnWidth: 100; onResized: width => parent.asked = width\n"
+                      "    onReset: parent.reset = true } }\n",
                       QUrl(u"qrc:/splitter.qml"_s));
     std::unique_ptr<QObject> holder(component.create());
     QVERIFY2(holder, qPrintable(component.errorString()));
@@ -324,10 +330,11 @@ void TestLists::columnBordersDragToResize()
         QTest::mouseMove(m_window.get(), from + QPoint(10 * step, 0), 20);
     QTest::mouseRelease(m_window.get(), Qt::LeftButton, {}, from + QPoint(60, 0));
     QCOMPARE(holder->property("asked").toInt(), 160);
+    QVERIFY(!holder->property("rowDragged").toBool());
 
     // A double click asks for the theme's width again.
     QTest::mouseDClick(m_window.get(), Qt::LeftButton, {}, from);
-    QCOMPARE(holder->property("asked").toInt(), 0);
+    QVERIFY(holder->property("reset").toBool());
 }
 
 QTEST_MAIN(TestLists)

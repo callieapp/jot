@@ -28,6 +28,7 @@ class Settings : public QObject
     Q_PROPERTY(int sidebarWidth READ sidebarWidth WRITE setSidebarWidth NOTIFY sidebarWidthChanged)
     Q_PROPERTY(
         int noteListWidth READ noteListWidth WRITE setNoteListWidth NOTIFY noteListWidthChanged)
+    Q_PROPERTY(int minNoteListWidth READ minNoteListWidth CONSTANT)
     /// The font notes are written in: "" for the theme's, "serif" or "mono".
     Q_PROPERTY(QString noteFont READ noteFont WRITE setNoteFont NOTIFY noteFontChanged)
     /// Notes show their Markdown as written rather than styled.
@@ -54,11 +55,15 @@ public:
     [[nodiscard]] bool checkForUpdates() const { return m_checkForUpdates; }
     void setCheckForUpdates(bool check);
     [[nodiscard]] int sidebarWidth() const { return m_sidebarWidth; }
-    /// Kept between 180 and 480, or 0 for the theme's width.
+    /// Kept between 180 and 480; resetSidebarWidth() goes back to the theme's.
     void setSidebarWidth(int width);
+    Q_INVOKABLE void resetSidebarWidth();
     [[nodiscard]] int noteListWidth() const { return m_noteListWidth; }
-    /// Kept between 220 and 640, or 0 for the theme's width.
+    /// Kept between kMinNoteListWidth and 640; resetNoteListWidth() goes back to the theme's.
     void setNoteListWidth(int width);
+    Q_INVOKABLE void resetNoteListWidth();
+    static constexpr int kMinNoteListWidth = 220;
+    [[nodiscard]] static int minNoteListWidth() { return kMinNoteListWidth; }
     [[nodiscard]] static QStringList noteFonts();
     [[nodiscard]] QString noteFont() const { return m_noteFont; }
     void setNoteFont(const QString &font);

@@ -272,6 +272,19 @@ ApplicationWindow {
         }
 
         Item {
+            id: columns
+
+            // The columns give way on a narrow window, so the note keeps room to write in.
+            readonly property int room: width - Theme.editorMinWidth
+            readonly property int sidebarWidth: Math.max(0, Math.min(Settings.sidebarWidth > 0
+                                                                     ? Settings.sidebarWidth :
+                                                                       Theme.sidebarWidth, room
+                                                                     - Settings.minNoteListWidth))
+            readonly property int noteListWidth: Math.max(0, Math.min(Settings.noteListWidth > 0
+                                                                      ? Settings.noteListWidth :
+                                                                        Theme.noteListWidth, room
+                                                                      - sidebarWidth))
+
             anchors {
                 left: parent.left
                 right: parent.right
@@ -294,7 +307,7 @@ ApplicationWindow {
                     top: parent.top
                     bottom: parent.bottom
                 }
-                width: Settings.sidebarWidth > 0 ? Settings.sidebarWidth : Theme.sidebarWidth
+                width: columns.sidebarWidth
             }
             ColumnSplitter {
                 visible: sidebar.visible
@@ -305,6 +318,7 @@ ApplicationWindow {
                 }
                 columnWidth: sidebar.width
                 onResized: width => Settings.sidebarWidth = width
+                onReset: Settings.resetSidebarWidth()
             }
             TaskList {
                 visible: Vault.isOpen && Vault.showingTasks
@@ -313,7 +327,7 @@ ApplicationWindow {
                     top: parent.top
                     bottom: parent.bottom
                 }
-                width: Settings.noteListWidth > 0 ? Settings.noteListWidth : Theme.noteListWidth
+                width: columns.noteListWidth
             }
             NoteList {
                 id: noteList
@@ -325,7 +339,7 @@ ApplicationWindow {
                     top: parent.top
                     bottom: parent.bottom
                 }
-                width: Settings.noteListWidth > 0 ? Settings.noteListWidth : Theme.noteListWidth
+                width: columns.noteListWidth
             }
             ColumnSplitter {
                 visible: Vault.isOpen
@@ -336,6 +350,7 @@ ApplicationWindow {
                 }
                 columnWidth: noteList.width
                 onResized: width => Settings.noteListWidth = width
+                onReset: Settings.resetNoteListWidth()
             }
             NoteEditor {
                 id: editor
