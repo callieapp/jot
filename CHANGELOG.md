@@ -22,6 +22,8 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 - The format row's Formatted and Source buttons switch between styled and as-written Markdown,
   its Task switch makes the note a task, and its H button holds the three heading sizes. Done is
   a checkbox.
+- Delete moves the selected note, or the notebook clicked in the sidebar, to the trash after
+  asking; a notebook's menu offers the same. A notebook goes with everything in it.
 
 ### Changed
 

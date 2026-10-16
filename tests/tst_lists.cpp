@@ -43,6 +43,7 @@ private Q_SLOTS:
     void notebookMenuMakesANotebookInside();
     void trashAsksFirst();
     void columnBordersDragToResize();
+    void deleteAsksFirstForNotesAndNotebooks();
 
 private:
     /// The visible menu entry reading `text`, anywhere in the window.
@@ -335,6 +336,39 @@ void TestLists::columnBordersDragToResize()
     // A double click asks for the theme's width again.
     QTest::mouseDClick(m_window.get(), Qt::LeftButton, {}, from);
     QVERIFY(holder->property("reset").toBool());
+}
+
+void TestLists::deleteAsksFirstForNotesAndNotebooks()
+{
+    const auto confirm = [this] {
+        return findItem(
+            [](QQuickItem *item) {
+                return item->isVisible() && item->objectName() == u"confirmTrash"_s;
+            },
+            m_window->contentItem());
+    };
+    // A note: chosen in the list, then Delete.
+    QQuickItem *pancakes = findItem(
+        [](QQuickItem *item) {
+            return item->isVisible() &&
+                   item->property("path").toString() == u"Recipes/Pancakes.md"_s;
+        },
+        qobject_cast<QQuickItem *>(m_noteList.get()));
+    click(pancakes);
+    QTest::keyClick(m_window.get(), Qt::Key_Delete);
+    QTRY_VERIFY(confirm());
+    QVERIFY(QFileInfo::exists(m_root + u"/Recipes/Pancakes.md"_s));
+    click(confirm());
+    QTRY_VERIFY(!QFileInfo::exists(m_root + u"/Recipes/Pancakes.md"_s));
+
+    // A notebook: chosen in the sidebar, then Delete.
+    QTRY_VERIFY(!confirm());
+    click(entry(u"Places"_s));
+    QTest::keyClick(m_window.get(), Qt::Key_Delete);
+    QTRY_VERIFY(confirm());
+    QVERIFY(QFileInfo(m_root + u"/Ashfall/Places"_s).isDir());
+    click(confirm());
+    QTRY_VERIFY(!QFileInfo::exists(m_root + u"/Ashfall/Places"_s));
 }
 
 QTEST_MAIN(TestLists)

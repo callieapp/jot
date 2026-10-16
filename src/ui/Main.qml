@@ -435,6 +435,10 @@ ApplicationWindow {
             "label": qsTr("Settings")
         },
         {
+            "keys": ["Delete"],
+            "label": qsTr("Move the selected note or notebook to the trash")
+        },
+        {
             "keys": ["F1"],
             "label": qsTr("Keyboard shortcuts")
         },

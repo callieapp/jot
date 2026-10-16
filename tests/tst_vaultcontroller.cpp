@@ -40,6 +40,7 @@ private Q_SLOTS:
     void movesANoteToAnotherNotebook();
     void followsANotebookThatMovedThoughALinkCouldNotBeRewritten();
     void actsOnNotesThatAreNotShown();
+    void trashesANotebook();
     void suggestsLinksThatResolve();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
@@ -412,6 +413,29 @@ void TestVaultController::actsOnNotesThatAreNotShown()
     QVERIFY(m_vault->trashNote(u"Recipes/Sourdough.md"_s));
     QVERIFY(!QFileInfo::exists(m_root + u"/Recipes/Sourdough.md"_s));
     QCOMPARE(m_vault->current(), u"Welcome.md"_s);
+}
+
+void TestVaultController::trashesANotebook()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Characters/Soren.md"_s);
+    m_vault->notes()->setNotebook(u"Ashfall/Characters"_s);
+    m_settings->setCollapsedNotebooks({u"Ashfall/Characters"_s, u"Recipes"_s});
+    QCOMPARE(m_vault->notesInNotebook(u"Ashfall"_s), 4);
+
+    QVERIFY(m_vault->trashNotebook(u"Ashfall"_s));
+    QVERIFY(!QFileInfo::exists(m_root + u"/Ashfall"_s));
+    // Kept in the vault's own trash here, since the tests ask for it.
+    QVERIFY(QDir(m_root + u"/.jot/trash"_s).entryList(QDir::Dirs | QDir::NoDotAndDotDot).size() ==
+            1);
+    QCOMPARE(m_vault->current(), QString());
+    QCOMPARE(m_vault->notes()->notebook(), QString());
+    QCOMPARE(m_settings->collapsedNotebooks(), QStringList{u"Recipes"_s});
+    QVERIFY(!m_vault->index()->note(u"Ashfall/Pitch.md"_s));
+    QCOMPARE(m_vault->noteCount(), 4);
+
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not move.*"_s));
+    QVERIFY(!m_vault->trashNotebook(u".jot"_s));
 }
 
 void TestVaultController::switcherFindsByTitleAliasAndPath()

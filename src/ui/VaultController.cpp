@@ -636,6 +636,44 @@ bool VaultController::trashNote(const QString &path)
     return true;
 }
 
+bool VaultController::trashNotebook(const QString &path)
+{
+    if (!m_vault || !m_index || path.isEmpty())
+        return false;
+    const auto inside = [&path](const QString &other) {
+        return other == path || other.startsWith(path + u'/');
+    };
+    if (inside(m_current))
+        saveNow();
+    QStringList notes;
+    for (const NoteInfo &note : m_index->notesIn(path))
+        notes.append(note.path);
+    QString error;
+    if (!m_vault->trashFolder(path, &error)) {
+        qCWarning(lcVault) << "could not move" << path << "to the trash:" << error;
+        setProblem(tr("Could not move the notebook to the trash: %1").arg(error));
+        return false;
+    }
+    m_index->update(notes);
+    // Nothing goes on naming what is gone: the note shown, the list's notebook, the folds.
+    if (inside(m_current))
+        setCurrent({});
+    if (inside(m_notes.notebook()))
+        m_notes.setNotebook({});
+    QStringList collapsed = m_settings.collapsedNotebooks();
+    collapsed.removeIf(inside);
+    m_settings.setCollapsedNotebooks(collapsed);
+    if (m_watcher)
+        m_watcher->start();
+    reloadModels();
+    return true;
+}
+
+int VaultController::notesInNotebook(const QString &path) const
+{
+    return m_index ? int(m_index->notesIn(path).size()) : 0;
+}
+
 bool VaultController::setTask(const QString &path, bool task)
 {
     // Only the task key: a due date is the user's own, and comes back if it is a task again.

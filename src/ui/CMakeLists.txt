@@ -80,6 +80,7 @@ qt_add_qml_module(jotui
         ThemeEditor.qml
         Tip.qml
         TaskDetails.qml
+        TrashConfirm.qml
         TaskList.qml
         Toggle.qml
         UpdateDialog.qml

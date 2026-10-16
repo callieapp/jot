@@ -104,6 +104,10 @@ Rectangle {
                 root.showMenu(Vault.notes.pathAt(currentIndex), currentItem, Theme.space5,
                               currentItem.height / 2)
                 event.accepted = true
+            } else if (event.key === Qt.Key_Delete && currentItem && Vault.writable) {
+                // Delete asks first, as the menu's Move to trash does.
+                trashConfirm.askForNote(Vault.notes.pathAt(currentIndex))
+                event.accepted = true
             }
         }
 
@@ -314,78 +318,11 @@ Rectangle {
         MenuEntry {
             text: qsTr("Move to trash...")
             enabled: Vault.writable
-            onTriggered: {
-                trashConfirm.path = noteMenu.path
-                trashConfirm.open()
-            }
+            onTriggered: trashConfirm.askForNote(noteMenu.path)
         }
     }
 
-    // Asked, as the editor's Delete does, since a vault's own trash is out of sight.
-    Popup {
+    TrashConfirm {
         id: trashConfirm
-
-        property string path
-
-        anchors.centerIn: Overlay.overlay
-        width: 360
-        padding: Theme.space6
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-
-        Overlay.modal: Scrim {}
-
-        background: Rectangle {
-            radius: Theme.radiusXl
-            color: Theme.surface
-            border.color: Theme.border
-
-            SoftShadow {
-                anchors.fill: parent
-                radius: parent.radius
-            }
-        }
-
-        contentItem: Column {
-            spacing: Theme.space4
-
-            Text {
-                width: parent.width
-                wrapMode: Text.Wrap
-                text: qsTr("Move %1 to the trash?").arg(Vault.titleOf(trashConfirm.path))
-                color: Theme.text
-                font.family: Theme.displayFontFamily
-                font.pixelSize: Theme.textLg
-                font.weight: Theme.weightBold
-            }
-            Text {
-                width: parent.width
-                wrapMode: Text.Wrap
-                text: qsTr(
-                          "It goes to your desktop's trash, with its attachments. Where the desktop has none for this folder, it goes to the .jot/trash folder in your notes folder.")
-                color: Theme.textMuted
-                font.family: Theme.fontFamily
-                font.pixelSize: Theme.textSm
-            }
-            Row {
-                spacing: Theme.space2
-
-                StickerButton {
-                    objectName: "confirmTrash"
-                    text: qsTr("Move to trash")
-                    destructive: true
-                    armed: true
-                    onClicked: {
-                        Vault.trashNote(trashConfirm.path)
-                        trashConfirm.close()
-                    }
-                }
-                StickerButton {
-                    text: qsTr("Cancel")
-                    onClicked: trashConfirm.close()
-                }
-            }
-        }
     }
 }

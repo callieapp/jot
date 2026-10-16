@@ -92,6 +92,10 @@ public:
     Q_INVOKABLE bool trashCurrent();
     /// Moves the note at `path`, and its attachments, to the system trash.
     Q_INVOKABLE bool trashNote(const QString &path);
+    /// Moves the notebook at `path`, and everything in it, to the system trash.
+    Q_INVOKABLE bool trashNotebook(const QString &path);
+    /// How many notes the notebook at `path` holds, inside notebooks within it too.
+    Q_INVOKABLE int notesInNotebook(const QString &path) const;
     /// Makes the note at `path` a task, or no longer one. Its due date stays either way.
     Q_INVOKABLE bool setTask(const QString &path, bool task);
     /// Whether the note at `path` is a task, done or not.
