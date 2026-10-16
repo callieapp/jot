@@ -10,6 +10,8 @@ Menu {
     property real minimumWidth: 200
 
     padding: Theme.space2
+    // A submenu's own entry, in the parent menu, looks like the rest.
+    delegate: MenuEntry {}
 
     background: Rectangle {
         implicitWidth: root.minimumWidth

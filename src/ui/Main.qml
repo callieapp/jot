@@ -287,6 +287,7 @@ ApplicationWindow {
             Sidebar {
                 id: sidebar
 
+                onNoteMade: editor.editTitle()
                 visible: Vault.isOpen
                 anchors {
                     left: parent.left
@@ -307,6 +308,7 @@ ApplicationWindow {
             NoteList {
                 id: noteList
 
+                onTitleEditRequested: editor.editTitle()
                 visible: Vault.isOpen && !Vault.showingTodos
                 anchors {
                     left: sidebar.right

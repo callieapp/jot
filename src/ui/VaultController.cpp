@@ -92,6 +92,7 @@ bool VaultController::openPath(const QString &path)
         return false;
     }
     auto vault = std::make_unique<Vault>(*created);
+    vault->setSystemTrash(m_systemTrash);
     auto index = std::make_unique<VaultIndex>(*vault, m_indexPath);
     if (!index->open(&error)) {
         fail(tr("Could not open the index for %1: %2").arg(path, error));
@@ -614,19 +615,77 @@ void VaultController::resyncAfterRename(const QString &from, const QString &to)
 
 bool VaultController::trashCurrent()
 {
-    if (!m_vault || m_current.isEmpty())
+    return trashNote(m_current);
+}
+
+bool VaultController::trashNote(const QString &path)
+{
+    if (!m_vault || path.isEmpty())
         return false;
-    saveNow();
+    if (path == m_current)
+        saveNow();
     QString error;
-    const QString path = m_current;
     if (!m_vault->trashNote(path, &error)) {
         qCWarning(lcVault) << "could not move" << path << "to the trash:" << error;
         return false;
     }
     m_index->update({path});
-    setCurrent({});
+    if (path == m_current)
+        setCurrent({});
     reloadModels();
     return true;
+}
+
+bool VaultController::setTodo(const QString &path, bool todo)
+{
+    return rewriteNote(path, [todo](const QString &text) {
+        if (todo)
+            return std::optional(setFrontMatterKey(text, u"todo"_s, u"open"_s));
+        QString changed = setFrontMatterKey(text, u"todo"_s, {});
+        changed = setFrontMatterKey(changed, u"due"_s, {});
+        return std::optional(setFrontMatterKey(changed, u"done"_s, {}));
+    });
+}
+
+bool VaultController::isTodo(const QString &path) const
+{
+    const std::optional<NoteInfo> info = m_index ? m_index->note(path) : std::nullopt;
+    return info && !info->todo.isEmpty();
+}
+
+QString VaultController::linkTo(const QString &path) const
+{
+    if (!m_index || path.isEmpty())
+        return {};
+    // Wikilinks find notes by file name, so a name two notes share needs the path.
+    const QString name = Vault::titleFromPath(path);
+    const qsizetype sharing =
+        std::ranges::count_if(m_index->notesIn({}), [&](const NoteInfo &note) {
+            return Vault::titleFromPath(note.path).compare(name, Qt::CaseInsensitive) == 0;
+        });
+    return u"[["_s + (sharing > 1 ? path.chopped(3) : name) + u"]]"_s;
+}
+
+void VaultController::showInFiles(const QString &path) const
+{
+    if (!m_vault)
+        return;
+    const QString folder = path.endsWith(u".md"_s)
+                               ? (path.contains(u'/') ? path.section(u'/', 0, -2) : QString())
+                               : path;
+    QDesktopServices::openUrl(QUrl::fromLocalFile(m_vault->absolute(folder)));
+}
+
+QStringList VaultController::notebookPaths() const
+{
+    QStringList paths;
+    if (m_vault) {
+        for (const VaultEntry &entry : m_vault->entries()) {
+            if (entry.folder)
+                paths.append(entry.path);
+        }
+    }
+    return paths;
 }
 
 bool VaultController::follow(const QString &target, bool wiki)

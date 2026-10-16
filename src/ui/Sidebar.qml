@@ -12,6 +12,9 @@ Rectangle {
     /// The notebook whose name is being typed, or "".
     property string renamingPath
 
+    /// A note was made from a notebook's menu, and is shown; its title should take the typing.
+    signal noteMade
+
     /// Moves what was dropped, a note or a notebook, into the notebook at `path`.
     function dropInto(path, drop) {
         if (drop.formats.includes("application/x-jot-note")) {
@@ -179,6 +182,16 @@ Rectangle {
                         Vault.showingTodos = false
                         Vault.notes.notebook = path
                     }
+                    TapHandler {
+                        acceptedButtons: Qt.RightButton
+                        // At the click, which Wayland does not share as a cursor position.
+                        onTapped: eventPoint => {
+                            notebookMenu.path = notebook.path
+                            notebookMenu.popup(notebook, eventPoint.position.x,
+                                               eventPoint.position.y)
+                        }
+                    }
+
                     // "All notes" is the vault itself, which has no name to change.
                     onDoubleClicked: {
                         if (path !== "" && Vault.writable)
@@ -360,5 +373,40 @@ Rectangle {
         }
         width: 1
         color: Theme.hairline
+    }
+
+    MenuCard {
+        id: notebookMenu
+
+        /// The notebook it is for; "" is All notes, the vault itself.
+        property string path
+
+        MenuEntry {
+            text: qsTr("New note")
+            enabled: Vault.writable
+            onTriggered: {
+                Vault.showingTodos = false
+                Vault.notes.tag = ""
+                Vault.notes.notebook = notebookMenu.path
+                if (Vault.newNote() !== "")
+                    root.noteMade()
+            }
+        }
+        MenuEntry {
+            text: notebookMenu.path === "" ? qsTr("New notebook") : qsTr("New notebook inside")
+            enabled: Vault.writable
+            onTriggered: root.renamingPath = Vault.newNotebook(notebookMenu.path)
+        }
+        MenuEntry {
+            text: qsTr("Rename")
+            visible: notebookMenu.path !== ""
+            height: visible ? implicitHeight : 0
+            enabled: Vault.writable
+            onTriggered: root.renamingPath = notebookMenu.path
+        }
+        MenuEntry {
+            text: qsTr("Show in Files")
+            onTriggered: Vault.showInFiles(notebookMenu.path)
+        }
     }
 }

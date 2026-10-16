@@ -23,8 +23,9 @@ Q_IMPORT_QML_PLUGIN(Jot_UiPlugin)
 using namespace jot;
 using namespace Qt::StringLiterals;
 
-/// Drives the sidebar in a window: making and renaming notebooks by hand.
-class TestSidebar : public QObject
+/// Drives the sidebar and the note list in a window: making and renaming notebooks by hand,
+/// and the menus on notes and notebooks.
+class TestLists : public QObject
 {
     Q_OBJECT
 
@@ -38,8 +39,13 @@ private Q_SLOTS:
     void escapeKeepsTheOldName();
     void makesANotebookReadyToName();
     void dropsNotesAndNotebooksOnNotebooks();
+    void noteMenuMakesATodo();
+    void notebookMenuMakesANotebookInside();
 
 private:
+    /// The visible menu entry reading `text`, anywhere in the window.
+    QQuickItem *menuEntry(const QString &text) const;
+    void click(QQuickItem *item, Qt::MouseButton button = Qt::LeftButton);
     /// The sidebar entry labelled `label`, among those shown.
     QQuickItem *entry(const QString &label) const;
     QQuickItem *findItem(const std::function<bool(QQuickItem *)> &match,
@@ -54,10 +60,11 @@ private:
     std::unique_ptr<QQmlEngine> m_engine;
     std::unique_ptr<QQuickWindow> m_window;
     std::unique_ptr<QObject> m_sidebar;
+    std::unique_ptr<QObject> m_noteList;
     QString m_root;
 };
 
-void TestSidebar::init()
+void TestLists::init()
 {
     m_dir = std::make_unique<QTemporaryDir>();
     m_root = m_dir->filePath(u"Notes"_s);
@@ -81,18 +88,27 @@ void TestSidebar::init()
     component.loadFromModule("Jot.Ui", "Sidebar");
     m_sidebar.reset(component.create());
     QVERIFY2(m_sidebar, qPrintable(component.errorString()));
+    QQmlComponent list(m_engine.get());
+    list.loadFromModule("Jot.Ui", "NoteList");
+    m_noteList.reset(list.create());
+    QVERIFY2(m_noteList, qPrintable(list.errorString()));
     m_window = std::make_unique<QQuickWindow>();
-    m_window->resize(320, 700);
+    m_window->resize(640, 700);
     auto *item = qobject_cast<QQuickItem *>(m_sidebar.get());
     item->setParentItem(m_window->contentItem());
-    item->setSize(m_window->size());
+    item->setSize({320, 700});
+    auto *notes = qobject_cast<QQuickItem *>(m_noteList.get());
+    notes->setParentItem(m_window->contentItem());
+    notes->setPosition({320, 0});
+    notes->setSize({320, 700});
     m_window->show();
     QVERIFY(QTest::qWaitForWindowExposed(m_window.get()));
 }
 
-void TestSidebar::cleanup()
+void TestLists::cleanup()
 {
     m_sidebar.reset();
+    m_noteList.reset();
     m_window.reset();
     m_engine.reset();
     VaultController::setInstance(nullptr);
@@ -100,8 +116,8 @@ void TestSidebar::cleanup()
     SettingsForeign::s_instance = nullptr;
 }
 
-QQuickItem *TestSidebar::findItem(const std::function<bool(QQuickItem *)> &match,
-                                  QQuickItem *from) const
+QQuickItem *TestLists::findItem(const std::function<bool(QQuickItem *)> &match,
+                                QQuickItem *from) const
 {
     if (!from)
         from = qobject_cast<QQuickItem *>(m_sidebar.get());
@@ -114,27 +130,43 @@ QQuickItem *TestSidebar::findItem(const std::function<bool(QQuickItem *)> &match
     return nullptr;
 }
 
-QQuickItem *TestSidebar::entry(const QString &label) const
+QQuickItem *TestLists::entry(const QString &label) const
 {
     return findItem([&label](QQuickItem *item) {
         return item->isVisible() && item->property("label").toString() == label;
     });
 }
 
-void TestSidebar::type(const QString &text)
+QQuickItem *TestLists::menuEntry(const QString &text) const
+{
+    return findItem(
+        [&text](QQuickItem *item) {
+            return item->isVisible() && item->inherits("QQuickMenuItem") &&
+                   item->property("text").toString() == text;
+        },
+        m_window->contentItem());
+}
+
+void TestLists::click(QQuickItem *item, Qt::MouseButton button)
+{
+    QTest::mouseClick(m_window.get(), button, {},
+                      item->mapToScene({item->width() / 2, item->height() / 2}).toPoint());
+}
+
+void TestLists::type(const QString &text)
 {
     for (const QChar c : text)
         QTest::keyClick(m_window.get(), c.toLatin1());
 }
 
-void TestSidebar::leavesRoomUnderTheTitleBar()
+void TestLists::leavesRoomUnderTheTitleBar()
 {
     QQuickItem *todos = entry(u"To-dos"_s);
     QVERIFY(todos);
     QVERIFY(todos->mapToScene({0, 0}).y() >= ThemeController::instance()->space3());
 }
 
-void TestSidebar::renamesANotebookByDoubleClick()
+void TestLists::renamesANotebookByDoubleClick()
 {
     QQuickItem *places = entry(u"Places"_s);
     QVERIFY(places);
@@ -151,7 +183,7 @@ void TestSidebar::renamesANotebookByDoubleClick()
     QTRY_VERIFY(entry(u"Harbor"_s));
 }
 
-void TestSidebar::escapeKeepsTheOldName()
+void TestLists::escapeKeepsTheOldName()
 {
     QQuickItem *places = entry(u"Places"_s);
     const QPoint centre = places->mapToScene({places->width() / 2, places->height() / 2}).toPoint();
@@ -163,7 +195,7 @@ void TestSidebar::escapeKeepsTheOldName()
     QVERIFY(QFileInfo(m_root + u"/Ashfall/Places"_s).isDir());
 }
 
-void TestSidebar::makesANotebookReadyToName()
+void TestLists::makesANotebookReadyToName()
 {
     QQuickItem *add =
         findItem([](QQuickItem *item) { return item->objectName() == u"addNotebook"_s; });
@@ -177,7 +209,7 @@ void TestSidebar::makesANotebookReadyToName()
     QVERIFY(!QFileInfo::exists(m_root + u"/New notebook"_s));
 }
 
-void TestSidebar::drop(QQuickItem *target, const QString &format, const QString &data)
+void TestLists::drop(QQuickItem *target, const QString &format, const QString &data)
 {
     // Rows made again after a move are placed a moment later; every row sits below To-dos.
     QTRY_VERIFY(target->mapToScene({0, 0}).y() > 0);
@@ -192,7 +224,7 @@ void TestSidebar::drop(QQuickItem *target, const QString &format, const QString 
     QCoreApplication::sendEvent(m_window.get(), &dropped);
 }
 
-void TestSidebar::dropsNotesAndNotebooksOnNotebooks()
+void TestLists::dropsNotesAndNotebooksOnNotebooks()
 {
     QTest::failOnWarning(QRegularExpression(u"\\.qml:"_s));
     drop(entry(u"Inbox"_s), u"application/x-jot-note"_s, u"Recipes/Pancakes.md"_s);
@@ -207,5 +239,39 @@ void TestSidebar::dropsNotesAndNotebooksOnNotebooks()
     QTRY_VERIFY(QFileInfo(m_root + u"/Recipes"_s).isDir());
 }
 
-QTEST_MAIN(TestSidebar)
-#include "tst_sidebar.moc"
+void TestLists::noteMenuMakesATodo()
+{
+    // Looked up each time, since the list makes its rows again when a note changes.
+    const auto pancakes = [this] {
+        return findItem(
+            [](QQuickItem *item) {
+                return item->isVisible() &&
+                       item->property("path").toString() == u"Recipes/Pancakes.md"_s;
+            },
+            qobject_cast<QQuickItem *>(m_noteList.get()));
+    };
+    QVERIFY(pancakes());
+    click(pancakes(), Qt::RightButton);
+    QTRY_VERIFY(menuEntry(u"Make a to-do"_s));
+    click(menuEntry(u"Make a to-do"_s));
+    QTRY_VERIFY(m_vault->isTodo(u"Recipes/Pancakes.md"_s));
+
+    // Opened again, it offers the other way.
+    QTRY_VERIFY(pancakes());
+    click(pancakes(), Qt::RightButton);
+    QTRY_VERIFY(menuEntry(u"Not a to-do"_s));
+}
+
+void TestLists::notebookMenuMakesANotebookInside()
+{
+    click(entry(u"Recipes"_s), Qt::RightButton);
+    QTRY_VERIFY(menuEntry(u"New notebook inside"_s));
+    click(menuEntry(u"New notebook inside"_s));
+    QTRY_COMPARE(m_sidebar->property("renamingPath").toString(), u"Recipes/New notebook"_s);
+    type(u"Breads"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QTRY_VERIFY(QFileInfo(m_root + u"/Recipes/Breads"_s).isDir());
+}
+
+QTEST_MAIN(TestLists)
+#include "tst_lists.moc"
