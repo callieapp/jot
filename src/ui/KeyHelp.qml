@@ -13,7 +13,9 @@ Popup {
 
     anchors.centerIn: Overlay.overlay
     width: 620
-    height: Math.min(implicitHeight, (parent ? parent.height : 800) - 2 * Theme.space6)
+    // The overlay, not the parent: in a LazyPopup the parent is a loader with no size.
+    height: Math.min(implicitHeight, (Overlay.overlay ? Overlay.overlay.height : 800) - 2
+                     * Theme.space6)
     padding: Theme.space6
     modal: true
     focus: true

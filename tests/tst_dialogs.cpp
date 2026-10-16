@@ -50,25 +50,20 @@ void TestDialogs::initTestCase()
 
 void TestDialogs::opensCleanly_data()
 {
-    QTest::addColumn<QString>("name");
-    QTest::addColumn<QVariantMap>("properties");
-    const QVariantList shortcuts{
-        QVariantMap{{u"keys"_s, QStringList{u"Ctrl+N"_s}}, {u"label"_s, u"New note"_s}},
-        QVariantMap{{u"keys"_s, QStringList{u"Ctrl+S"_s}},
-                    {u"label"_s, u"Save now"_s},
-                    {u"inNote"_s, true}}};
-    QTest::newRow("settings") << u"SettingsDialog"_s << QVariantMap{};
-    QTest::newRow("shortcuts") << u"KeyHelp"_s << QVariantMap{{u"actions"_s, shortcuts}};
-    QTest::newRow("about") << u"AboutDialog"_s << QVariantMap{};
-    QTest::newRow("what's new") << u"WhatsNewDialog"_s << QVariantMap{};
-    QTest::newRow("update") << u"UpdateDialog"_s << QVariantMap{};
-    QTest::newRow("theme colors") << u"ThemeEditor"_s << QVariantMap{};
+    // Each as Main.qml makes it, with what it is given there.
+    QTest::addColumn<QString>("dialog");
+    QTest::newRow("settings") << u"SettingsDialog {}"_s;
+    QTest::newRow("shortcuts") << u"KeyHelp { actions: [{keys: ['Ctrl+N'], label: 'New note'}, "
+                                  "{keys: ['Ctrl+S'], label: 'Save now', inNote: true}] }"_s;
+    QTest::newRow("about") << u"AboutDialog {}"_s;
+    QTest::newRow("what's new") << u"WhatsNewDialog {}"_s;
+    QTest::newRow("update") << u"UpdateDialog {}"_s;
+    QTest::newRow("theme colors") << u"ThemeEditor {}"_s;
 }
 
 void TestDialogs::opensCleanly()
 {
-    QFETCH(QString, name);
-    QFETCH(QVariantMap, properties);
+    QFETCH(QString, dialog);
     QTest::failOnWarning();
 
     QQuickWindow window;
@@ -77,15 +72,19 @@ void TestDialogs::opensCleanly()
     window.show();
     QVERIFY(QTest::qWaitForWindowExposed(&window));
 
+    // In a LazyPopup and opened through it, as the app does, since that is what places it.
     QQmlEngine engine;
     QQmlComponent component(&engine);
-    component.loadFromModule("Jot.Ui", name);
-    properties.insert(u"parent"_s, QVariant::fromValue(window.contentItem()));
-    std::unique_ptr<QObject> dialog(component.createWithInitialProperties(properties));
-    QVERIFY2(dialog, qPrintable(component.errorString()));
-    QMetaObject::invokeMethod(dialog.get(), "open");
-    QTRY_VERIFY(dialog->property("opened").toBool());
-    QVERIFY(dialog->property("height").toReal() > 100);
+    component.setData(u"import Jot.Ui\nLazyPopup { sourceComponent: %1 }\n"_s.arg(dialog).toUtf8(),
+                      QUrl(u"qrc:/test.qml"_s));
+    std::unique_ptr<QObject> lazy(component.create());
+    QVERIFY2(lazy, qPrintable(component.errorString()));
+    qobject_cast<QQuickItem *>(lazy.get())->setParentItem(window.contentItem());
+    QMetaObject::invokeMethod(lazy.get(), "open");
+    QTRY_VERIFY(lazy->property("opened").toBool());
+    auto *popup = lazy->property("popup").value<QObject *>();
+    QVERIFY(popup->property("height").toReal() > 100);
+    QVERIFY(popup->property("width").toReal() > 100);
 }
 
 QTEST_MAIN(TestDialogs)
