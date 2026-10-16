@@ -69,6 +69,7 @@ qt_add_qml_module(jotui
         Logo.qml
         MenuCard.qml
         MenuEntry.qml
+        ModeSwitch.qml
         NoteEditor.qml
         NoteList.qml
         PickerButton.qml
