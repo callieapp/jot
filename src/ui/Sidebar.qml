@@ -14,9 +14,9 @@ Rectangle {
 
     /// Moves what was dropped, a note or a notebook, into the notebook at `path`.
     function dropInto(path, drop) {
-        if (drop.hasFormat("application/x-jot-note")) {
+        if (drop.formats.includes("application/x-jot-note")) {
             Vault.moveNoteTo(drop.getDataAsString("application/x-jot-note"), path)
-        } else if (drop.hasFormat("application/x-jot-notebook")) {
+        } else if (drop.formats.includes("application/x-jot-notebook")) {
             Vault.moveNotebook(drop.getDataAsString("application/x-jot-notebook"), path)
         }
         drop.accept(Qt.MoveAction)
