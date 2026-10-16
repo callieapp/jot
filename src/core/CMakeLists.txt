@@ -31,6 +31,8 @@ add_library(jotcore STATIC
     LogFile.cpp
     jot/Color.h
     Color.cpp
+    jot/CodeColors.h
+    CodeColors.cpp
     jot/Base16.h
     Base16.cpp
     jot/ThemeSpec.h

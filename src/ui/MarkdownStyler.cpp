@@ -194,6 +194,15 @@ void MarkdownStyler::setCursorPosition(int position)
     scheduleImages();
 }
 
+void MarkdownStyler::setFontFamily(const QString &family)
+{
+    if (m_fontFamily == family)
+        return;
+    m_fontFamily = family;
+    applyLook();
+    Q_EMIT fontFamilyChanged();
+}
+
 void MarkdownStyler::setPixelSize(int size)
 {
     if (m_pixelSize == size)
@@ -250,8 +259,8 @@ void MarkdownStyler::applyLook()
     look.faint = theme.textFaint();
     look.accent = theme.accent();
     look.codeBackground = theme.surfaceAlt();
-    look.dark = theme.dark();
-    look.family = theme.fontFamily();
+    look.code = codeColors(theme.spec());
+    look.family = m_fontFamily.isEmpty() ? theme.fontFamily() : m_fontFamily;
     look.monoFamily = theme.monoFontFamily();
     look.displayFamily = theme.displayFontFamily();
     look.pixelSize = m_pixelSize;

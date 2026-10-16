@@ -24,6 +24,8 @@ class Settings : public QObject
     /// Looks for newer releases once a day.
     Q_PROPERTY(bool checkForUpdates READ checkForUpdates WRITE setCheckForUpdates NOTIFY
                    checkForUpdatesChanged)
+    /// The font notes are written in: "" for the theme's, "serif" or "mono".
+    Q_PROPERTY(QString noteFont READ noteFont WRITE setNoteFont NOTIFY noteFontChanged)
     /// Notes show their Markdown as written rather than styled.
     Q_PROPERTY(bool sourceMode READ sourceMode WRITE setSourceMode NOTIFY sourceModeChanged)
     /// The version that ran last, so a new one can say what changed.
@@ -47,6 +49,9 @@ public:
     void setCollapsedNotebooks(const QStringList &paths);
     [[nodiscard]] bool checkForUpdates() const { return m_checkForUpdates; }
     void setCheckForUpdates(bool check);
+    [[nodiscard]] static QStringList noteFonts();
+    [[nodiscard]] QString noteFont() const { return m_noteFont; }
+    void setNoteFont(const QString &font);
     [[nodiscard]] bool sourceMode() const { return m_sourceMode; }
     void setSourceMode(bool source);
     [[nodiscard]] QString lastSeenVersion() const { return m_lastSeenVersion; }
@@ -62,6 +67,7 @@ Q_SIGNALS:
     void noteSortChanged();
     void collapsedNotebooksChanged();
     void checkForUpdatesChanged();
+    void noteFontChanged();
     void sourceModeChanged();
     void lastSeenVersionChanged();
 
@@ -72,6 +78,7 @@ private:
     QString m_noteSort;
     QStringList m_collapsedNotebooks;
     bool m_checkForUpdates = true;
+    QString m_noteFont;
     bool m_sourceMode = false;
     QString m_lastSeenVersion;
 };

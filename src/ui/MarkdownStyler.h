@@ -24,6 +24,8 @@ class MarkdownStyler : public QObject
     Q_PROPERTY(QQuickTextDocument *document READ document WRITE setDocument NOTIFY documentChanged)
     Q_PROPERTY(
         int cursorPosition READ cursorPosition WRITE setCursorPosition NOTIFY cursorPositionChanged)
+    /// The editor's body font, which images on their own lines are measured in.
+    Q_PROPERTY(QString fontFamily READ fontFamily WRITE setFontFamily NOTIFY fontFamilyChanged)
     /// The editor's body text size, which headings are scaled from.
     Q_PROPERTY(int pixelSize READ pixelSize WRITE setPixelSize NOTIFY pixelSizeChanged)
     /// The width of the text, which images shown inline fit within.
@@ -44,6 +46,8 @@ public:
     void setDocument(QQuickTextDocument *document);
     [[nodiscard]] int cursorPosition() const { return m_cursorPosition; }
     void setCursorPosition(int position);
+    [[nodiscard]] QString fontFamily() const { return m_fontFamily; }
+    void setFontFamily(const QString &family);
     [[nodiscard]] int pixelSize() const { return m_pixelSize; }
     void setPixelSize(int size);
     [[nodiscard]] int width() const { return m_width; }
@@ -74,6 +78,7 @@ public:
 Q_SIGNALS:
     void documentChanged();
     void cursorPositionChanged();
+    void fontFamilyChanged();
     void pixelSizeChanged();
     void widthChanged();
     void imagesChanged();
@@ -90,6 +95,7 @@ private:
     QPointer<QQuickTextDocument> m_document;
     MarkdownHighlighter *m_highlighter = nullptr;
     int m_cursorPosition = 0;
+    QString m_fontFamily;
     int m_pixelSize = 16;
     int m_width = 600;
     bool m_imagesPending = false;

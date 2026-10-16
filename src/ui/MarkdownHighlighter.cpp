@@ -76,7 +76,7 @@ MarkdownHighlighter::~MarkdownHighlighter() = default;
 void MarkdownHighlighter::setLook(const Look &look)
 {
     m_look = look;
-    m_code->setDark(look.dark);
+    m_code->setColors(look.code, look.boldWeight);
     rehighlight();
 }
 

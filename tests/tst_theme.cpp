@@ -1,3 +1,5 @@
+#include "jot/CodeColors.h"
+#include "jot/Color.h"
 #include "jot/ThemeLoader.h"
 
 #include <QColor>
@@ -48,6 +50,8 @@ private Q_SLOTS:
     void lowInkContrastIsAWarning();
     void shadowOpacityIsBounded();
     void weightsAreReadAndBounded();
+    void editorSectionIsRead();
+    void codeColorsComeFromTheAccent();
 };
 
 void TestTheme::defaultThemeIsCompleteAndClean()
@@ -229,6 +233,41 @@ void TestTheme::weightsAreReadAndBounded()
     const ThemeLoadResult heavy = parse("[type]\nweight-bold = 1000\n");
     QVERIFY(!heavy.ok());
     QVERIFY(anyContains(heavy.errors, "type.weight-bold"));
+}
+
+void TestTheme::editorSectionIsRead()
+{
+    const ThemeLoadResult result =
+        parse("[editor]\nfamily = \"Literata\"\nkeyword = \"#ff0000\"\ncomment = \"#00ff00\"\n");
+    QVERIFY(result.ok());
+    QCOMPARE(result.theme.editor.family, QStringLiteral("Literata"));
+    QCOMPARE(result.theme.editor.keyword, QColor("#ff0000"));
+    QVERIFY(!result.theme.editor.string.isValid());
+    QVERIFY(ThemeLoader::defaultTheme().editor.family.isEmpty());
+
+    QVERIFY(!parse("[editor]\nstring = \"green\"\n").ok());
+    QVERIFY(anyContains(parse("[editor]\nsize = 3\n").warnings, "editor.size"));
+}
+
+void TestTheme::codeColorsComeFromTheAccent()
+{
+    ThemeSpec theme = ThemeLoader::defaultTheme();
+    theme.editor.comment = QColor("#123456");
+    const CodeColors colors = codeColors(theme);
+    QCOMPARE(colors.keyword, theme.colors.accent);
+    QCOMPARE(colors.comment, QColor("#123456"));
+    // The others turn the accent's hue, keeping its lightness, so they sit with it.
+    const QList<QColor> worked{colors.string, colors.number, colors.type};
+    for (const QColor &each : worked) {
+        QVERIFY(each != theme.colors.accent);
+        QVERIFY(std::abs(color::toOklch(each).lightness -
+                         color::toOklch(theme.colors.accent).lightness) < 0.02);
+    }
+    QVERIFY(colors.string != colors.number && colors.number != colors.type);
+
+    // A grey accent still gives code some color.
+    theme.colors.accent = QColor("#888888");
+    QVERIFY(color::toOklch(codeColors(theme).string).chroma > 0.05);
 }
 
 QTEST_GUILESS_MAIN(TestTheme)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "jot/CodeColors.h"
+
 #include <KSyntaxHighlighting/AbstractHighlighter>
 #include <KSyntaxHighlighting/State>
 
@@ -12,6 +14,7 @@ namespace jot {
 
 /// Colors the lines of fenced code blocks by their language, through KSyntaxHighlighting,
 /// one line at a time so the Markdown highlighter can carry the parser along its blocks.
+/// The colors are the app theme's, not KSyntaxHighlighting's own themes.
 class CodeHighlighter : public KSyntaxHighlighting::AbstractHighlighter
 {
 public:
@@ -33,8 +36,8 @@ public:
 
     CodeHighlighter();
 
-    /// Colors for a dark or a light editor.
-    void setDark(bool dark);
+    /// The colors for each kind of word, and the weight keywords are drawn in.
+    void setColors(const CodeColors &colors, int boldWeight);
 
     /// The formats for `text`, a line of code in `language`, starting from `state`, which
     /// becomes the state after the line. Nothing for a language it does not know.
@@ -47,7 +50,8 @@ protected:
 private:
     QList<Span> m_spans;
     QString m_language;
-    bool m_dark = true;
+    CodeColors m_colors;
+    int m_boldWeight = 700;
 };
 
 } // namespace jot

@@ -53,6 +53,8 @@ void TestMarkdownHighlighter::init()
     m_look.faint = QColor(u"#777777"_s);
     m_look.accent = QColor(u"#f08fb8"_s);
     m_look.codeBackground = QColor(u"#333333"_s);
+    m_look.code = {QColor(u"#ff0001"_s), QColor(u"#00ff02"_s), QColor(u"#0000f3"_s),
+                   QColor(u"#ffff04"_s), QColor(u"#00fff5"_s)};
     m_look.monoFamily = u"Mono Sample"_s;
     m_look.displayFamily = u"Display Sample"_s;
     m_look.pixelSize = 16;
@@ -182,6 +184,14 @@ void TestMarkdownHighlighter::codeIsColoredByItsLanguage()
     cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
     cursor.insertText(u"python"_s);
     QVERIFY(colored(u"int y"_s));
+
+    // The theme's code colors, keywords bold and comments italic.
+    setText(u"```cpp\nreturn 42; // why\n```\n"_s);
+    QCOMPARE(formatAt(find(u"return"_s)).foreground().color(), m_look.code.keyword);
+    QCOMPARE(formatAt(find(u"return"_s)).fontWeight(), m_look.boldWeight);
+    QCOMPARE(formatAt(find(u"42"_s)).foreground().color(), m_look.code.number);
+    QCOMPARE(formatAt(find(u"why"_s)).foreground().color(), m_look.code.comment);
+    QVERIFY(formatAt(find(u"why"_s)).fontItalic());
 
     // Short names work through their file extension.
     setText(u"```py\ndef go():\n```\n"_s);

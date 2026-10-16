@@ -1,5 +1,7 @@
 #pragma once
 
+#include "jot/CodeColors.h"
+
 #include <QColor>
 #include <QHash>
 #include <QSize>
@@ -31,8 +33,8 @@ public:
         QColor faint;
         QColor accent;
         QColor codeBackground;
-        /// Code is colored for a dark editor, or a light one.
-        bool dark = true;
+        /// The colors code is highlighted in.
+        CodeColors code;
         QString family;
         QString monoFamily;
         QString displayFamily;
