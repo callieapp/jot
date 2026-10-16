@@ -35,6 +35,17 @@
   </categories>
 
   <releases>
+    <release version="0.0.4" date="2026-10-15">
+      <description>
+        <ul>
+          <li>Lists carry on as you type: Return starts the next bullet, number or unticked box, Return on an empty item ends the list, and Tab and Shift+Tab nest and unnest items. Shift+Return breaks the line without a new item.</li>
+          <li>Tables: the format bar's table button adds one, or lines up the one you are in. Tab and Shift+Tab move between cells, padding them so the columns align; Tab in the last cell and Return add a row, and Return on an empty last row ends the table. Tables show in a monospace font so the columns line up on screen too.</li>
+          <li>Typing [[ offers your notes as you go, by title, alias or folder. Arrows choose one, Return or Tab puts it in and closes the link, and Escape puts the list away. When two notes share a title, the link names its folder too.</li>
+          <li>Ctrl+/ or the Source button shows a note's Markdown exactly as written, in the monospace font, with nothing folded away; again brings the styling back. Jot remembers which you prefer.</li>
+          <li>Code blocks are colored by their language, named after the opening fence ( python ,  rust ,  sh  and hundreds more), through KDE's syntax highlighting.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.0.3" date="2026-10-15">
       <description>
         <ul>
