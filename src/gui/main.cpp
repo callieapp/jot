@@ -50,8 +50,8 @@ int main(int argc, char *argv[])
     QCommandLineOption noteOption(
         u"note"_s, u"With --vault: show this note, by its path in the vault."_s, u"path"_s);
     parser.addOption(noteOption);
-    QCommandLineOption todosOption(u"todos"_s, u"With --vault: show the to-dos."_s);
-    parser.addOption(todosOption);
+    QCommandLineOption tasksOption(u"tasks"_s, u"With --vault: show the tasks."_s);
+    parser.addOption(tasksOption);
 #ifdef JOT_LIVE_QML
     QCommandLineOption liveOption(
         u"live-qml"_s,
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         vault.setCurrent(parser.value(noteOption));
-        vault.setShowingTodos(parser.isSet(todosOption));
+        vault.setShowingTasks(parser.isSet(tasksOption));
     } else {
         vault.openLast();
     }

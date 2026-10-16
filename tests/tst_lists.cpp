@@ -39,7 +39,7 @@ private Q_SLOTS:
     void escapeKeepsTheOldName();
     void makesANotebookReadyToName();
     void dropsNotesAndNotebooksOnNotebooks();
-    void noteMenuMakesATodo();
+    void noteMenuMakesATask();
     void notebookMenuMakesANotebookInside();
     void trashAsksFirst();
 
@@ -163,9 +163,9 @@ void TestLists::type(const QString &text)
 
 void TestLists::leavesRoomUnderTheTitleBar()
 {
-    QQuickItem *todos = entry(u"To-dos"_s);
-    QVERIFY(todos);
-    QVERIFY(todos->mapToScene({0, 0}).y() >= ThemeController::instance()->space3());
+    QQuickItem *tasks = entry(u"Tasks"_s);
+    QVERIFY(tasks);
+    QVERIFY(tasks->mapToScene({0, 0}).y() >= ThemeController::instance()->space3());
 }
 
 void TestLists::renamesANotebookByDoubleClick()
@@ -213,7 +213,7 @@ void TestLists::makesANotebookReadyToName()
 
 void TestLists::drop(QQuickItem *target, const QString &format, const QString &data)
 {
-    // Rows made again after a move are placed a moment later; every row sits below To-dos.
+    // Rows made again after a move are placed a moment later; every row sits below Tasks.
     QTRY_VERIFY(target->mapToScene({0, 0}).y() > 0);
     QMimeData mime;
     mime.setData(format, data.toUtf8());
@@ -241,7 +241,7 @@ void TestLists::dropsNotesAndNotebooksOnNotebooks()
     QTRY_VERIFY(QFileInfo(m_root + u"/Recipes"_s).isDir());
 }
 
-void TestLists::noteMenuMakesATodo()
+void TestLists::noteMenuMakesATask()
 {
     // Looked up each time, since the list makes its rows again when a note changes.
     const auto pancakes = [this] {
@@ -254,14 +254,14 @@ void TestLists::noteMenuMakesATodo()
     };
     QVERIFY(pancakes());
     click(pancakes(), Qt::RightButton);
-    QTRY_VERIFY(menuEntry(u"Make a to-do"_s));
-    click(menuEntry(u"Make a to-do"_s));
-    QTRY_VERIFY(m_vault->isTodo(u"Recipes/Pancakes.md"_s));
+    QTRY_VERIFY(menuEntry(u"Make a task"_s));
+    click(menuEntry(u"Make a task"_s));
+    QTRY_VERIFY(m_vault->isTask(u"Recipes/Pancakes.md"_s));
 
     // Opened again, it offers the other way.
     QTRY_VERIFY(pancakes());
     click(pancakes(), Qt::RightButton);
-    QTRY_VERIFY(menuEntry(u"Not a to-do"_s));
+    QTRY_VERIFY(menuEntry(u"Not a task"_s));
 }
 
 void TestLists::notebookMenuMakesANotebookInside()

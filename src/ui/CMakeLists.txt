@@ -33,8 +33,8 @@ qt_add_qml_module(jotui
         NoteListModel.cpp
         SwitcherModel.h
         SwitcherModel.cpp
-        TodoModel.h
-        TodoModel.cpp
+        TaskModel.h
+        TaskModel.cpp
         VaultController.h
         VaultController.cpp
         ReleaseInfo.h
@@ -77,8 +77,8 @@ qt_add_qml_module(jotui
         SuggestionPopup.qml
         ThemeEditor.qml
         Tip.qml
-        TodoDetails.qml
-        TodoList.qml
+        TaskDetails.qml
+        TaskList.qml
         Toggle.qml
         UpdateDialog.qml
         Welcome.qml

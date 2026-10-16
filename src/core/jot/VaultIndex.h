@@ -19,8 +19,8 @@ struct NoteInfo
     QString title;
     QStringList tags;
     QStringList aliases;
-    /// "open", "done" or empty for a note that is not a to-do.
-    QString todo;
+    /// "open", "done" or empty for a note that is not a task.
+    QString task;
     QString due;
     QString created;
     QString type;
@@ -63,18 +63,18 @@ struct SearchHit
     qint64 modified = 0;
 };
 
-/// Whether a to-do due on `due`, as front matter writes it (a date, or a date and time), is
+/// Whether a task due on `due`, as front matter writes it (a date, or a date and time), is
 /// past due on `today`. A due that is not a date never is.
 [[nodiscard]] bool isOverdue(const QString &due, const QDate &today);
 
 /// What Jot knows about a vault's notes, kept in SQLite for search, links, tags and
-/// to-dos. It is a cache: deleting it loses nothing, and refresh() rebuilds it from the
+/// tasks. It is a cache: deleting it loses nothing, and refresh() rebuilds it from the
 /// files. It lives outside the vault, so syncing a vault never syncs its index.
 class VaultIndex
 {
 public:
     /// Raised whenever what the index stores changes shape; an older index is rebuilt.
-    static constexpr int kSchema = 2;
+    static constexpr int kSchema = 3;
 
     explicit VaultIndex(Vault vault, QString databasePath = {});
     ~VaultIndex();
@@ -99,7 +99,7 @@ public:
     [[nodiscard]] QHash<QString, int> noteCounts() const;
 
     /// Notes matching `query`: words, each matched at the start of a word, plus any of
-    /// `tag:name` (with its nested tags), `in:folder`, `todo:open`, `todo:done` and
+    /// `tag:name` (with its nested tags), `in:folder`, `task:open`, `task:done` and
     /// `type:name`. Best matches first, titles counting most.
     [[nodiscard]] QList<SearchHit> search(const QString &query, int limit = 50) const;
 
@@ -120,8 +120,8 @@ public:
     [[nodiscard]] QStringList tagged(const QString &tag) const;
     /// Unticked checkboxes across the vault, note by note.
     [[nodiscard]] QList<NoteTask> openTasks() const;
-    /// Notes whose front matter makes them to-dos that are still open, soonest due first.
-    [[nodiscard]] QList<NoteInfo> openTodoNotes() const;
+    /// Notes whose front matter makes them tasks that are still open, soonest due first.
+    [[nodiscard]] QList<NoteInfo> openTaskNotes() const;
 
 private:
     bool createSchema(QString *error);

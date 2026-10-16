@@ -17,7 +17,7 @@ Rectangle {
         noteMenu.path = path
         noteMenu.folder = Vault.notebookOf(path)
         noteMenu.notebooks = [""].concat(Vault.notebookPaths())
-        noteMenu.todo = Vault.isTodo(path)
+        noteMenu.task = Vault.isTask(path)
         noteMenu.popup(item, x, y)
     }
 
@@ -243,7 +243,7 @@ Rectangle {
 
         property string path
         property var notebooks: []
-        property bool todo: false
+        property bool task: false
         property string folder
 
         MenuEntry {
@@ -292,9 +292,9 @@ Rectangle {
             }
         }
         MenuEntry {
-            text: noteMenu.todo ? qsTr("Not a to-do") : qsTr("Make a to-do")
+            text: noteMenu.task ? qsTr("Not a task") : qsTr("Make a task")
             enabled: Vault.writable
-            onTriggered: Vault.setTodo(noteMenu.path, !noteMenu.todo)
+            onTriggered: Vault.setTask(noteMenu.path, !noteMenu.task)
         }
         MenuEntry {
             text: qsTr("Move to trash...")

@@ -453,12 +453,12 @@ void TestMarkdownEdit::completesWikilinks()
 void TestMarkdownEdit::setsFrontMatterKeepingTheSelection()
 {
     const QString note = u"Buy milk.\n"_s;
-    const Edit made = setKey(note, 4, 8, u"todo"_s, u"open"_s);
-    QCOMPARE(applied(note, made), u"---\ntodo: open\n---\nBuy [milk].\n"_s);
+    const Edit made = setKey(note, 4, 8, u"task"_s, u"open"_s);
+    QCOMPARE(applied(note, made), u"---\ntask: open\n---\nBuy [milk].\n"_s);
 
-    const QString todo = u"---\ntodo: open\ndue: 2026-10-20\n---\nBuy milk.\n"_s;
-    const Edit dropped = setKey(todo, 37, 37, u"due"_s, QVariant());
-    QCOMPARE(applied(todo, dropped), u"---\ntodo: open\n---\nBu|y milk.\n"_s);
+    const QString task = u"---\ntask: open\ndue: 2026-10-20\n---\nBuy milk.\n"_s;
+    const Edit dropped = setKey(task, 37, 37, u"due"_s, QVariant());
+    QCOMPARE(applied(task, dropped), u"---\ntask: open\n---\nBu|y milk.\n"_s);
 }
 
 void TestMarkdownEdit::editsAreAsSmallAsTheyCanBe()

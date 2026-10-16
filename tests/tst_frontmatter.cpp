@@ -134,9 +134,9 @@ void TestFrontMatter::keepsABlockListABlockList()
 
 void TestFrontMatter::givesFrontMatterToANoteWithout()
 {
-    QCOMPARE(jot::setFrontMatterKey(u"# Hi\n"_s, u"todo"_s, u"open"_s),
-             u"---\ntodo: open\n---\n# Hi\n"_s);
-    QCOMPARE(jot::setFrontMatterKey(u"# Hi\n"_s, u"todo"_s, QVariant()), u"# Hi\n"_s);
+    QCOMPARE(jot::setFrontMatterKey(u"# Hi\n"_s, u"task"_s, u"open"_s),
+             u"---\ntask: open\n---\n# Hi\n"_s);
+    QCOMPARE(jot::setFrontMatterKey(u"# Hi\n"_s, u"task"_s, QVariant()), u"# Hi\n"_s);
 }
 
 void TestFrontMatter::keepsLineEndingsAndTheByteOrderMark()

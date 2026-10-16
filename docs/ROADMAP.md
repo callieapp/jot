@@ -5,7 +5,7 @@ everyday Markdown notes. Its second job is to be the best Linux home for long-fo
 for people building fictional worlds and games, with first-class support for characters, places
 and other story entities.
 
-Jot is the second app in a small suite with Callie (and later a to-do app). The code lives at
+Jot is the second app in a small suite with Callie (and later a task app). The code lives at
 `github.com/callieapp/jot`, the app id is `org.callieapp.Jot`, and the website is a section of
 Callie's site at <https://callieapp.org/jot>. The first packages are .deb and .rpm for Fedora,
 Debian and Ubuntu.
@@ -30,7 +30,7 @@ Scrivener, and the worldbuilding tools (Campfire, World Anvil, LegendKeeper) are
 Jot's promises:
 
 1. **Your notes are files.** A vault is a folder of `.md` files with YAML front matter. Folders
-   are notebooks. Tags, to-dos and properties live in the files. Every database Jot keeps is a
+   are notebooks. Tags, tasks and properties live in the files. Every database Jot keeps is a
    cache that can be deleted and rebuilt.
 2. **Native and fast.** Cold start and search should be quick enough to measure and publish,
    for example a 10,000-note vault.
@@ -79,7 +79,7 @@ These follow Callie's GUIDELINES.md and DESIGN.md unless noted.
 ## Reuse from Callie
 
 Code is copied from Callie, not shared, for now. Copying is set up so that a shared "kit" can be
-extracted once a third app (to-dos) arrives. [SUITE.md](SUITE.md) has the rules: shared files stay
+extracted once a third app (tasks) arrives. [SUITE.md](SUITE.md) has the rules: shared files stay
 identical to Callie's, and app-specific values sit in one marked place per file.
 
 | Copy nearly as-is                                                                                                                                                                                                | Adapt                                          | Leave behind                             |
@@ -116,7 +116,7 @@ and the goal of each.
   ends (the website and the final vault format) are in 0.1.
 - **[0.1: A notes app I can live in](https://github.com/callieapp/jot/milestone/1):** Lara can
   move off Joplin for local use. Vault and notebooks, the live-preview editor, links and
-  backlinks, tags, to-dos, search, outside edits, Joplin import, the CLI and the website.
+  backlinks, tags, tasks, search, outside edits, Joplin import, the CLI and the website.
 - **[0.2: Sync](https://github.com/callieapp/jot/milestone/2):** the same vault on a laptop and a
   desktop through a cloud the user picks. Jot's own three-way engine, then folder, S3, Dropbox
   and Google Drive transports, and note history. Versions 0.2 to 0.4 as transports land.

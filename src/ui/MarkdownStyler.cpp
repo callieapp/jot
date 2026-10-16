@@ -110,7 +110,7 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
         {u"task"_s, LineStyle::Task},     {u"quote"_s, LineStyle::Quote},
         {u"h1"_s, LineStyle::Heading1},   {u"h2"_s, LineStyle::Heading2},
         {u"h3"_s, LineStyle::Heading3}};
-    const QString todo = m_frontMatter.value(u"todo"_s).toString();
+    const QString task = m_frontMatter.value(u"task"_s).toString();
     if (markers.contains(action)) {
         step(wrap(working, from, to, markers.value(action)));
     } else if (styles.contains(action)) {
@@ -139,20 +139,20 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
         step(link(working, from, to));
     } else if (action == u"codeblock") {
         step(codeBlock(working, from, to));
-    } else if (action == u"todo" && todo.isEmpty()) {
-        setKey(u"todo"_s, u"open"_s);
-    } else if (action == u"todo") {
-        // Only the todo key: a due date is the user's own, and comes back with it.
-        setKey(u"todo"_s, {});
-    } else if (action == u"done" && todo == u"done") {
-        setKey(u"todo"_s, u"open"_s);
+    } else if (action == u"taskNote" && task.isEmpty()) {
+        setKey(u"task"_s, u"open"_s);
+    } else if (action == u"taskNote") {
+        // Only the task key: a due date is the user's own, and comes back with it.
+        setKey(u"task"_s, {});
+    } else if (action == u"done" && task == u"done") {
+        setKey(u"task"_s, u"open"_s);
         setKey(u"done"_s, {});
     } else if (action == u"done") {
-        setKey(u"todo"_s, u"done"_s);
+        setKey(u"task"_s, u"done"_s);
         setKey(u"done"_s, QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
     } else if (action == u"due") {
-        if (todo.isEmpty())
-            setKey(u"todo"_s, u"open"_s);
+        if (task.isEmpty())
+            setKey(u"task"_s, u"open"_s);
         setKey(u"due"_s, argument.isEmpty() ? QVariant() : QVariant(argument));
     } else {
         return {};

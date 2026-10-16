@@ -165,7 +165,7 @@ bool VaultIndex::createSchema(QString *error)
     QSqlDatabase db = QSqlDatabase::database(m_connection);
     const QStringList statements{
         u"CREATE TABLE notes (path TEXT PRIMARY KEY, title TEXT, size INTEGER, modified INTEGER, "
-        u"todo TEXT, due TEXT, created TEXT, type TEXT)"_s,
+        u"task TEXT, due TEXT, created TEXT, type TEXT)"_s,
         u"CREATE TABLE tags (path TEXT, tag TEXT COLLATE NOCASE)"_s,
         u"CREATE INDEX tags_by_tag ON tags (tag)"_s,
         u"CREATE INDEX tags_by_path ON tags (path)"_s,
@@ -271,16 +271,16 @@ void VaultIndex::read(const QString &path)
             tags.append(tag);
     }
     const QStringList aliases = listOf(meta.value(u"aliases"_s, meta.value(u"alias"_s)));
-    QString todo = meta.value(u"todo"_s).toString().trimmed().toLower();
-    if (todo != u"open" && todo != u"done")
-        todo.clear();
+    QString task = meta.value(u"task"_s).toString().trimmed().toLower();
+    if (task != u"open" && task != u"done")
+        task.clear();
 
     QSqlDatabase db = QSqlDatabase::database(m_connection);
     QSqlQuery note(db);
     note.prepare(u"INSERT INTO notes VALUES (?, ?, ?, ?, ?, ?, ?, ?)"_s);
     for (const QVariant &value :
          {QVariant(path), QVariant(title), QVariant(stamp->size), QVariant(stamp->modified),
-          QVariant(todo), meta.value(u"due"_s), meta.value(u"created"_s), meta.value(u"type"_s)})
+          QVariant(task), meta.value(u"due"_s), meta.value(u"created"_s), meta.value(u"type"_s)})
         note.addBindValue(value.isValid() ? value.toString() : QString());
     exec(note, "note");
     // Read now: SQLite reports the connection's latest insert, which the lists below change.
@@ -460,7 +460,7 @@ NoteInfo VaultIndex::infoFrom(const QSqlQuery &query) const
     NoteInfo info;
     info.path = query.value(0).toString();
     info.title = query.value(1).toString();
-    info.todo = query.value(2).toString();
+    info.task = query.value(2).toString();
     info.due = query.value(3).toString();
     info.created = query.value(4).toString();
     info.type = query.value(5).toString();
@@ -486,7 +486,7 @@ std::optional<NoteInfo> VaultIndex::note(const QString &path) const
 {
     QSqlQuery query(QSqlDatabase::database(m_connection));
     query.prepare(
-        u"SELECT path, title, todo, due, created, type, modified FROM notes WHERE path = ?"_s);
+        u"SELECT path, title, task, due, created, type, modified FROM notes WHERE path = ?"_s);
     query.addBindValue(path);
     if (!query.exec() || !query.next())
         return std::nullopt;
@@ -497,9 +497,9 @@ QList<NoteInfo> VaultIndex::notesIn(const QString &folder) const
 {
     QSqlQuery query(QSqlDatabase::database(m_connection));
     if (folder.isEmpty()) {
-        query.prepare(u"SELECT path, title, todo, due, created, type, modified FROM notes"_s);
+        query.prepare(u"SELECT path, title, task, due, created, type, modified FROM notes"_s);
     } else {
-        query.prepare(u"SELECT path, title, todo, due, created, type, modified FROM notes "
+        query.prepare(u"SELECT path, title, task, due, created, type, modified FROM notes "
                       u"WHERE path LIKE ? ESCAPE '\\'"_s);
         query.addBindValue(likeEscaped(folder) + u"/%"_s);
     }
@@ -521,7 +521,7 @@ QList<NoteInfo> VaultIndex::notesIn(const QString &folder) const
             NoteInfo info;
             info.path = query.value(0).toString();
             info.title = query.value(1).toString();
-            info.todo = query.value(2).toString();
+            info.task = query.value(2).toString();
             info.due = query.value(3).toString();
             info.created = query.value(4).toString();
             info.type = query.value(5).toString();
@@ -563,7 +563,7 @@ QList<SearchHit> VaultIndex::search(const QString &query, int limit) const
         const QString key = word.section(u':', 0, 0).toLower();
         const QString value = word.section(u':', 1);
         if (word.contains(u':') && !value.isEmpty() &&
-            (key == u"tag" || key == u"in" || key == u"todo" || key == u"type")) {
+            (key == u"tag" || key == u"in" || key == u"task" || key == u"type")) {
             if (key == u"tag") {
                 QString tag = value.startsWith(u'#') ? value.mid(1) : value;
                 where.append(u"n.path IN (SELECT path FROM tags WHERE tag = ? OR tag LIKE ? "
@@ -572,8 +572,8 @@ QList<SearchHit> VaultIndex::search(const QString &query, int limit) const
             } else if (key == u"in") {
                 where.append(u"n.path LIKE ? ESCAPE '\\'"_s);
                 values << likeEscaped(QDir::cleanPath(value)) + u"/%"_s;
-            } else if (key == u"todo") {
-                where.append(u"n.todo = ?"_s);
+            } else if (key == u"task") {
+                where.append(u"n.task = ?"_s);
                 values << value.toLower();
             } else {
                 where.append(u"n.type = ? COLLATE NOCASE"_s);
@@ -713,11 +713,11 @@ QList<NoteTask> VaultIndex::openTasks() const
     return tasks;
 }
 
-QList<NoteInfo> VaultIndex::openTodoNotes() const
+QList<NoteInfo> VaultIndex::openTaskNotes() const
 {
     // Those with a due date first, soonest first; then the rest by title.
     QSqlQuery query(
-        u"SELECT path, title, todo, due, created, type, modified FROM notes WHERE todo = 'open' "
+        u"SELECT path, title, task, due, created, type, modified FROM notes WHERE task = 'open' "
         u"ORDER BY coalesce(due, '') = '', due, title COLLATE NOCASE"_s,
         QSqlDatabase::database(m_connection));
     QList<NoteInfo> notes;

@@ -76,9 +76,9 @@ Keys Jot understands:
 | `tags`    | list of strings            | Tags, nested with `/`: `cast/lead`              |
 | `aliases` | list of strings            | Other names links and mentions can use          |
 | `created` | ISO 8601 date-time         | When the note was created                       |
-| `todo`    | `open` or `done`           | Makes the note a to-do                          |
-| `due`     | ISO 8601 date or date-time | When a to-do is due                             |
-| `done`    | ISO 8601 date-time         | When a to-do was completed                      |
+| `task`    | `open` or `done`           | Makes the note a task                           |
+| `due`     | ISO 8601 date or date-time | When a task is due                              |
+| `done`    | ISO 8601 date-time         | When a task was completed                       |
 | `type`    | string                     | Note type, for templates and properties (later) |
 
 Rules:
@@ -147,13 +147,13 @@ setting.
 Each `*.assets` folder belongs to the note with the same name. Jot hides it in the notebook tree
 and shows its files under the note instead.
 
-## To-dos
+## Tasks
 
-There are two kinds, and the to-do view shows both:
+There are two kinds, and the task view shows both:
 
 - **Checkboxes** in any note: `- [ ] task` and `- [x] task`. Ticking one in Jot edits that line.
-- **To-do notes**: a note with `todo: open` or `todo: done` in its front matter, and optionally
-  `due` and `done`. Completing one sets `todo: done` and `done:` to the current time.
+- **Task notes**: a note with `task: open` or `task: done` in its front matter, and optionally
+  `due` and `done`. Completing one sets `task: done` and `done:` to the current time.
 
 ## Order and folder appearance
 
@@ -201,7 +201,7 @@ A JEX export or Joplin's database maps onto this format as follows:
 | Note title                          | File name, with `title:` when it had unsafe characters          |
 | Tags                                | `tags:`                                                         |
 | `created_time`, `updated_time`      | `created:`, and the file's modification time                    |
-| To-do, `todo_completed`, `todo_due` | `todo:`, `done:`, `due:`                                        |
+| To-do, `todo_completed`, `todo_due` | `task:`, `done:`, `due:`                                        |
 | Resource used by notes              | File in the `.assets` folder of the first note that uses it     |
 | `:/id` links                        | Relative Markdown links                                         |
 | HTML notes                          | Converted to Markdown where possible, otherwise kept as `.html` |

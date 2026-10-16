@@ -534,12 +534,12 @@ QVariantMap VaultController::preview(const QString &target) const
     return {{u"path"_s, path}, {u"title"_s, info->title}, {u"text"_s, body}};
 }
 
-void VaultController::setShowingTodos(bool showing)
+void VaultController::setShowingTasks(bool showing)
 {
-    if (m_showingTodos == showing)
+    if (m_showingTasks == showing)
         return;
-    m_showingTodos = showing;
-    Q_EMIT showingTodosChanged();
+    m_showingTasks = showing;
+    Q_EMIT showingTasksChanged();
 }
 
 bool VaultController::rewriteNote(
@@ -581,10 +581,10 @@ bool VaultController::setTaskDone(const QString &path, int line, bool done, cons
     });
 }
 
-bool VaultController::completeTodo(const QString &path)
+bool VaultController::completeTask(const QString &path)
 {
     return rewriteNote(path, [](const QString &text) {
-        QString changed = setFrontMatterKey(text, u"todo"_s, u"done"_s);
+        QString changed = setFrontMatterKey(text, u"task"_s, u"done"_s);
         changed = setFrontMatterKey(changed, u"done"_s,
                                     QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
         return std::optional(changed);
@@ -636,12 +636,12 @@ bool VaultController::trashNote(const QString &path)
     return true;
 }
 
-bool VaultController::setTodo(const QString &path, bool todo)
+bool VaultController::setTask(const QString &path, bool task)
 {
-    // Only the todo key: a due date is the user's own, and comes back if it is a to-do again.
-    return rewriteNote(path, [todo](const QString &text) {
+    // Only the task key: a due date is the user's own, and comes back if it is a task again.
+    return rewriteNote(path, [task](const QString &text) {
         return std::optional(
-            setFrontMatterKey(text, u"todo"_s, todo ? QVariant(u"open"_s) : QVariant()));
+            setFrontMatterKey(text, u"task"_s, task ? QVariant(u"open"_s) : QVariant()));
     });
 }
 
@@ -651,10 +651,10 @@ QString VaultController::titleOf(const QString &path) const
     return info ? info->title : Vault::titleFromPath(path);
 }
 
-bool VaultController::isTodo(const QString &path) const
+bool VaultController::isTask(const QString &path) const
 {
     const std::optional<NoteInfo> info = m_index ? m_index->note(path) : std::nullopt;
-    return info && !info->todo.isEmpty();
+    return info && !info->task.isEmpty();
 }
 
 QString VaultController::linkTo(const QString &path) const
@@ -730,14 +730,14 @@ void VaultController::reloadModels()
         m_notes.reload(m_index.get());
         m_switcher.reload(m_index.get());
         m_linkSuggestions.reload(m_index.get());
-        m_todos.reload(m_index.get());
+        m_tasks.reload(m_index.get());
     } else {
         m_notebooks.reload(nullptr, {}, 0);
         m_notes.reload(nullptr);
         m_switcher.reload(nullptr);
         m_linkSuggestions.reload(nullptr);
         m_backlinks.reload(nullptr, nullptr, {});
-        m_todos.reload(nullptr);
+        m_tasks.reload(nullptr);
     }
     Q_EMIT notesChanged();
 }

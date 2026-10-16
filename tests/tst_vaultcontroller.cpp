@@ -388,12 +388,12 @@ void TestVaultController::actsOnNotesThatAreNotShown()
     QVERIFY(m_vault->openPath(m_root));
     m_vault->setCurrent(u"Welcome.md"_s);
 
-    QVERIFY(!m_vault->isTodo(u"Recipes/Pancakes.md"_s));
-    QVERIFY(m_vault->setTodo(u"Recipes/Pancakes.md"_s, true));
-    QVERIFY(m_vault->isTodo(u"Recipes/Pancakes.md"_s));
-    QVERIFY(m_vault->setTodo(u"Inbox/Groceries.md"_s, false));
+    QVERIFY(!m_vault->isTask(u"Recipes/Pancakes.md"_s));
+    QVERIFY(m_vault->setTask(u"Recipes/Pancakes.md"_s, true));
+    QVERIFY(m_vault->isTask(u"Recipes/Pancakes.md"_s));
+    QVERIFY(m_vault->setTask(u"Inbox/Groceries.md"_s, false));
     const QString groceries = readFile(m_root + u"/Inbox/Groceries.md"_s);
-    QVERIFY(!groceries.contains(u"todo:"_s));
+    QVERIFY(!groceries.contains(u"task:"_s));
     QVERIFY(groceries.contains(u"due:"_s));
 
     QCOMPARE(m_vault->linkTo(u"Ashfall/Characters/Soren.md"_s), u"[[Soren]]"_s);
@@ -711,20 +711,20 @@ void TestVaultController::previewsWhatALinkLeadsTo()
 void TestVaultController::listsAndTicksWhatIsLeftToDo()
 {
     QVERIFY(m_vault->openPath(m_root));
-    TodoModel &todos = *m_vault->todos();
-    // The to-do note first, then the open boxes, note by note.
-    QCOMPARE(column(todos, "kind"), (QStringList{u"note"_s, u"task"_s, u"task"_s, u"task"_s}));
-    QCOMPARE(column(todos, "title").first(), u"Groceries"_s);
-    QCOMPARE(column(todos, "due").first(), u"2026-10-20"_s);
-    QCOMPARE(column(todos, "task").mid(1), (QStringList{u"decide what he wants by act two"_s,
+    TaskModel &tasks = *m_vault->tasks();
+    // The task note first, then the open boxes, note by note.
+    QCOMPARE(column(tasks, "kind"), (QStringList{u"note"_s, u"task"_s, u"task"_s, u"task"_s}));
+    QCOMPARE(column(tasks, "title").first(), u"Groceries"_s);
+    QCOMPARE(column(tasks, "due").first(), u"2026-10-20"_s);
+    QCOMPARE(column(tasks, "task").mid(1), (QStringList{u"decide what he wants by act two"_s,
                                                         u"watercolor paper"_s, u"oat milk"_s}));
 
-    const QStringList lines = column(todos, "line");
+    const QStringList lines = column(tasks, "line");
     // A box in a note that is not shown is ticked in its file.
     QVERIFY(m_vault->setTaskDone(u"Ashfall/Characters/Soren.md"_s, lines.at(1).toInt(), true));
     QVERIFY(readFile(m_root + u"/Ashfall/Characters/Soren.md"_s)
                 .contains(u"- [x] decide what he wants"_s));
-    QCOMPARE(todos.rowCount(), 3);
+    QCOMPARE(tasks.rowCount(), 3);
 
     // One in the note shown goes through the editor's text, unsaved edits and all.
     m_vault->setCurrent(u"Inbox/Groceries.md"_s);
@@ -740,10 +740,10 @@ void TestVaultController::listsAndTicksWhatIsLeftToDo()
     QVERIFY(!m_vault->unsaved());
     QVERIFY(!m_vault->setTaskDone(u"Inbox/Groceries.md"_s, 2, true)); // not a task
 
-    QVERIFY(m_vault->completeTodo(u"Inbox/Groceries.md"_s));
-    QVERIFY(m_vault->currentText().contains(u"todo: done"_s));
+    QVERIFY(m_vault->completeTask(u"Inbox/Groceries.md"_s));
+    QVERIFY(m_vault->currentText().contains(u"task: done"_s));
     QVERIFY(m_vault->currentText().contains(u"\ndone: 20"_s));
-    QCOMPARE(column(todos, "kind"), (QStringList{u"task"_s, u"task"_s}));
+    QCOMPARE(column(tasks, "kind"), (QStringList{u"task"_s, u"task"_s}));
 
     QSignalSpy reveal(m_vault.get(), &VaultController::revealPosition);
     m_vault->openAt(u"Ashfall/Characters/Soren.md"_s, 7);

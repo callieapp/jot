@@ -4,7 +4,7 @@ import QtQuick
 import QtQuick.Controls
 
 /// The row over a note: Markdown formatting for the selection or the line the cursor is
-/// on, and on the right, whether the note is a to-do.
+/// on, and on the right, whether the note is a task.
 Rectangle {
     id: root
 
@@ -13,7 +13,7 @@ Rectangle {
 
     signal formatRequested(string action)
 
-    readonly property string todo: frontMatter.todo || ""
+    readonly property string task: frontMatter.task || ""
 
     implicitHeight: row.implicitHeight + 2 * Theme.space2
     color: Theme.bg
@@ -36,7 +36,7 @@ Rectangle {
             right: parent.right
             verticalCenter: parent.verticalCenter
             leftMargin: Theme.space5
-            rightMargin: todoButton.width + sourceButton.width + Theme.space1 + 2 * Theme.space5
+            rightMargin: taskButton.width + sourceButton.width + Theme.space1 + 2 * Theme.space5
         }
         spacing: Theme.space1
 
@@ -125,7 +125,7 @@ Rectangle {
         id: sourceButton
 
         anchors {
-            right: todoButton.left
+            right: taskButton.left
             rightMargin: Theme.space1
             top: row.top
         }
@@ -136,20 +136,20 @@ Rectangle {
         onClicked: root.formatRequested("source")
     }
 
-    // A note that is a to-do shows in To-dos until it is done.
+    // A note that is a task shows in Tasks until it is done.
     PillButton {
-        id: todoButton
+        id: taskButton
 
         anchors {
             right: parent.right
             rightMargin: Theme.space5
             top: row.top
         }
-        label: qsTr("To-do")
-        tip: root.todo === "" ? qsTr("Make this note a to-do") : qsTr("No longer a to-do")
-        selected: root.todo !== ""
+        label: qsTr("Task")
+        tip: root.task === "" ? qsTr("Make this note a task") : qsTr("No longer a task")
+        selected: root.task !== ""
         focusPolicy: Qt.NoFocus
-        onClicked: root.formatRequested("todo")
+        onClicked: root.formatRequested("taskNote")
     }
 
     /// A small button that formats: a label drawn in the style it gives, or a glyph.
@@ -167,7 +167,7 @@ Rectangle {
         property bool mono
 
         implicitWidth: Math.max(implicitHeight, caption.implicitWidth + 2 * Theme.space2)
-        // As tall as the To-do pill, so the row lines up.
+        // As tall as the Task pill, so the row lines up.
         implicitHeight: 32
         focusPolicy: Qt.NoFocus
         Accessible.name: tip

@@ -243,8 +243,8 @@ Rectangle {
                 }
             }
 
-            TodoDetails {
-                visible: Vault.writable && styler.frontMatter.todo !== undefined
+            TaskDetails {
+                visible: Vault.writable && styler.frontMatter.task !== undefined
                 frontMatter: styler.frontMatter
                 onFormatRequested: (action, argument) => root.format(action, argument)
             }

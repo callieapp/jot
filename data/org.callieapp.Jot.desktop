@@ -7,6 +7,6 @@ Exec=jot-gui
 Icon=org.callieapp.Jot
 Terminal=false
 Categories=Office;
-Keywords=notes;notebook;markdown;writing;journal;todo;
+Keywords=notes;notebook;markdown;writing;journal;task;
 StartupNotify=true
 StartupWMClass=org.callieapp.Jot

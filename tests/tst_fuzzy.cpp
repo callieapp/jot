@@ -33,7 +33,7 @@ void TestFuzzy::prefersWordStartsAndRuns_data()
     QTest::newRow("word starts") << u"mv"_s << u"Mara Vey"_s << u"Lemon verbena"_s;
     QTest::newRow("a run") << u"ferry"_s << u"The Ferry"_s << u"Fear every reply"_s;
     QTest::newRow("shorter") << u"mara"_s << u"Mara"_s << u"Mara Vey and the river"_s;
-    QTest::newRow("camel case") << u"tn"_s << u"TodoNotes"_s << u"Tension"_s;
+    QTest::newRow("camel case") << u"tn"_s << u"TaskNotes"_s << u"Tension"_s;
     QTest::newRow("path segment") << u"cm"_s << u"Cast/Mara"_s << u"Accommodation"_s;
     QTest::newRow("earlier") << u"ch"_s << u"Chapter 1"_s << u"Rich chapter"_s;
 }

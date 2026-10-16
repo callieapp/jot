@@ -51,7 +51,7 @@ const QList<std::pair<QString, QString>> kCommands = {
     {u"new"_s, u"Make a note: jot new \"Idea\"; its body is read from a pipe"_s},
     {u"show"_s, u"Print a note, by its title, an alias or its path"_s},
     {u"open"_s, u"Open a note in the app"_s},
-    {u"todo"_s, u"To-do notes and unticked tasks"_s},
+    {u"tasks"_s, u"Task notes and unticked boxes"_s},
     {u"logs"_s, u"Show, follow (-f) or open (--open) the log files"_s},
     {u"doctor"_s, u"Details for a bug report; --report opens a new issue"_s},
     {u"upgrade"_s, u"Install the latest release, or the one given: jot upgrade 0.1.0"_s},
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
                                          u"order"_s);
     addOption(orderOption);
     const QCommandLineOption jsonOption(
-        u"json"_s, u"With status, ls, search, new and todo: print JSON for scripts."_s);
+        u"json"_s, u"With status, ls, search, new and tasks: print JSON for scripts."_s);
     addOption(jsonOption);
     const QCommandLineOption dryRunOption(
         u"dry-run"_s, u"With upgrade and downgrade: say what would happen, and change nothing."_s);
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
         return runCompletions(args.at(1));
 
     static const QStringList kVaultCommands = {u"status"_s, u"ls"_s,   u"search"_s, u"new"_s,
-                                               u"show"_s,   u"open"_s, u"todo"_s};
+                                               u"show"_s,   u"open"_s, u"tasks"_s};
     if (kVaultCommands.contains(command)) {
         std::optional<OpenVault> open = openVault(parser.value(vaultOption));
         if (!open)
@@ -367,8 +367,8 @@ int main(int argc, char *argv[])
             return commands.search(rest, json);
         if (command == u"show")
             return commands.show(rest);
-        if (command == u"todo")
-            return commands.todo(json);
+        if (command == u"tasks")
+            return commands.listTasks(json);
         if (command == u"new") {
             // Piped in, the text becomes the note's body.
             QString body;
