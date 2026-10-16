@@ -160,10 +160,25 @@ void TestNoteEditor::opensALongNoteAtTheTop()
     QVERIFY(scroll->property("contentHeight").toReal() > scroll->height());
     QCOMPARE(scroll->property("contentY").toReal(), 0.0);
 
-    m_vault->setCurrent(u"Ashfall/Pitch.md"_s);
-    m_vault->setCurrent(u"Ashfall/Characters/Mara Vey.md"_s);
+    // Another long note, opened from part way down this one, starts at its top.
+    QFile file(m_root + u"/Long.md"_s);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write(QByteArray("A line.\n\n").repeated(80));
+    file.close();
+    QTRY_VERIFY_WITH_TIMEOUT(m_vault->index()->note(u"Long.md"_s), 3000);
+    scroll->setProperty("contentY", 150.0);
+    m_vault->setCurrent(u"Long.md"_s);
     QTest::qWait(200);
     QCOMPARE(scroll->property("contentY").toReal(), 0.0);
+
+    // The same note changed on disk keeps its place.
+    scroll->setProperty("contentY", 300.0);
+    QVERIFY(file.open(QIODevice::Append));
+    file.write("One more.\n");
+    file.close();
+    QTRY_VERIFY_WITH_TIMEOUT(m_vault->currentText().endsWith(u"One more.\n"_s), 3000);
+    QTest::qWait(200);
+    QCOMPARE(scroll->property("contentY").toReal(), 300.0);
 }
 
 void TestNoteEditor::typingIsDrawnAndSaved()
