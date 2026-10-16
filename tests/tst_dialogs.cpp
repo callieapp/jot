@@ -54,6 +54,8 @@ void TestDialogs::opensCleanly_data()
     QTest::addColumn<QString>("dialog");
     QTest::newRow("settings") << u"SettingsDialog {}"_s;
     QTest::newRow("shortcuts") << u"KeyHelp { KeyRouter { id: keys } actions: keys.actions }"_s;
+    QTest::newRow("shortcuts, vi mode")
+        << u"KeyHelp { KeyRouter { id: keys } actions: keys.actions; tab: 'vi' }"_s;
     QTest::newRow("about") << u"AboutDialog {}"_s;
     QTest::newRow("what's new") << u"WhatsNewDialog {}"_s;
     QTest::newRow("update") << u"UpdateDialog {}"_s;
