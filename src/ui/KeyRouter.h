@@ -26,11 +26,8 @@ struct KeyAction
     QString leader;
 };
 
-/// Turns typed keys into actions, from the one table every shortcut and the help are made
-/// from. Standard shortcuts are left to QML's Shortcut; in vi mode single keys act too,
-/// and the leader key starts a second key for the commands that have none of their own.
-/// Keys typed into a text field, or into anything open over the window, are left alone:
-/// the note's own vi keys are ViEditor's.
+/// Turns vi mode's keys into actions from one table, so the shortcuts and their help cannot
+/// disagree. Text fields and popups keep their keys; the note's vi keys are ViEditor's.
 class KeyRouter : public QObject
 {
     Q_OBJECT

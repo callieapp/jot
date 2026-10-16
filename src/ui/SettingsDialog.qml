@@ -363,8 +363,18 @@ Popup {
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 90
+                    // As wide as its longest wording, so the buttons beside it stay put.
+                    width: Math.max(implicitWidth, longest.advanceWidth)
                     horizontalAlignment: Text.AlignHCenter
+
+                    TextMetrics {
+                        id: longest
+                        text: qsTr("until Esc")
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.textMd
+                        font.weight: Theme.weightBold
+                    }
+
                     text: Settings.leaderTimeout === 0 ? qsTr("until Esc") : qsTr("%1 s").arg(Number(
                                                                                                   Settings.leaderTimeout
                                                                                                   / 1000).toLocaleString(

@@ -429,7 +429,7 @@ Rectangle {
                         width: Math.max(2, glyphs.averageCharacterWidth)
                         visible: body.activeFocus
                         color: Theme.accent
-                        opacity: 0.45
+                        opacity: Theme.blockCursorOpacity
 
                         FontMetrics {
                             id: glyphs

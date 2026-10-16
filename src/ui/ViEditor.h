@@ -12,9 +12,8 @@ class QTextDocument;
 
 namespace jot {
 
-/// Vi's modes for a TextEdit, kept basic: normal mode moves and edits by single keys,
-/// insert mode types, and visual mode selects with normal mode's moves. The keys are
-/// KeyRouter's "note" and "visual" actions; the leader goes to the router.
+/// Vi's normal, insert and visual modes for a TextEdit, kept basic. Moves are sent as the
+/// TextEdit's own keys, so they behave as its arrows do.
 class ViEditor : public QObject
 {
     Q_OBJECT

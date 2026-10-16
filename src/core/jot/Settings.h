@@ -33,8 +33,7 @@ class Settings : public QObject
     Q_PROPERTY(QString noteFont READ noteFont WRITE setNoteFont NOTIFY noteFontChanged)
     /// Notes show their Markdown as written rather than styled.
     Q_PROPERTY(bool sourceMode READ sourceMode WRITE setSourceMode NOTIFY sourceModeChanged)
-    /// Single keys act, as in vi: notes are written in insert mode and moved around in
-    /// normal mode, and a leader key starts a command.
+    /// Single keys act, as in vi, with a leader key before commands.
     Q_PROPERTY(bool viMode READ viMode WRITE setViMode NOTIFY keyboardChanged)
     Q_PROPERTY(QString leaderKey READ leaderKey WRITE setLeaderKey NOTIFY keyboardChanged)
     /// Milliseconds the leader waits for the next key; 0 waits until Escape.

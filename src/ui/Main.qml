@@ -466,7 +466,8 @@ ApplicationWindow {
                 editor.editTitle()
             break
         case "trash":
-            if (note && Vault.writable)
+            // Not while the tasks are shown, which hide the note it would ask about.
+            if (note && Vault.writable && !Vault.showingTasks)
                 noteList.askToTrash(Vault.current)
             break
         case "sourceMode":
