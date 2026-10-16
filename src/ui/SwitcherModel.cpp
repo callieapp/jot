@@ -102,7 +102,7 @@ QVariantList SwitcherModel::suggestions(int limit) const
         items.append(QVariantMap{
             {u"text"_s, row.title},
             {u"detail"_s, row.alias.isEmpty() ? notebook : row.alias},
-            {u"target"_s, shared ? row.path.chopped(3) : name},
+            {u"target"_s, Vault::wikilinkName(row.path, shared)},
         });
     }
     return items;

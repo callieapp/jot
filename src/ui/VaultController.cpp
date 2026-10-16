@@ -638,13 +638,17 @@ bool VaultController::trashNote(const QString &path)
 
 bool VaultController::setTodo(const QString &path, bool todo)
 {
+    // Only the todo key: a due date is the user's own, and comes back if it is a to-do again.
     return rewriteNote(path, [todo](const QString &text) {
-        if (todo)
-            return std::optional(setFrontMatterKey(text, u"todo"_s, u"open"_s));
-        QString changed = setFrontMatterKey(text, u"todo"_s, {});
-        changed = setFrontMatterKey(changed, u"due"_s, {});
-        return std::optional(setFrontMatterKey(changed, u"done"_s, {}));
+        return std::optional(
+            setFrontMatterKey(text, u"todo"_s, todo ? QVariant(u"open"_s) : QVariant()));
     });
+}
+
+QString VaultController::titleOf(const QString &path) const
+{
+    const std::optional<NoteInfo> info = m_index ? m_index->note(path) : std::nullopt;
+    return info ? info->title : Vault::titleFromPath(path);
 }
 
 bool VaultController::isTodo(const QString &path) const
@@ -663,16 +667,14 @@ QString VaultController::linkTo(const QString &path) const
         std::ranges::count_if(m_index->notesIn({}), [&](const NoteInfo &note) {
             return Vault::titleFromPath(note.path).compare(name, Qt::CaseInsensitive) == 0;
         });
-    return u"[["_s + (sharing > 1 ? path.chopped(3) : name) + u"]]"_s;
+    return u"[["_s + Vault::wikilinkName(path, sharing > 1) + u"]]"_s;
 }
 
 void VaultController::showInFiles(const QString &path) const
 {
     if (!m_vault)
         return;
-    const QString folder = path.endsWith(u".md"_s)
-                               ? (path.contains(u'/') ? path.section(u'/', 0, -2) : QString())
-                               : path;
+    const QString folder = path.endsWith(u".md"_s) ? Vault::notebookOf(path) : path;
     QDesktopServices::openUrl(QUrl::fromLocalFile(m_vault->absolute(folder)));
 }
 

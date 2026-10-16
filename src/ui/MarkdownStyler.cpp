@@ -142,9 +142,8 @@ QVariantMap MarkdownStyler::format(const QString &action, int from, int to, cons
     } else if (action == u"todo" && todo.isEmpty()) {
         setKey(u"todo"_s, u"open"_s);
     } else if (action == u"todo") {
+        // Only the todo key: a due date is the user's own, and comes back with it.
         setKey(u"todo"_s, {});
-        setKey(u"due"_s, {});
-        setKey(u"done"_s, {});
     } else if (action == u"done" && todo == u"done") {
         setKey(u"todo"_s, u"open"_s);
         setKey(u"done"_s, {});

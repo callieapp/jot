@@ -308,8 +308,9 @@ void TestNoteEditor::makesTheNoteATodoWithADueDate()
                               Q_ARG(QVariant, QString()));
     QTRY_VERIFY_WITH_TIMEOUT(!m_vault->unsaved(), 2000);
     const QString undone = *notefile::read(m_root + u"/Recipes/Pancakes.md"_s, &error);
+    // The due date is the user's own, so it stays for when it is a to-do again.
     QVERIFY(!undone.contains(u"todo:"_s));
-    QVERIFY(!undone.contains(u"due:"_s));
+    QVERIFY(undone.contains(u"due: 2026-11-02"_s));
 }
 
 void TestNoteEditor::continuesAndNestsLists()
