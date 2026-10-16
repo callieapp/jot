@@ -45,10 +45,14 @@ Rectangle {
     // The editor holds the text; the vault hears of each change and saves it shortly after.
     // A note loaded from disk replaces the text without counting as an edit.
     property bool loading: false
+    /// The note the editor holds, to tell another note from this one changed on disk.
+    property string loadedPath
 
     function load() {
         loading = true
-        const cursor = body.cursorPosition
+        // Another note starts at its top; the same one, reloaded, stays where it was.
+        const another = Vault.current !== loadedPath
+        const cursor = another ? 0 : body.cursorPosition
         // Swapping a whole note in under a live highlighter leaves the TextEdit blank, so
         // the styling comes off for the swap and goes back on after.
         styler.document = null
@@ -56,6 +60,9 @@ Rectangle {
         styler.document = body.textDocument
         body.cursorPosition = Math.min(cursor, body.length)
         title.text = Vault.currentTitle
+        loadedPath = Vault.current
+        if (another)
+            flick.contentY = 0
         loading = false
     }
 
@@ -149,6 +156,8 @@ Rectangle {
     Flickable {
         id: flick
 
+        objectName: "scroll"
+
         anchors {
             left: parent.left
             right: parent.right
@@ -162,8 +171,11 @@ Rectangle {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
 
-        /// Scrolls so the cursor stays in view while typing.
+        /// Scrolls so the cursor stays in view while typing. Not before the editor has a
+        /// height, when every line would count as out of view.
         function follow(rect) {
+            if (height <= 0 || !body.activeFocus)
+                return
             const top = page.y + body.y + rect.y
             const bottom = top + rect.height
             if (top < contentY)
