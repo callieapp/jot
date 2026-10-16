@@ -54,6 +54,7 @@ qt_add_qml_module(jotui
         AboutDialog.qml
         Backlinks.qml
         CheckBox.qml
+        CloseButton.qml
         ColumnSplitter.qml
         DangerButton.qml
         Dropdown.qml

@@ -46,19 +46,30 @@ Popup {
     contentItem: Column {
         spacing: Theme.space3
 
-        Field {
-            id: input
-
+        Row {
             width: parent.width
-            placeholderText: qsTr("Go to a note")
-            onTextEdited: {
-                Vault.switcher.query = text
-                results.currentIndex = 0
+            spacing: Theme.space2
+
+            Field {
+                id: input
+
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - closeButton.width - parent.spacing
+                placeholderText: qsTr("Go to a note")
+                onTextEdited: {
+                    Vault.switcher.query = text
+                    results.currentIndex = 0
+                }
+                Keys.onDownPressed: results.incrementCurrentIndex()
+                Keys.onUpPressed: results.decrementCurrentIndex()
+                Keys.onReturnPressed: root.choose(results.currentIndex)
+                Keys.onEnterPressed: root.choose(results.currentIndex)
             }
-            Keys.onDownPressed: results.incrementCurrentIndex()
-            Keys.onUpPressed: results.decrementCurrentIndex()
-            Keys.onReturnPressed: root.choose(results.currentIndex)
-            Keys.onEnterPressed: root.choose(results.currentIndex)
+            CloseButton {
+                id: closeButton
+                anchors.verticalCenter: parent.verticalCenter
+                onClicked: root.close()
+            }
         }
 
         ListView {

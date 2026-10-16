@@ -53,16 +53,26 @@ Popup {
                 font.pixelSize: Theme.textXl
                 font.weight: Theme.weightBold
             }
-            StickerButton {
+            Row {
                 anchors {
                     right: parent.right
                     verticalCenter: title.verticalCenter
                 }
-                accent: true
-                text: qsTr("Done")
-                onClicked: {
-                    root.close()
-                    root.finished()
+                spacing: Theme.space2
+
+                StickerButton {
+                    accent: true
+                    text: qsTr("Done")
+                    onClicked: {
+                        root.close()
+                        root.finished()
+                    }
+                }
+                CloseButton {
+                    onClicked: {
+                        root.close()
+                        root.finished()
+                    }
                 }
             }
         }

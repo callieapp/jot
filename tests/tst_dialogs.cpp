@@ -28,6 +28,8 @@ private Q_SLOTS:
     void initTestCase();
     void opensCleanly_data();
     void opensCleanly();
+    void everyModalHasAClose_data();
+    void everyModalHasAClose();
 
 private:
     QTemporaryDir m_dir;
@@ -86,6 +88,47 @@ void TestDialogs::opensCleanly()
     auto *popup = lazy->property("popup").value<QObject *>();
     QVERIFY(popup->property("height").toReal() > 100);
     QVERIFY(popup->property("width").toReal() > 100);
+}
+
+void TestDialogs::everyModalHasAClose_data()
+{
+    QTest::addColumn<QString>("dialog");
+    for (const QString &dialog : {u"SettingsDialog {}"_s, u"KeyHelp { actions: [] }"_s,
+                                  u"AboutDialog {}"_s, u"WhatsNewDialog {}"_s, u"UpdateDialog {}"_s,
+                                  u"ThemeEditor {}"_s, u"TrashConfirm {}"_s, u"QuickSwitcher {}"_s})
+        QTest::newRow(qPrintable(dialog)) << dialog;
+}
+
+void TestDialogs::everyModalHasAClose()
+{
+    QFETCH(QString, dialog);
+
+    QQuickWindow window;
+    window.resize(900, 700);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData(u"import Jot.Ui\n%1\n"_s.arg(dialog).toUtf8(), QUrl(u"qrc:/test.qml"_s));
+    std::unique_ptr<QObject> popup(component.create());
+    QVERIFY2(popup, qPrintable(component.errorString()));
+    popup->setProperty("parent", QVariant::fromValue(window.contentItem()));
+    QMetaObject::invokeMethod(popup.get(), "open");
+    QTRY_VERIFY(popup->property("opened").toBool());
+
+    // The X may sit in the content or in the card's corner.
+    QQuickItem *close = nullptr;
+    for (const char *part : {"contentItem", "background"}) {
+        auto *root = popup->property(part).value<QQuickItem *>();
+        if (!close && root)
+            close = root->findChild<QQuickItem *>(u"close"_s);
+    }
+    QVERIFY(close);
+    QTRY_VERIFY(close->isVisible() && close->width() > 0);
+    const QPointF centre = close->mapToScene(QPointF(close->width() / 2, close->height() / 2));
+    QTest::mouseClick(&window, Qt::LeftButton, {}, centre.toPoint());
+    QTRY_VERIFY(!popup->property("visible").toBool());
 }
 
 QTEST_MAIN(TestDialogs)
