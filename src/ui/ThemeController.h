@@ -137,6 +137,10 @@ public:
     [[nodiscard]] const ThemeSpec &spec() const { return m_spec; }
 
     Q_INVOKABLE QColor tint(const QColor &color, qreal alpha) const;
+    /// The font notes are written in for a Settings choice: "mono" is the theme's mono
+    /// family, "serif" its display one, and anything else its editor one. A theme that
+    /// leaves a family empty gets the system's monospace or serif font for it.
+    Q_INVOKABLE QString noteFontFamily(const QString &choice) const;
     Q_INVOKABLE double contrast(const QColor &a, const QColor &b) const;
 
     QVariantList swatches() const;

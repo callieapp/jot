@@ -43,11 +43,11 @@ Rectangle {
     color: Theme.bg
 
     /// The font notes are written in, as Settings and the theme choose it.
-    readonly property string noteFamily: Settings.noteFont === "mono" ? Theme.monoFontFamily :
-                                                                        Settings.noteFont
-                                                                        === "serif"
-                                                                        ? Theme.displayFontFamily :
-                                                                          Theme.editorFontFamily
+    readonly property string noteFamily: {
+        // Read again when the theme changes.
+        Theme.name
+        return Theme.noteFontFamily(Settings.noteFont)
+    }
 
     // The editor holds the text; the vault hears of each change and saves it shortly after.
     // A note loaded from disk replaces the text without counting as an edit.

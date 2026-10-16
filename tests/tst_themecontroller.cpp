@@ -31,6 +31,7 @@ class TestThemeController : public QObject
     Q_OBJECT
 
 private Q_SLOTS:
+    void noteFontsFallBackToGenericFamilies();
     void startsWithDefaultTheme();
     void loadsAFileAndReloadsOnEdit();
     void brokenEditKeepsLastGoodTheme();
@@ -118,6 +119,18 @@ void TestThemeController::bundledFontsAreAvailable()
     const QStringList families = QFontDatabase::families();
     QVERIFY(families.contains(QStringLiteral("Nunito")));
     QVERIFY(families.contains(QStringLiteral("Fraunces")));
+}
+
+void TestThemeController::noteFontsFallBackToGenericFamilies()
+{
+    ThemeController &theme = *ThemeController::instance();
+    QVERIFY(theme.load(u"minimal"_s).isEmpty());
+    // Minimal names no mono or display family of its own.
+    QCOMPARE(theme.noteFontFamily(u"mono"_s), u"monospace"_s);
+    QCOMPARE(theme.noteFontFamily(u"serif"_s), u"serif"_s);
+    QCOMPARE(theme.noteFontFamily({}), theme.editorFontFamily());
+    QVERIFY(theme.load(u"callie"_s).isEmpty());
+    QCOMPARE(theme.noteFontFamily(u"serif"_s), theme.displayFontFamily());
 }
 
 QTEST_MAIN(TestThemeController)
