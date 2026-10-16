@@ -1,3 +1,4 @@
+#include "MarkdownStyler.h"
 #include "SettingsForeign.h"
 #include "ThemeController.h"
 #include "VaultController.h"
@@ -420,15 +421,23 @@ void TestNoteEditor::togglesSourceMode()
 void TestNoteEditor::writesInTheChosenFont()
 {
     QQuickItem *body = find(u"body"_s);
+    auto *styler = body->findChild<MarkdownStyler *>();
+    QVERIFY(styler);
     const auto family = [body] { return body->property("font").value<QFont>().family(); };
     const ThemeController &theme = *ThemeController::instance();
+    // The default theme leaves its mono family empty, so mono must not come out empty.
+    QVERIFY(theme.monoFontFamily().isEmpty());
     QCOMPARE(family(), theme.editorFontFamily());
+
     m_settings->setNoteFont(u"mono"_s);
-    QCOMPARE(family(), theme.monoFontFamily());
+    QCOMPARE(family(), u"monospace"_s);
+    QCOMPARE(styler->fontFamily(), u"monospace"_s);
     m_settings->setNoteFont(u"serif"_s);
-    QCOMPARE(family(), theme.displayFontFamily());
+    QCOMPARE(family(), theme.noteFontFamily(u"serif"_s));
+    QVERIFY(family() != theme.editorFontFamily());
     m_settings->setNoteFont({});
     QCOMPARE(family(), theme.editorFontFamily());
+    QCOMPARE(styler->fontFamily(), theme.editorFontFamily());
 }
 
 QTEST_MAIN(TestNoteEditor)

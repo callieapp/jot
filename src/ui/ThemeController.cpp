@@ -139,4 +139,15 @@ int ThemeController::easingBounce() const
     return m_spec.motion.bounce > 0 ? QEasingCurve::OutBack : QEasingCurve::OutCubic;
 }
 
+QString ThemeController::noteFontFamily(const QString &choice) const
+{
+    if (choice == u"mono")
+        return m_spec.type.monoFamily.isEmpty() ? QStringLiteral("monospace")
+                                                : m_spec.type.monoFamily;
+    if (choice == u"serif")
+        return m_spec.type.displayFamily.isEmpty() ? QStringLiteral("serif")
+                                                   : m_spec.type.displayFamily;
+    return editorFontFamily();
+}
+
 } // namespace jot
