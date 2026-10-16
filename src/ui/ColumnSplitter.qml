@@ -9,8 +9,10 @@ Item {
     /// The width the column has now.
     required property real columnWidth
 
-    /// The column should be this wide, or the theme's own width for 0.
+    /// The column should be this wide.
     signal resized(int width)
+    /// The column should go back to the theme's width.
+    signal reset
 
     width: Theme.space3
     // Over both columns' edges, so it is easy to catch.
@@ -41,7 +43,7 @@ Item {
     }
 
     TapHandler {
-        onDoubleTapped: root.resized(0)
+        onDoubleTapped: root.reset()
     }
 
     Rectangle {

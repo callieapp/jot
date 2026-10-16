@@ -111,6 +111,8 @@ class ThemeController : public QObject
     Q_PROPERTY(int sidebarWidth READ sidebarWidth CONSTANT)
     /// The middle column of notes, between the sidebar and the note.
     Q_PROPERTY(int noteListWidth READ noteListWidth CONSTANT)
+    /// The narrowest the note gets, however wide the columns beside it were dragged.
+    Q_PROPERTY(int editorMinWidth READ editorMinWidth CONSTANT)
     /// The widest a note's text runs, so lines stay easy to read on a wide window.
     Q_PROPERTY(int editorWidth READ editorWidth CONSTANT)
     /// The tallest an image shows inline in a note.
@@ -219,6 +221,7 @@ public:
     int logoLift() const { return 1; }
     int sidebarWidth() const { return 240; }
     int noteListWidth() const { return 320; }
+    int editorMinWidth() const { return 240; }
     int treeIndent() const { return 14; }
     int editorWidth() const { return 760; }
     int imageHeight() const { return 360; }

@@ -118,6 +118,14 @@ void TestSettings::keepsColumnWidthsInBounds()
     settings.setNoteListWidth(5000);
     QCOMPARE(settings.noteListWidth(), 640);
     QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteListWidth(), 640);
+    // A drag past the edge stops at the narrowest rather than meaning the theme's width.
+    settings.setSidebarWidth(0);
+    QCOMPARE(settings.sidebarWidth(), 180);
+    settings.setNoteListWidth(-40);
+    QCOMPARE(settings.noteListWidth(), Settings::kMinNoteListWidth);
+    settings.resetSidebarWidth();
+    QCOMPARE(settings.sidebarWidth(), 0);
+    QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).sidebarWidth(), 0);
     // 0 is the theme's own width, which reset goes back to.
     settings.reset();
     QCOMPARE(settings.sidebarWidth(), 0);
