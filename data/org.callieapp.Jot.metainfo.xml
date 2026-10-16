@@ -35,6 +35,27 @@
   </categories>
 
   <releases>
+    <release version="0.0.5" date="2026-10-16">
+      <description>
+        <ul>
+          <li>Settings, Theme, Note text: write notes in the theme's font, a serif or a mono one.</li>
+          <li>Code blocks take their colors from the theme, worked out from its accent, so they match it. A theme file can set them, and the note font, in a new [editor] section.</li>
+          <li>Notebooks can be made, renamed and moved without a file manager: the + beside Notebooks makes one, a double-click renames one, and dragging a note or a notebook onto another moves it there. Links to the notes inside keep working.</li>
+          <li>Right-click a note for Open, Rename, Move to, Copy link, Show in Files, Make a task and Move to trash, or a notebook for a new note or notebook inside it, Rename and Show in Files. The Menu key opens the selected note's.</li>
+          <li>The sidebar and the note list can be made wider or narrower by dragging their edges; a double-click puts one back. While a note or notebook is dragged, a copy of it follows the pointer.</li>
+          <li>The format row's Formatted and Source buttons switch between styled and as-written Markdown, its Task switch makes the note a task, and its H button holds the three heading sizes. Done is a checkbox.</li>
+          <li>Delete moves the selected note, or the notebook clicked in the sidebar, to the trash after asking; a notebook's menu offers the same. A notebook goes with everything in it.</li>
+          <li>Vi mode, under Settings, Keyboard. Notes open in normal mode, where h, j, k and l move, x, dd and p edit and u undoes; i, a or o start typing and Esc stops, and v selects. Out of a note, j and k go through the list, and / searches it: Enter goes to what was found, Esc clears the search and leaves it. A leader key, comma by default, starts commands such as a new note or the tasks, and shows what can follow it if the next key is slow to come.</li>
+          <li>The keyboard shortcuts list (F1) is made from the same table as the shortcuts themselves, vi mode's keys included.</li>
+          <li>To-dos are now tasks, everywhere: the sidebar's Tasks, the Task button, and jot tasks. A note that is a task says task: open or task: done in its front matter; todo: is no longer read.</li>
+          <li>The keyboard shortcuts dialog shows again.</li>
+          <li>The fold arrow beside a notebook comes to a clean point.</li>
+          <li>A long note opens at its title, not scrolled part way down.</li>
+          <li>The sidebar leaves room under the title bar.</li>
+          <li>jot upgrade on a computer without Jot's package names Jot's installer, not Callie's.</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.0.4" date="2026-10-15">
       <description>
         <ul>
