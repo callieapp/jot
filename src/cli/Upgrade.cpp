@@ -17,7 +17,7 @@ namespace jot::cli {
 
 namespace {
 
-const QString kInstaller = u"curl -fsSL https://callieapp.org/install.sh | sh"_s;
+const QString kInstaller = u"curl -fsSL https://callieapp.org/jot/install.sh | sh"_s;
 
 int runWithTerminal(const QStringList &command)
 {

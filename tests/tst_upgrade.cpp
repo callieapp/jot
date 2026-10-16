@@ -250,7 +250,7 @@ void TestUpgrade::refusesWhatItCannotDo()
 
     // Not from a package: the installer is the way in.
     QCOMPARE(run({}, QString()), 1);
-    QVERIFY(m_err.contains(u"install.sh"_s));
+    QVERIFY(m_err.contains(u"curl -fsSL https://callieapp.org/jot/install.sh | sh"_s));
     QVERIFY(m_ran.isEmpty());
 }
 
