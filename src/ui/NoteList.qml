@@ -77,9 +77,15 @@ Rectangle {
             text: Vault.notes.query
             onTextEdited: Vault.notes.query = text
             Keys.onDownPressed: list.forceActiveFocus()
+            // Return keeps what was found and goes to it, as Enter after a search in vi.
+            Keys.onReturnPressed: list.forceActiveFocus()
+            Keys.onEnterPressed: list.forceActiveFocus()
             Keys.onEscapePressed: {
                 text = ""
                 Vault.notes.query = ""
+                // In vi mode, Escape also gives the keys back to the list.
+                if (Settings.viMode)
+                    list.forceActiveFocus()
             }
         }
 
