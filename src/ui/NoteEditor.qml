@@ -42,6 +42,13 @@ Rectangle {
 
     color: Theme.bg
 
+    /// The font notes are written in, as Settings and the theme choose it.
+    readonly property string noteFamily: Settings.noteFont === "mono" ? Theme.monoFontFamily :
+                                                                        Settings.noteFont
+                                                                        === "serif"
+                                                                        ? Theme.displayFontFamily :
+                                                                          Theme.editorFontFamily
+
     // The editor holds the text; the vault hears of each change and saves it shortly after.
     // A note loaded from disk replaces the text without counting as an edit.
     property bool loading: false
@@ -265,7 +272,7 @@ Rectangle {
                 color: Theme.text
                 selectionColor: Theme.tint(Theme.accent, 0.4)
                 selectedTextColor: Theme.text
-                font.family: Theme.fontFamily
+                font.family: root.noteFamily
                 font.pixelSize: Theme.textLg
                 selectByMouse: true
                 persistentSelection: true
@@ -400,6 +407,7 @@ Rectangle {
                     id: styler
 
                     sourceMode: Settings.sourceMode
+                    fontFamily: root.noteFamily
                     cursorPosition: body.activeFocus ? body.cursorPosition : -1
                     pixelSize: body.font.pixelSize
                     width: body.width

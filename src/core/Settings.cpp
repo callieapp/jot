@@ -19,6 +19,7 @@ const QString kCollapsedNotebooks = u"notes/collapsedNotebooks"_s;
 const QString kCheckForUpdates = u"updates/check"_s;
 const QString kLastSeenVersion = u"app/lastSeenVersion"_s;
 const QString kSourceMode = u"editor/sourceMode"_s;
+const QString kNoteFont = u"editor/font"_s;
 
 } // namespace
 
@@ -34,6 +35,9 @@ Settings::Settings(const QString &path, QObject *parent)
     m_checkForUpdates = m_store.value(kCheckForUpdates, true).toBool();
     m_lastSeenVersion = m_store.value(kLastSeenVersion).toString();
     m_sourceMode = m_store.value(kSourceMode, false).toBool();
+    m_noteFont = m_store.value(kNoteFont).toString();
+    if (!noteFonts().contains(m_noteFont))
+        m_noteFont.clear();
 }
 
 QString Settings::defaultPath()
@@ -101,6 +105,20 @@ void Settings::setLastSeenVersion(const QString &version)
     Q_EMIT lastSeenVersionChanged();
 }
 
+QStringList Settings::noteFonts()
+{
+    return {QString(), u"serif"_s, u"mono"_s};
+}
+
+void Settings::setNoteFont(const QString &font)
+{
+    if (m_noteFont == font || !noteFonts().contains(font))
+        return;
+    m_noteFont = font;
+    m_store.setValue(kNoteFont, font);
+    Q_EMIT noteFontChanged();
+}
+
 void Settings::setSourceMode(bool source)
 {
     if (m_sourceMode == source)
@@ -116,6 +134,7 @@ void Settings::reset()
     setNoteSort(noteSorts().first());
     setCheckForUpdates(true);
     setSourceMode(false);
+    setNoteFont({});
 }
 
 } // namespace jot

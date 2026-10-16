@@ -56,6 +56,8 @@ class ThemeController : public QObject
     Q_PROPERTY(QString fontFamily READ fontFamily NOTIFY changed)
     Q_PROPERTY(QString displayFontFamily READ displayFontFamily NOTIFY changed)
     Q_PROPERTY(QString monoFontFamily READ monoFontFamily NOTIFY changed)
+    /// The font notes are written in: the theme's [editor] family, or its usual one.
+    Q_PROPERTY(QString editorFontFamily READ editorFontFamily NOTIFY changed)
     /// Font weights for strong, bold and heavy text.
     Q_PROPERTY(int weightStrong READ weightStrong NOTIFY changed)
     Q_PROPERTY(int weightBold READ weightBold NOTIFY changed)
@@ -170,6 +172,10 @@ public:
     QString fontFamily() const { return m_spec.type.family; }
     QString displayFontFamily() const { return m_spec.type.displayFamily; }
     QString monoFontFamily() const { return m_spec.type.monoFamily; }
+    QString editorFontFamily() const
+    {
+        return m_spec.editor.family.isEmpty() ? m_spec.type.family : m_spec.editor.family;
+    }
     int weightStrong() const { return m_spec.type.weightStrong; }
     int weightBold() const { return m_spec.type.weightBold; }
     int weightHeavy() const { return m_spec.type.weightHeavy; }

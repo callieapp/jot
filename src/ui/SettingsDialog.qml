@@ -238,6 +238,49 @@ Popup {
         }
 
         Section {
+            title: qsTr("Note text")
+            visible: root.tab === "appearance"
+
+            Row {
+                spacing: Theme.space2
+
+                Repeater {
+                    model: [
+                        {
+                            "id": "",
+                            "label": qsTr("Theme font")
+                        },
+                        {
+                            "id": "serif",
+                            "label": qsTr("Serif")
+                        },
+                        {
+                            "id": "mono",
+                            "label": qsTr("Mono")
+                        }
+                    ]
+
+                    PillButton {
+                        id: fontChoice
+                        required property var modelData
+                        label: fontChoice.modelData.label
+                        selected: Settings.noteFont === fontChoice.modelData.id
+                        onClicked: Settings.noteFont = fontChoice.modelData.id
+                    }
+                }
+            }
+            Text {
+                width: parent.width
+                wrapMode: Text.Wrap
+                text: qsTr(
+                          "The font notes are written in. Serif suits long writing; mono lines up columns of text.")
+                color: Theme.textMuted
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.textSm
+            }
+        }
+
+        Section {
             title: qsTr("Folders")
             visible: root.tab === "developer"
 

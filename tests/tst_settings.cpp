@@ -17,6 +17,7 @@ private Q_SLOTS:
     void signalsOnlyOnAChange();
     void refusesAnUnknownSort();
     void resetKeepsTheVault();
+    void refusesAnUnknownNoteFont();
 };
 
 void TestSettings::startsWithDefaults()
@@ -77,6 +78,7 @@ void TestSettings::resetKeepsTheVault()
     settings.setNoteSort(u"title"_s);
     settings.setCheckForUpdates(false);
     settings.setSourceMode(true);
+    settings.setNoteFont(u"serif"_s);
     settings.setCollapsedNotebooks({u"Work"_s});
     QSignalSpy themeChanged(&settings, &Settings::themeChanged);
 
@@ -87,9 +89,20 @@ void TestSettings::resetKeepsTheVault()
     QCOMPARE(settings.noteSort(), u"updated"_s);
     QVERIFY(settings.checkForUpdates());
     QVERIFY(!settings.sourceMode());
+    QCOMPARE(settings.noteFont(), QString());
     QCOMPARE(settings.vaultPath(), u"/home/me/Notes"_s);
     QCOMPARE(settings.collapsedNotebooks(), QStringList{u"Work"_s});
     QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteSort(), u"updated"_s);
+}
+
+void TestSettings::refusesAnUnknownNoteFont()
+{
+    QTemporaryDir dir;
+    Settings settings(dir.filePath(u"settings.ini"_s));
+    settings.setNoteFont(u"mono"_s);
+    settings.setNoteFont(u"comic"_s);
+    QCOMPARE(settings.noteFont(), u"mono"_s);
+    QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteFont(), u"mono"_s);
 }
 
 QTEST_GUILESS_MAIN(TestSettings)

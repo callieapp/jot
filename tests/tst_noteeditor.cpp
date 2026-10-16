@@ -45,6 +45,7 @@ private Q_SLOTS:
     void fillsInTablesWithTheKeys();
     void completesWikilinksFromTheKeyboard();
     void togglesSourceMode();
+    void writesInTheChosenFont();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -414,6 +415,20 @@ void TestNoteEditor::togglesSourceMode()
     QTest::keyClick(m_window.get(), Qt::Key_Slash, Qt::ControlModifier);
     QVERIFY(!m_settings->sourceMode());
     QTRY_VERIFY_WITH_TIMEOUT(blueInk() > 1000, 3000);
+}
+
+void TestNoteEditor::writesInTheChosenFont()
+{
+    QQuickItem *body = find(u"body"_s);
+    const auto family = [body] { return body->property("font").value<QFont>().family(); };
+    const ThemeController &theme = *ThemeController::instance();
+    QCOMPARE(family(), theme.editorFontFamily());
+    m_settings->setNoteFont(u"mono"_s);
+    QCOMPARE(family(), theme.monoFontFamily());
+    m_settings->setNoteFont(u"serif"_s);
+    QCOMPARE(family(), theme.displayFontFamily());
+    m_settings->setNoteFont({});
+    QCOMPARE(family(), theme.editorFontFamily());
 }
 
 QTEST_MAIN(TestNoteEditor)

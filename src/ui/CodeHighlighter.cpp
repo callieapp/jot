@@ -5,8 +5,6 @@
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/Theme>
 
-#include <QFont>
-
 using namespace Qt::StringLiterals;
 
 namespace jot {
@@ -39,16 +37,14 @@ KSyntaxHighlighting::Definition definitionFor(const QString &language)
 
 CodeHighlighter::CodeHighlighter()
 {
+    // Formats are only valid with a theme set, though the colors come from setColors().
     setTheme(repository().defaultTheme(KSyntaxHighlighting::Repository::DarkTheme));
 }
 
-void CodeHighlighter::setDark(bool dark)
+void CodeHighlighter::setColors(const CodeColors &colors, int boldWeight)
 {
-    if (m_dark == dark)
-        return;
-    m_dark = dark;
-    setTheme(repository().defaultTheme(dark ? KSyntaxHighlighting::Repository::DarkTheme
-                                            : KSyntaxHighlighting::Repository::LightTheme));
+    m_colors = colors;
+    m_boldWeight = boldWeight;
 }
 
 QList<CodeHighlighter::Span> CodeHighlighter::highlight(QStringView text, const QString &language,
@@ -66,15 +62,44 @@ QList<CodeHighlighter::Span> CodeHighlighter::highlight(QStringView text, const 
 
 void CodeHighlighter::applyFormat(int offset, int length, const KSyntaxHighlighting::Format &format)
 {
-    if (length <= 0 || format.isDefaultTextStyle(theme()))
+    using Style = KSyntaxHighlighting::Theme::TextStyle;
+    if (length <= 0)
         return;
     QTextCharFormat style;
-    if (format.hasTextColor(theme()))
-        style.setForeground(format.textColor(theme()));
-    if (format.isBold(theme()))
-        style.setFontWeight(QFont::Bold);
-    if (format.isItalic(theme()))
+    switch (format.textStyle()) {
+    case Style::Keyword:
+    case Style::ControlFlow:
+        style.setForeground(m_colors.keyword);
+        style.setFontWeight(m_boldWeight);
+        break;
+    case Style::Import:
+    case Style::Preprocessor:
+    case Style::Attribute: style.setForeground(m_colors.keyword); break;
+    case Style::String:
+    case Style::VerbatimString:
+    case Style::SpecialString:
+    case Style::Char:
+    case Style::SpecialChar: style.setForeground(m_colors.string); break;
+    case Style::DecVal:
+    case Style::BaseN:
+    case Style::Float:
+    case Style::Constant: style.setForeground(m_colors.number); break;
+    case Style::DataType:
+    case Style::BuiltIn:
+    case Style::Function:
+    case Style::Extension: style.setForeground(m_colors.type); break;
+    case Style::Comment:
+    case Style::Documentation:
+    case Style::Annotation:
+    case Style::CommentVar:
+    case Style::RegionMarker:
+        style.setForeground(m_colors.comment);
         style.setFontItalic(true);
+        break;
+    default:
+        // Variables, operators and the rest read as plain code.
+        return;
+    }
     m_spans.append({offset, length, style});
 }
 

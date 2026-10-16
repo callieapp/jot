@@ -5,6 +5,12 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
 
 ## Unreleased
 
+### New
+
+- Settings, Theme, Note text: write notes in the theme's font, a serif or a mono one.
+- Code blocks take their colors from the theme, worked out from its accent, so they match it.
+  A theme file can set them, and the note font, in a new `[editor]` section.
+
 ### Fixed
 
 - A long note opens at its title, not scrolled part way down.
