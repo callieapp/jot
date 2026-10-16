@@ -419,6 +419,18 @@ void TestNoteEditor::togglesSourceMode()
     QTest::keyClick(m_window.get(), Qt::Key_Slash, Qt::ControlModifier);
     QVERIFY(!m_settings->sourceMode());
     QTRY_VERIFY_WITH_TIMEOUT(blueInk() > 1000, 3000);
+
+    // The format row's switch does the same, its thumb sliding under the choice.
+    QQuickItem *modes = find(u"modes"_s);
+    QVERIFY(modes);
+    QQuickItem *thumb = find(u"thumb"_s, modes);
+    const qreal start = thumb->x();
+    const QPointF source = modes->mapToScene(QPointF(modes->width() * 0.75, modes->height() / 2));
+    QTest::mouseClick(m_window.get(), Qt::LeftButton, {}, source.toPoint());
+    QVERIFY(m_settings->sourceMode());
+    QTRY_COMPARE(thumb->x(), start + modes->property("segment").toReal());
+    // Slimmer than the row, so it does not touch its edges.
+    QVERIFY(modes->height() < modes->parentItem()->parentItem()->height() - 8);
 }
 
 void TestNoteEditor::writesInTheChosenFont()

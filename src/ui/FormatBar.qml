@@ -142,37 +142,22 @@ Rectangle {
         }
         spacing: Theme.space3
 
-        // The note styled as it is typed, or its Markdown as written, side by side.
-        Rectangle {
+        // The note styled as it is typed, or its Markdown as written.
+        ModeSwitch {
+            objectName: "modes"
             anchors.verticalCenter: parent.verticalCenter
-            width: modes.width + 2 * Theme.space1
-            height: modes.height + 2 * Theme.space1
-            radius: Theme.radiusMd + Theme.space1
-            color: Theme.surfaceAlt
-
-            Row {
-                id: modes
-
-                anchors.centerIn: parent
-                spacing: 0
-
-                PillButton {
-                    label: qsTr("Formatted")
-                    tip: qsTr("Style the Markdown as you type (Ctrl+/)")
-                    selected: !Settings.sourceMode
-                    hoverColor: Theme.border
-                    focusPolicy: Qt.NoFocus
-                    onClicked: Settings.sourceMode = false
+            options: [
+                {
+                    "label": qsTr("Formatted"),
+                    "tip": qsTr("Style the Markdown as you type (Ctrl+/)")
+                },
+                {
+                    "label": qsTr("Source"),
+                    "tip": qsTr("Show the Markdown as written (Ctrl+/)")
                 }
-                PillButton {
-                    label: qsTr("Source")
-                    tip: qsTr("Show the Markdown as written (Ctrl+/)")
-                    selected: Settings.sourceMode
-                    hoverColor: Theme.border
-                    focusPolicy: Qt.NoFocus
-                    onClicked: Settings.sourceMode = true
-                }
-            }
+            ]
+            current: Settings.sourceMode ? 1 : 0
+            onPicked: index => Settings.sourceMode = index === 1
         }
 
         // A note that is a task shows in Tasks until it is done.
