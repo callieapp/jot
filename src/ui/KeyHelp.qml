@@ -53,12 +53,25 @@ Popup {
     contentItem: Column {
         spacing: Theme.space4
 
-        Text {
-            text: qsTr("Keyboard shortcuts")
-            color: Theme.text
-            font.family: Theme.displayFontFamily
-            font.pixelSize: Theme.textXl
-            font.weight: Theme.weightBold
+        Item {
+            width: parent.width
+            height: title.implicitHeight
+
+            Text {
+                id: title
+                text: qsTr("Keyboard shortcuts")
+                color: Theme.text
+                font.family: Theme.displayFontFamily
+                font.pixelSize: Theme.textXl
+                font.weight: Theme.weightBold
+            }
+            CloseButton {
+                anchors {
+                    right: parent.right
+                    verticalCenter: title.verticalCenter
+                }
+                onClicked: root.close()
+            }
         }
 
         Row {

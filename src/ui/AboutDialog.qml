@@ -46,6 +46,16 @@ Popup {
             anchors.fill: parent
             radius: parent.radius
         }
+
+        // In the corner, clear of what the card says.
+        CloseButton {
+            anchors {
+                top: parent.top
+                right: parent.right
+                margins: Theme.space4
+            }
+            onClicked: root.close()
+        }
     }
 
     contentItem: Column {

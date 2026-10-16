@@ -42,13 +42,24 @@ Popup {
             anchors.fill: parent
             radius: parent.radius
         }
+
+        // In the corner, clear of what the card says.
+        CloseButton {
+            anchors {
+                top: parent.top
+                right: parent.right
+                margins: Theme.space4
+            }
+            onClicked: root.close()
+        }
     }
 
     contentItem: Column {
         spacing: Theme.space4
 
         Text {
-            width: parent.width
+            // Room for the X in the corner.
+            width: parent.width - Theme.space7
             wrapMode: Text.Wrap
             text: {
                 if (!root.notebook)
