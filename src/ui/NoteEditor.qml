@@ -413,7 +413,9 @@ Rectangle {
 
                         readonly property rect line: {
                             body.layoutTick
-                            return body.positionToRectangle(modelData.position)
+                            // An edit can shorten the note before the list catches up.
+                            return body.positionToRectangle(Math.min(modelData.position,
+                                                                     body.length))
                         }
 
                         x: 0

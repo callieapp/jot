@@ -37,6 +37,7 @@ private Q_SLOTS:
     void typingIsDrawnAndSaved();
     void typingKeepsWindowsLineEndings();
     void showsImagesInPlaceOfTheirLinks();
+    void switchingAwayFromAPictureLeavesNoStalePlace();
     void formatsAndUndoesInOneStep();
     void formatsFromTheKeyboard();
     void makesTheNoteATodoWithADueDate();
@@ -237,6 +238,16 @@ int TestNoteEditor::blueInk()
         }
     }
     return count;
+}
+
+void TestNoteEditor::switchingAwayFromAPictureLeavesNoStalePlace()
+{
+    // The picture's place is from The Ferry; a shorter note must not be asked for it.
+    QTest::failOnWarning(QRegularExpression(u"out of range"_s));
+    m_vault->setCurrent(u"Ashfall/Places/The Ferry.md"_s);
+    QTRY_VERIFY_WITH_TIMEOUT(blueInk() > 1000, 3000);
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QTRY_VERIFY_WITH_TIMEOUT(blueInk() < 50, 3000);
 }
 
 void TestNoteEditor::formatsAndUndoesInOneStep()

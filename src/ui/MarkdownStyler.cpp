@@ -52,6 +52,9 @@ void MarkdownStyler::setDocument(QQuickTextDocument *document)
                 &MarkdownStyler::readFrontMatter);
     }
     Q_EMIT documentChanged();
+    // At once rather than scheduled: the images' places belong to the old text, and asking
+    // the new text for them, as the editor would before the update came, reaches past it.
+    Q_EMIT imagesChanged();
     scheduleImages();
     readFrontMatter();
 }
