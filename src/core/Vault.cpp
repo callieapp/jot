@@ -334,22 +334,44 @@ std::optional<QString> Vault::createNote(const QString &folder, const QString &t
     return path;
 }
 
-bool Vault::trashNote(const QString &path, QString *error) const
+bool Vault::moveToTrash(const QString &relative, const QString &stamp) const
 {
     // Where the desktop has no trash, as on some removable or network drives, the vault
-    // keeps its own, so a note is never deleted outright.
+    // keeps its own, so nothing is deleted outright.
+    const QString file = absolute(relative);
+    if (m_systemTrash && QFile::moveToTrash(file))
+        return true;
+    const QString folder = absolute(kSettingsFolder + u"/trash/"_s + stamp);
+    const QString name = relative.section(u'/', -1);
+    QString target = folder + u'/' + name;
+    // Two of one name trashed in the same second keep both.
+    for (int n = 2; QFileInfo::exists(target); ++n)
+        target = folder + u'/' + u"%1 %2"_s.arg(n).arg(name);
+    return QDir().mkpath(folder) && QDir().rename(file, target);
+}
+
+bool Vault::trashFolder(const QString &path, QString *error) const
+{
+    if (!writable()) {
+        *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
+        return false;
+    }
+    if (path.isEmpty() || !isNotebookPath(path) || !QFileInfo(absolute(path)).isDir()) {
+        *error = QObject::tr("%1 is not a notebook in this vault").arg(path);
+        return false;
+    }
+    if (!moveToTrash(path, QDateTime::currentDateTime().toString(u"yyyyMMdd-HHmmss"_s))) {
+        *error = QObject::tr("could not move %1 to the trash").arg(path);
+        return false;
+    }
+    return true;
+}
+
+bool Vault::trashNote(const QString &path, QString *error) const
+{
     const QString stamp = QDateTime::currentDateTime().toString(u"yyyyMMdd-HHmmss"_s);
     const auto toTrash = [this, &stamp](const QString &relative) {
-        const QString file = absolute(relative);
-        if (m_systemTrash && QFile::moveToTrash(file))
-            return true;
-        const QString folder = absolute(kSettingsFolder + u"/trash/"_s + stamp);
-        const QString name = relative.section(u'/', -1);
-        QString target = folder + u'/' + name;
-        // Two notes of one name trashed in the same second keep both.
-        for (int n = 2; QFileInfo::exists(target); ++n)
-            target = folder + u'/' + u"%1 %2"_s.arg(n).arg(name);
-        return QDir().mkpath(folder) && QDir().rename(file, target);
+        return moveToTrash(relative, stamp);
     };
     if (!toTrash(path)) {
         *error = QObject::tr("could not move %1 to the trash").arg(path);

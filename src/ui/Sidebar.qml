@@ -192,6 +192,14 @@ Rectangle {
                         }
                     }
 
+                    // Delete on the notebook clicked asks before it goes to the trash.
+                    Keys.onDeletePressed: event => {
+                        if (notebook.path !== "" && Vault.writable && !notebook.renaming) {
+                            trashConfirm.askForNotebook(notebook.path)
+                            event.accepted = true
+                        }
+                    }
+
                     // "All notes" is the vault itself, which has no name to change.
                     onDoubleClicked: {
                         if (path !== "" && Vault.writable)
@@ -422,5 +430,16 @@ Rectangle {
             text: qsTr("Show in Files")
             onTriggered: Vault.showInFiles(notebookMenu.path)
         }
+        MenuEntry {
+            text: qsTr("Move to trash...")
+            visible: notebookMenu.path !== ""
+            height: visible ? implicitHeight : 0
+            enabled: Vault.writable
+            onTriggered: trashConfirm.askForNotebook(notebookMenu.path)
+        }
+    }
+
+    TrashConfirm {
+        id: trashConfirm
     }
 }
