@@ -5,11 +5,13 @@
 #include "jot/Settings.h"
 
 #include <QDirIterator>
+#include <QMimeData>
 #include <QQmlComponent>
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QtQml/qqmlextensionplugin.h>
@@ -35,6 +37,7 @@ private Q_SLOTS:
     void renamesANotebookByDoubleClick();
     void escapeKeepsTheOldName();
     void makesANotebookReadyToName();
+    void dropsNotesAndNotebooksOnNotebooks();
 
 private:
     /// The sidebar entry labelled `label`, among those shown.
@@ -42,6 +45,8 @@ private:
     QQuickItem *findItem(const std::function<bool(QQuickItem *)> &match,
                          QQuickItem *from = nullptr) const;
     void type(const QString &text);
+    /// Drags `format` holding `data` onto `target`, as the desktop delivers a drag and drop.
+    void drop(QQuickItem *target, const QString &format, const QString &data);
 
     std::unique_ptr<QTemporaryDir> m_dir;
     std::unique_ptr<Settings> m_settings;
@@ -170,6 +175,36 @@ void TestSidebar::makesANotebookReadyToName()
     QTest::keyClick(m_window.get(), Qt::Key_Return);
     QTRY_VERIFY(QFileInfo(m_root + u"/Ideas"_s).isDir());
     QVERIFY(!QFileInfo::exists(m_root + u"/New notebook"_s));
+}
+
+void TestSidebar::drop(QQuickItem *target, const QString &format, const QString &data)
+{
+    // Rows made again after a move are placed a moment later; every row sits below To-dos.
+    QTRY_VERIFY(target->mapToScene({0, 0}).y() > 0);
+    QMimeData mime;
+    mime.setData(format, data.toUtf8());
+    const QPointF at = target->mapToScene({target->width() / 2, target->height() / 2});
+    QDragEnterEvent enter(at.toPoint(), Qt::MoveAction, &mime, Qt::LeftButton, {});
+    QCoreApplication::sendEvent(m_window.get(), &enter);
+    QDragMoveEvent move(at.toPoint(), Qt::MoveAction, &mime, Qt::LeftButton, {});
+    QCoreApplication::sendEvent(m_window.get(), &move);
+    QDropEvent dropped(at, Qt::MoveAction, &mime, Qt::LeftButton, {});
+    QCoreApplication::sendEvent(m_window.get(), &dropped);
+}
+
+void TestSidebar::dropsNotesAndNotebooksOnNotebooks()
+{
+    QTest::failOnWarning(QRegularExpression(u"\\.qml:"_s));
+    drop(entry(u"Inbox"_s), u"application/x-jot-note"_s, u"Recipes/Pancakes.md"_s);
+    QTRY_VERIFY(QFileInfo::exists(m_root + u"/Inbox/Pancakes.md"_s));
+
+    QTRY_VERIFY(entry(u"Ashfall"_s));
+    drop(entry(u"Ashfall"_s), u"application/x-jot-notebook"_s, u"Recipes"_s);
+    QTRY_VERIFY(QFileInfo(m_root + u"/Ashfall/Recipes"_s).isDir());
+
+    // All notes is the top of the vault.
+    drop(entry(u"All notes"_s), u"application/x-jot-notebook"_s, u"Ashfall/Recipes"_s);
+    QTRY_VERIFY(QFileInfo(m_root + u"/Recipes"_s).isDir());
 }
 
 QTEST_MAIN(TestSidebar)
