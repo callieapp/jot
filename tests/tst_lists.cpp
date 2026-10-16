@@ -44,6 +44,7 @@ private Q_SLOTS:
     void trashAsksFirst();
     void columnBordersDragToResize();
     void deleteAsksFirstForNotesAndNotebooks();
+    void searchHandsTheKeysBackToTheList();
 
 private:
     /// The visible menu entry reading `text`, anywhere in the window.
@@ -369,6 +370,35 @@ void TestLists::deleteAsksFirstForNotesAndNotebooks()
     QVERIFY(QFileInfo(m_root + u"/Ashfall/Places"_s).isDir());
     click(confirm());
     QTRY_VERIFY(!QFileInfo::exists(m_root + u"/Ashfall/Places"_s));
+}
+
+void TestLists::searchHandsTheKeysBackToTheList()
+{
+    QQuickItem *list = findItem([](QQuickItem *item) { return item->inherits("QQuickListView"); },
+                                qobject_cast<QQuickItem *>(m_noteList.get()));
+    QVERIFY(list);
+    const auto search = [this] {
+        QMetaObject::invokeMethod(m_noteList.get(), "focusSearch");
+        type(u"pan"_s);
+        QCOMPARE(m_vault->notes()->property("query").toString(), u"pan"_s);
+    };
+
+    // Return keeps what was found and goes to the list.
+    search();
+    QTest::keyClick(m_window.get(), Qt::Key_Return);
+    QVERIFY(list->hasActiveFocus());
+    QCOMPARE(m_vault->notes()->property("query").toString(), u"pan"_s);
+
+    // Escape clears it; in vi mode it leaves the box too, so j and k work at once.
+    search();
+    QTest::keyClick(m_window.get(), Qt::Key_Escape);
+    QCOMPARE(m_vault->notes()->property("query").toString(), QString());
+    QVERIFY(!list->hasActiveFocus());
+    m_settings->setViMode(true);
+    search();
+    QTest::keyClick(m_window.get(), Qt::Key_Escape);
+    QCOMPARE(m_vault->notes()->property("query").toString(), QString());
+    QVERIFY(list->hasActiveFocus());
 }
 
 QTEST_MAIN(TestLists)
