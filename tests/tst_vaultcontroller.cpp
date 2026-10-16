@@ -393,9 +393,19 @@ void TestVaultController::actsOnNotesThatAreNotShown()
     QVERIFY(m_vault->isTodo(u"Recipes/Pancakes.md"_s));
     QVERIFY(m_vault->setTodo(u"Inbox/Groceries.md"_s, false));
     const QString groceries = readFile(m_root + u"/Inbox/Groceries.md"_s);
-    QVERIFY(!groceries.contains(u"todo:"_s) && !groceries.contains(u"due:"_s));
+    QVERIFY(!groceries.contains(u"todo:"_s));
+    QVERIFY(groceries.contains(u"due:"_s));
 
     QCOMPARE(m_vault->linkTo(u"Ashfall/Characters/Soren.md"_s), u"[[Soren]]"_s);
+    // A name another note shares, in any case, needs the path to say which.
+    QFile twin(m_root + u"/Inbox/pancakes.md"_s);
+    QVERIFY(twin.open(QIODevice::WriteOnly));
+    twin.write("Another stack.\n");
+    twin.close();
+    QTRY_VERIFY_WITH_TIMEOUT(m_vault->index()->note(u"Inbox/pancakes.md"_s), 3000);
+    QCOMPARE(m_vault->linkTo(u"Recipes/Pancakes.md"_s), u"[[Recipes/Pancakes]]"_s);
+    QCOMPARE(m_vault->notebookOf(u"Recipes/Pancakes.md"_s), u"Recipes"_s);
+    QCOMPARE(m_vault->notebookOf(u"Welcome.md"_s), QString());
     QVERIFY(m_vault->notebookPaths().contains(u"Ashfall/Places"_s));
     QVERIFY(!m_vault->notebookPaths().contains(QString()));
 

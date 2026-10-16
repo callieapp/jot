@@ -92,7 +92,7 @@ public:
     Q_INVOKABLE bool trashCurrent();
     /// Moves the note at `path`, and its attachments, to the system trash.
     Q_INVOKABLE bool trashNote(const QString &path);
-    /// Makes the note at `path` a to-do, or no longer one, dropping its due and done dates.
+    /// Makes the note at `path` a to-do, or no longer one. Its due date stays either way.
     Q_INVOKABLE bool setTodo(const QString &path, bool todo);
     /// Whether the note at `path` is a to-do, done or not.
     Q_INVOKABLE bool isTodo(const QString &path) const;
@@ -102,6 +102,10 @@ public:
     Q_INVOKABLE void showInFiles(const QString &path) const;
     /// Every notebook's path, folded or not, in the order the sidebar lists them.
     Q_INVOKABLE QStringList notebookPaths() const;
+    /// The title of the note at `path`, as the note list shows it.
+    Q_INVOKABLE QString titleOf(const QString &path) const;
+    /// The notebook the note at `path` is in; empty for the top of the vault.
+    Q_INVOKABLE QString notebookOf(const QString &path) const { return Vault::notebookOf(path); }
     /// Makes a notebook in `parent`, or at the top for none, and gives its path.
     Q_INVOKABLE QString newNotebook(const QString &parent = {});
     /// Renames the notebook at `path`, rewriting links to the notes in it.

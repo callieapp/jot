@@ -15,6 +15,7 @@ Rectangle {
     /// The point is given rather than read from the cursor, which Wayland does not share.
     function showMenu(path, item, x, y) {
         noteMenu.path = path
+        noteMenu.folder = Vault.notebookOf(path)
         noteMenu.notebooks = [""].concat(Vault.notebookPaths())
         noteMenu.todo = Vault.isTodo(path)
         noteMenu.popup(item, x, y)
@@ -243,8 +244,7 @@ Rectangle {
         property string path
         property var notebooks: []
         property bool todo: false
-        readonly property string folder: path.includes("/") ? path.slice(0, path.lastIndexOf("/")) :
-                                                              ""
+        property string folder
 
         MenuEntry {
             text: qsTr("Open")
@@ -296,11 +296,81 @@ Rectangle {
             enabled: Vault.writable
             onTriggered: Vault.setTodo(noteMenu.path, !noteMenu.todo)
         }
-        // The system trash keeps it, so this needs no second click.
         MenuEntry {
-            text: qsTr("Move to trash")
+            text: qsTr("Move to trash...")
             enabled: Vault.writable
-            onTriggered: Vault.trashNote(noteMenu.path)
+            onTriggered: {
+                trashConfirm.path = noteMenu.path
+                trashConfirm.open()
+            }
+        }
+    }
+
+    // Asked, as the editor's Delete does, since a vault's own trash is out of sight.
+    Popup {
+        id: trashConfirm
+
+        property string path
+
+        anchors.centerIn: Overlay.overlay
+        width: 360
+        padding: Theme.space6
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+        Overlay.modal: Scrim {}
+
+        background: Rectangle {
+            radius: Theme.radiusXl
+            color: Theme.surface
+            border.color: Theme.border
+
+            SoftShadow {
+                anchors.fill: parent
+                radius: parent.radius
+            }
+        }
+
+        contentItem: Column {
+            spacing: Theme.space4
+
+            Text {
+                width: parent.width
+                wrapMode: Text.Wrap
+                text: qsTr("Move %1 to the trash?").arg(Vault.titleOf(trashConfirm.path))
+                color: Theme.text
+                font.family: Theme.displayFontFamily
+                font.pixelSize: Theme.textLg
+                font.weight: Theme.weightBold
+            }
+            Text {
+                width: parent.width
+                wrapMode: Text.Wrap
+                text: qsTr(
+                          "It goes to your desktop's trash, with its attachments. Where the desktop has none for this folder, it goes to the .jot/trash folder in your notes folder.")
+                color: Theme.textMuted
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.textSm
+            }
+            Row {
+                spacing: Theme.space2
+
+                StickerButton {
+                    objectName: "confirmTrash"
+                    text: qsTr("Move to trash")
+                    destructive: true
+                    armed: true
+                    onClicked: {
+                        Vault.trashNote(trashConfirm.path)
+                        trashConfirm.close()
+                    }
+                }
+                StickerButton {
+                    text: qsTr("Cancel")
+                    onClicked: trashConfirm.close()
+                }
+            }
         }
     }
 }

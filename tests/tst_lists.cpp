@@ -41,6 +41,7 @@ private Q_SLOTS:
     void dropsNotesAndNotebooksOnNotebooks();
     void noteMenuMakesATodo();
     void notebookMenuMakesANotebookInside();
+    void trashAsksFirst();
 
 private:
     /// The visible menu entry reading `text`, anywhere in the window.
@@ -80,6 +81,7 @@ void TestLists::init()
     SettingsForeign::s_instance = m_settings.get();
     m_vault = std::make_unique<VaultController>(*m_settings);
     m_vault->setIndexPath(m_dir->filePath(u"index.sqlite"_s));
+    m_vault->setSystemTrash(false);
     VaultController::setInstance(m_vault.get());
     QVERIFY(m_vault->openPath(m_root));
 
@@ -271,6 +273,31 @@ void TestLists::notebookMenuMakesANotebookInside()
     type(u"Breads"_s);
     QTest::keyClick(m_window.get(), Qt::Key_Return);
     QTRY_VERIFY(QFileInfo(m_root + u"/Recipes/Breads"_s).isDir());
+}
+
+void TestLists::trashAsksFirst()
+{
+    const auto sourdough = [this] {
+        return findItem(
+            [](QQuickItem *item) {
+                return item->isVisible() &&
+                       item->property("path").toString() == u"Recipes/Sourdough.md"_s;
+            },
+            qobject_cast<QQuickItem *>(m_noteList.get()));
+    };
+    click(sourdough(), Qt::RightButton);
+    QTRY_VERIFY(menuEntry(u"Move to trash..."_s));
+    click(menuEntry(u"Move to trash..."_s));
+    // Nothing goes until the question is answered.
+    QVERIFY(QFileInfo::exists(m_root + u"/Recipes/Sourdough.md"_s));
+    QQuickItem *confirm = nullptr;
+    QTRY_VERIFY((confirm = findItem(
+                     [](QQuickItem *item) {
+                         return item->isVisible() && item->objectName() == u"confirmTrash"_s;
+                     },
+                     m_window->contentItem())));
+    click(confirm);
+    QTRY_VERIFY(!QFileInfo::exists(m_root + u"/Recipes/Sourdough.md"_s));
 }
 
 QTEST_MAIN(TestLists)
