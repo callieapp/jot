@@ -4,6 +4,7 @@
 #include "jot/NoteScan.h"
 
 #include <QDir>
+#include <QHash>
 #include <QSet>
 #include <QUrl>
 
@@ -106,6 +107,72 @@ std::optional<QStringList> renameNote(const Vault &vault, VaultIndex &index, con
         written.append(source);
     }
     index.update(QStringList{from, to} + written);
+    written.sort();
+    return written;
+}
+
+std::optional<QStringList> moveNotebook(const Vault &vault, VaultIndex &index, const QString &from,
+                                        const QString &to, QString *error,
+                                        const BeforeWrite &beforeWrite)
+{
+    // Where each note inside goes, worked out while the index still knows them all.
+    QHash<QString, QString> moved;
+    for (const NoteInfo &note : index.notesIn(from))
+        moved.insert(note.path, to + note.path.mid(from.size()));
+    const auto after = [&moved](const QString &path) { return moved.value(path, path); };
+
+    // Every note with a link to one inside, and every note inside, may need its links redone.
+    QSet<QString> sources;
+    for (auto it = moved.cbegin(); it != moved.cend(); ++it) {
+        sources.insert(it.key());
+        for (const NoteLink &link : index.backlinks(it.key()))
+            sources.insert(link.source);
+    }
+    QList<std::pair<QString, QString>> rewrites;
+    for (const QString &source : std::as_const(sources)) {
+        const std::optional<QString> text = notefile::read(vault.absolute(source), error);
+        if (!text)
+            return std::nullopt;
+        const QString newSource = after(source);
+        const NoteParts parts = splitFrontMatter(*text);
+        const QString body = rewriteLinks(parts.body, [&](const QString &raw, bool wiki) {
+            const QString target = index.resolve(raw, source);
+            if (target.isEmpty() || (!moved.contains(target) && !moved.contains(source)))
+                return std::optional<QString>();
+            const QString newTarget = after(target);
+            if (wiki) {
+                // A wikilink by name, or by a path that did not change, still reaches it.
+                return target == newTarget
+                           ? std::optional<QString>()
+                           : std::optional(retarget(raw, wiki, newSource, newTarget));
+            }
+            // Other tools read a Markdown path literally, so it must name the file from the
+            // note's folder after the move.
+            const QString path = QUrl::fromPercentEncoding(raw.section(u'#', 0, 0).toUtf8());
+            const QString folder = folderOf(newSource);
+            const QString literal = QDir::cleanPath(folder.isEmpty() ? path : folder + u'/' + path);
+            if (literal == newTarget || literal + kNoteSuffix == newTarget)
+                return std::optional<QString>();
+            return std::optional(retarget(raw, wiki, newSource, newTarget));
+        });
+        if (body != parts.body)
+            rewrites.append({newSource, text->first(parts.body.data() - text->data()) + body});
+    }
+
+    if (!vault.moveFolder(from, to, error))
+        return std::nullopt;
+    QStringList written;
+    for (const auto &[path, text] : std::as_const(rewrites)) {
+        if (beforeWrite)
+            beforeWrite(path, text);
+        if (!notefile::write(vault.absolute(path), text, error))
+            return std::nullopt;
+        written.append(path);
+    }
+    QStringList changed = written;
+    for (auto it = moved.cbegin(); it != moved.cend(); ++it)
+        changed << it.key() << it.value();
+    index.update(changed);
     written.sort();
     return written;
 }

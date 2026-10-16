@@ -8,6 +8,8 @@
 #include <QSaveFile>
 #include <QStringDecoder>
 
+#include <algorithm>
+
 #include <sys/stat.h>
 
 using namespace Qt::StringLiterals;
@@ -23,6 +25,18 @@ const QString kAssetsSuffix = u".assets"_s;
 QString join(const QString &folder, const QString &name)
 {
     return folder.isEmpty() ? name : folder + u'/' + name;
+}
+
+/// Whether `folder` names a notebook inside the vault: not above it, not absolute, and not
+/// in a hidden folder such as `.jot`. Empty is the vault itself.
+bool isNotebookPath(const QString &folder)
+{
+    const QString clean = QDir::cleanPath(folder);
+    return folder.isEmpty() ||
+           !(clean == u".." || clean.startsWith(u"../"_s) || QDir::isAbsolutePath(clean) ||
+             clean.split(u'/').contains(QString()) ||
+             std::ranges::any_of(clean.split(u'/'),
+                                 [](const QString &part) { return part.startsWith(u'.'); }));
 }
 
 } // namespace
@@ -290,10 +304,7 @@ std::optional<QString> Vault::createNote(const QString &folder, const QString &t
         *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
         return std::nullopt;
     }
-    const QString clean = QDir::cleanPath(folder);
-    if (!folder.isEmpty() &&
-        (clean == u".." || clean.startsWith(u"../"_s) || QDir::isAbsolutePath(clean) ||
-         clean.section(u'/', 0, 0).startsWith(u'.'))) {
+    if (!isNotebookPath(folder)) {
         *error = QObject::tr("%1 is not a notebook in this vault").arg(folder);
         return std::nullopt;
     }
@@ -357,6 +368,54 @@ bool Vault::moveNote(const QString &from, const QString &to, QString *error) con
     const QString assets = absolute(assetsFolderFor(from));
     if (QFileInfo(assets).isDir() && !QDir().rename(assets, absolute(assetsFolderFor(to)))) {
         *error = QObject::tr("moved %1, but not its attachments").arg(from);
+        return false;
+    }
+    return true;
+}
+
+std::optional<QString> Vault::createFolder(const QString &parent, const QString &name,
+                                           QString *error) const
+{
+    if (!writable()) {
+        *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
+        return std::nullopt;
+    }
+    const QString base = fileNameFor(name.trimmed()).remove(u'/');
+    if (base.isEmpty() || base.startsWith(u'.') || !isNotebookPath(parent)) {
+        *error = QObject::tr("%1 cannot be a notebook").arg(name);
+        return std::nullopt;
+    }
+    QString path = join(parent, base);
+    for (int n = 2; QFileInfo::exists(absolute(path)); ++n)
+        path = join(parent, u"%1 %2"_s.arg(base).arg(n));
+    if (!QDir().mkpath(absolute(path))) {
+        *error = QObject::tr("could not create %1").arg(path);
+        return std::nullopt;
+    }
+    return path;
+}
+
+bool Vault::moveFolder(const QString &from, const QString &to, QString *error) const
+{
+    if (!writable()) {
+        *error = QObject::tr("this vault is from a newer Jot, so this one only reads it");
+        return false;
+    }
+    if (from.isEmpty() || to.isEmpty() || !isNotebookPath(from) || !isNotebookPath(to)) {
+        *error = QObject::tr("%1 cannot be moved to %2").arg(from, to);
+        return false;
+    }
+    if (to == from || to.startsWith(from + u'/')) {
+        *error = QObject::tr("%1 cannot go inside itself").arg(from);
+        return false;
+    }
+    if (QFileInfo::exists(absolute(to))) {
+        *error = QObject::tr("%1 already exists").arg(to);
+        return false;
+    }
+    const QString toParent = to.contains(u'/') ? to.section(u'/', 0, -2) : QString();
+    if (!QDir().mkpath(absolute(toParent)) || !QDir().rename(absolute(from), absolute(to))) {
+        *error = QObject::tr("could not move %1 to %2").arg(from, to);
         return false;
     }
     return true;

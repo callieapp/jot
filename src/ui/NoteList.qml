@@ -115,6 +115,19 @@ Rectangle {
             height: card.implicitHeight + Theme.space2
             hoverEnabled: true
             Accessible.name: title
+
+            // A note drags onto a notebook in the sidebar to move there.
+            DragHandler {
+                id: noteDrag
+                target: null
+                enabled: Vault.writable
+            }
+            Drag.active: noteDrag.active
+            Drag.dragType: Drag.Automatic
+            Drag.supportedActions: Qt.MoveAction
+            Drag.mimeData: ({
+                                "application/x-jot-note": note.path
+                            })
             onClicked: {
                 Vault.current = path
                 list.currentIndex = index

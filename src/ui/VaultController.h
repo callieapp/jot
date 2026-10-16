@@ -90,6 +90,14 @@ public:
     Q_INVOKABLE bool renameCurrent(const QString &title);
     /// Moves the note shown, and its attachments, to the system trash.
     Q_INVOKABLE bool trashCurrent();
+    /// Makes a notebook in `parent`, or at the top for none, and gives its path.
+    Q_INVOKABLE QString newNotebook(const QString &parent = {});
+    /// Renames the notebook at `path`, rewriting links to the notes in it.
+    Q_INVOKABLE bool renameNotebook(const QString &path, const QString &name);
+    /// Moves the notebook at `path` into `parent`, or to the top for none, rewriting links.
+    Q_INVOKABLE bool moveNotebook(const QString &path, const QString &parent);
+    /// Moves the note at `path`, and its attachments, into `notebook`, rewriting links.
+    Q_INVOKABLE bool moveNoteTo(const QString &path, const QString &notebook);
     /// Follows a link written in the note shown: opens a note, makes one a wikilink names
     /// but nothing holds yet, or opens anything else with the desktop.
     Q_INVOKABLE bool follow(const QString &target, bool wiki);
@@ -176,6 +184,10 @@ private:
     /// After a rename that did not finish, shows whichever of the two paths now holds
     /// the note, so nothing writes to one that is gone.
     void resyncAfterRename(const QString &from, const QString &to);
+    /// Moves a notebook from one path to another, and what refers to it with it.
+    bool relocateNotebook(const QString &from, const QString &to);
+    /// After notes were moved or rewritten: shows the note shown where it went, read again.
+    void afterMove(const QString &current, const QStringList &written);
     /// Replaces the whole text of the note at `path`, through the editor's copy when shown.
     bool rewriteNote(const QString &path,
                      const std::function<std::optional<QString>(const QString &)> &change);
