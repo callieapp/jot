@@ -334,6 +334,10 @@ bool VaultController::renameNotebook(const QString &path, const QString &name)
 
 bool VaultController::moveNotebook(const QString &path, const QString &parent)
 {
+    // Where it is already, or into itself, is nothing to do rather than a problem.
+    const QString current = path.contains(u'/') ? path.section(u'/', 0, -2) : QString();
+    if (parent == current || parent == path || parent.startsWith(path + u'/'))
+        return false;
     const QString name = path.section(u'/', -1);
     return relocateNotebook(path, parent.isEmpty() ? name : parent + u'/' + name);
 }
@@ -352,12 +356,29 @@ bool VaultController::relocateNotebook(const QString &from, const QString &to)
         jot::moveNotebook(*m_vault, *m_index, from, to, &error, expect);
     if (!written) {
         qCWarning(lcVault) << "could not move" << from << "to" << to << error;
+        // A failure after the folder moved leaves it moved, so everything follows it there
+        // and the index is read again, rather than the editor saving to where it was.
+        const bool movedAnyway =
+            !QFileInfo::exists(m_vault->absolute(from)) && QFileInfo::exists(m_vault->absolute(to));
+        if (movedAnyway) {
+            m_index->refresh();
+            followNotebook(from, to, {});
+        } else {
+            if (m_watcher)
+                m_watcher->start();
+            reloadModels();
+        }
+        // After following, which reads the note shown again and so clears any problem.
         setProblem(tr("Could not move the notebook: %1").arg(error));
-        if (m_watcher)
-            m_watcher->start();
-        reloadModels();
         return false;
     }
+    followNotebook(from, to, *written);
+    return true;
+}
+
+void VaultController::followNotebook(const QString &from, const QString &to,
+                                     const QStringList &written)
+{
     // Whatever named a path inside it now names the same place in its new spot.
     const auto follow = [&](const QString &path) {
         return path == from || path.startsWith(from + u'/') ? to + path.mid(from.size()) : path;
@@ -370,8 +391,7 @@ bool VaultController::relocateNotebook(const QString &from, const QString &to)
     m_notes.setNotebook(follow(m_notes.notebook()));
     if (m_watcher)
         m_watcher->start();
-    afterMove(follow(m_current), *written);
-    return true;
+    afterMove(follow(m_current), written);
 }
 
 bool VaultController::moveNoteTo(const QString &path, const QString &notebook)

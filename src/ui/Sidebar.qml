@@ -17,11 +17,7 @@ Rectangle {
         if (drop.hasFormat("application/x-jot-note")) {
             Vault.moveNoteTo(drop.getDataAsString("application/x-jot-note"), path)
         } else if (drop.hasFormat("application/x-jot-notebook")) {
-            const moving = drop.getDataAsString("application/x-jot-notebook")
-            const parent = moving.includes("/") ? moving.slice(0, moving.lastIndexOf("/")) : ""
-            // Not into itself, nor where it already is.
-            if (path !== moving && !path.startsWith(moving + "/") && path !== parent)
-                Vault.moveNotebook(moving, path)
+            Vault.moveNotebook(drop.getDataAsString("application/x-jot-notebook"), path)
         }
         drop.accept(Qt.MoveAction)
     }

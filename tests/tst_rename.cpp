@@ -187,7 +187,9 @@ void TestRename::movesANotebookAndKeepsItsLinksWorking()
 {
     write(u"Pitch.md"_s,
           u"[Mara](Cast/Mara.md), [[Mara]], [[Cast/Soren]], [deep](Cast/Minor/Tam.md)\n"_s);
-    write(u"Cast/Mara.md"_s, u"[brother](Soren.md), [pitch](../Pitch.md), [[Pitch]]\n"_s);
+    write(u"Board.md"_s, u"![face](Cast/Mara.assets/face.png)\n"_s);
+    write(u"Cast/Mara.md"_s,
+          u"[brother](Soren.md), [pitch](../Pitch.md), [[Pitch]], ![](Mara.assets/face.png)\n"_s);
     write(u"Cast/Soren.md"_s, u"soren\n"_s);
     write(u"Cast/Minor/Tam.md"_s, u"[mara](../Mara.md)\n"_s);
     write(u"Cast/Mara.assets/face.png"_s, u"png"_s);
@@ -205,10 +207,13 @@ void TestRename::movesANotebookAndKeepsItsLinksWorking()
              u"[Mara](Story/People/Mara.md), [[Mara]], [[Story/People/Soren]], "
              "[deep](Story/People/Minor/Tam.md)\n"_s);
     // Inside, paths between its own notes still work; the one out has a level more.
+    // Its own picture moved with it, so that link stays; one from outside follows it.
     QCOMPARE(read(u"Story/People/Mara.md"_s),
-             u"[brother](Soren.md), [pitch](../../Pitch.md), [[Pitch]]\n"_s);
+             u"[brother](Soren.md), [pitch](../../Pitch.md), [[Pitch]], "
+             "![](Mara.assets/face.png)\n"_s);
+    QCOMPARE(read(u"Board.md"_s), u"![face](Story/People/Mara.assets/face.png)\n"_s);
     QCOMPARE(read(u"Story/People/Minor/Tam.md"_s), u"[mara](../Mara.md)\n"_s);
-    QCOMPARE(*written, (QStringList{u"Pitch.md"_s, u"Story/People/Mara.md"_s}));
+    QCOMPARE(*written, (QStringList{u"Board.md"_s, u"Pitch.md"_s, u"Story/People/Mara.md"_s}));
 
     QCOMPARE(m_index->resolve(u"Story/People/Soren"_s, {}), u"Story/People/Soren.md"_s);
     QVERIFY(!m_index->note(u"Cast/Mara.md"_s));

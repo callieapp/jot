@@ -95,6 +95,7 @@ public:
     /// Renames the notebook at `path`, rewriting links to the notes in it.
     Q_INVOKABLE bool renameNotebook(const QString &path, const QString &name);
     /// Moves the notebook at `path` into `parent`, or to the top for none, rewriting links.
+    /// Moving it where it is, or into itself, does nothing and says false.
     Q_INVOKABLE bool moveNotebook(const QString &path, const QString &parent);
     /// Moves the note at `path`, and its attachments, into `notebook`, rewriting links.
     Q_INVOKABLE bool moveNoteTo(const QString &path, const QString &notebook);
@@ -186,6 +187,9 @@ private:
     void resyncAfterRename(const QString &from, const QString &to);
     /// Moves a notebook from one path to another, and what refers to it with it.
     bool relocateNotebook(const QString &from, const QString &to);
+    /// After a notebook moved: the folded notebooks, the list's notebook, the note shown and
+    /// the watcher follow it, and notes in `written` are read again.
+    void followNotebook(const QString &from, const QString &to, const QStringList &written);
     /// After notes were moved or rewritten: shows the note shown where it went, read again.
     void afterMove(const QString &current, const QStringList &written);
     /// Replaces the whole text of the note at `path`, through the editor's copy when shown.
