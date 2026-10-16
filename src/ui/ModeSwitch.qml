@@ -15,13 +15,12 @@ Rectangle {
     signal picked(int index)
 
     readonly property real segment: Math.max(first.implicitWidth, second.implicitWidth)
+    readonly property real inset: Theme.space1
 
     implicitWidth: 2 * segment + 2 * inset
-    implicitHeight: 26
+    implicitHeight: Theme.switchHeight
     radius: height / 2
     color: Theme.surfaceAlt
-
-    readonly property real inset: 2
 
     Rectangle {
         id: thumb
@@ -67,7 +66,8 @@ Rectangle {
 
         width: root.segment
         height: parent.height
-        implicitWidth: caption.implicitWidth + 2 * Theme.space3
+        // Measured in the heaviest weight, so choosing a side does not change the width.
+        implicitWidth: widest.advanceWidth + 2 * Theme.space3
         text: option.label
         focusPolicy: Qt.NoFocus
         Accessible.role: Accessible.RadioButton
@@ -76,6 +76,13 @@ Rectangle {
 
         HoverHandler {
             cursorShape: Qt.PointingHandCursor
+        }
+        TextMetrics {
+            id: widest
+            text: choice.text
+            font.family: Theme.fontFamily
+            font.pixelSize: Theme.textSm
+            font.weight: Theme.weightHeavy
         }
 
         contentItem: Text {
@@ -105,6 +112,7 @@ Rectangle {
                 visible: !choice.pressed
                 text: choice.option.tip
                 delay: Theme.durSlow * 2
+                // An open popup that takes Escape keeps the window's shortcuts from working.
                 closePolicy: Popup.NoAutoClose
             }
         }

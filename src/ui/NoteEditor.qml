@@ -168,6 +168,7 @@ Rectangle {
     FormatBar {
         id: formatBar
 
+        objectName: "formatBar"
         anchors {
             left: parent.left
             right: parent.right

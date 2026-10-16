@@ -125,6 +125,8 @@ class ThemeController : public QObject
     Q_PROPERTY(int treeIndent READ treeIndent CONSTANT)
     /// A row in a list such as the sidebar's notebooks.
     Q_PROPERTY(int listRowHeight READ listRowHeight CONSTANT)
+    /// A two-way switch such as the format row's Formatted and Source.
+    Q_PROPERTY(int switchHeight READ switchHeight CONSTANT)
     /// The dot on a button that says something is waiting, such as an update.
     Q_PROPERTY(int badgeSize READ badgeSize CONSTANT)
     /// The small line icons beside list text, and their stroke.
@@ -232,6 +234,7 @@ public:
     int editorWidth() const { return 760; }
     int imageHeight() const { return 360; }
     int listRowHeight() const { return 28; }
+    int switchHeight() const { return 26; }
     int badgeSize() const { return 10; }
     int smallGlyphSize() const { return 10; }
     qreal smallGlyphStroke() const { return 1.6; }
