@@ -115,19 +115,20 @@ std::optional<QStringList> moveNotebook(const Vault &vault, VaultIndex &index, c
                                         const QString &to, QString *error,
                                         const BeforeWrite &beforeWrite)
 {
-    // Where each note inside goes, worked out while the index still knows them all.
-    QHash<QString, QString> moved;
+    // Everything inside goes with it, notes and attachments alike.
+    const auto inside = [&from](const QString &path) { return path.startsWith(from + u'/'); };
+    const auto after = [&](const QString &path) {
+        return inside(path) ? to + path.mid(from.size()) : path;
+    };
+    QStringList notesInside;
     for (const NoteInfo &note : index.notesIn(from))
-        moved.insert(note.path, to + note.path.mid(from.size()));
-    const auto after = [&moved](const QString &path) { return moved.value(path, path); };
+        notesInside.append(note.path);
 
-    // Every note with a link to one inside, and every note inside, may need its links redone.
-    QSet<QString> sources;
-    for (auto it = moved.cbegin(); it != moved.cend(); ++it) {
-        sources.insert(it.key());
-        for (const NoteLink &link : index.backlinks(it.key()))
-            sources.insert(link.source);
-    }
+    // Every note inside, and every note with a link to anything inside, may need its links
+    // redone; worked out while the index still knows where links lead.
+    QSet<QString> sources(notesInside.cbegin(), notesInside.cend());
+    for (const QString &source : index.sourcesLinkingInto(from))
+        sources.insert(source);
     QList<std::pair<QString, QString>> rewrites;
     for (const QString &source : std::as_const(sources)) {
         const std::optional<QString> text = notefile::read(vault.absolute(source), error);
@@ -137,7 +138,7 @@ std::optional<QStringList> moveNotebook(const Vault &vault, VaultIndex &index, c
         const NoteParts parts = splitFrontMatter(*text);
         const QString body = rewriteLinks(parts.body, [&](const QString &raw, bool wiki) {
             const QString target = index.resolve(raw, source);
-            if (target.isEmpty() || (!moved.contains(target) && !moved.contains(source)))
+            if (target.isEmpty() || (!inside(target) && !inside(source)))
                 return std::optional<QString>();
             const QString newTarget = after(target);
             if (wiki) {
@@ -170,8 +171,8 @@ std::optional<QStringList> moveNotebook(const Vault &vault, VaultIndex &index, c
         written.append(path);
     }
     QStringList changed = written;
-    for (auto it = moved.cbegin(); it != moved.cend(); ++it)
-        changed << it.key() << it.value();
+    for (const QString &note : std::as_const(notesInside))
+        changed << note << after(note);
     index.update(changed);
     written.sort();
     return written;

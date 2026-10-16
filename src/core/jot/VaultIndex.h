@@ -106,6 +106,8 @@ public:
     [[nodiscard]] QList<NoteLink> linksFrom(const QString &path) const;
     /// Links that reach `path`, from other notes.
     [[nodiscard]] QList<NoteLink> backlinks(const QString &path) const;
+    /// The notes with a link to anything inside `folder`, a note or an attachment.
+    [[nodiscard]] QStringList sourcesLinkingInto(const QString &folder) const;
     /// Links that reach nothing, so a note could be made for them.
     [[nodiscard]] QList<NoteLink> unresolved() const;
     /// Where a link written in `from` leads, the way Obsidian reads it: a path from the

@@ -13,6 +13,8 @@
 #include <QTemporaryDir>
 #include <QTest>
 
+#include <unistd.h>
+
 using namespace jot;
 using namespace Qt::StringLiterals;
 
@@ -36,6 +38,7 @@ private Q_SLOTS:
     void switcherFindsByTitleAliasAndPath();
     void makesRenamesAndMovesNotebooks();
     void movesANoteToAnotherNotebook();
+    void followsANotebookThatMovedThoughALinkCouldNotBeRewritten();
     void suggestsLinksThatResolve();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
@@ -320,10 +323,39 @@ void TestVaultController::makesRenamesAndMovesNotebooks()
     QVERIFY(m_vault->moveNotebook(u"Ashfall/Cast"_s, {}));
     QCOMPARE(m_vault->current(), u"Cast/Mara Vey.md"_s);
     QCOMPARE(m_vault->index()->resolve(u"Mara"_s, {}), u"Cast/Mara Vey.md"_s);
-    // A notebook cannot go inside itself, and the problem says why.
-    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not move.*"_s));
+    // Into itself, or where it is, does nothing and is no problem.
     QVERIFY(!m_vault->moveNotebook(u"Ashfall"_s, u"Ashfall/New notebook"_s));
+    QVERIFY(!m_vault->moveNotebook(u"Cast"_s, {}));
+    QVERIFY(m_vault->problem().isEmpty());
+}
+
+void TestVaultController::followsANotebookThatMovedThoughALinkCouldNotBeRewritten()
+{
+    // A folder Jot cannot write in makes the rewrite of a link fail after the move. Root
+    // writes anywhere, as in CI's containers, so there the failure cannot be made.
+    if (geteuid() == 0)
+        QSKIP("root can write in any folder");
+    const QString locked = m_root + u"/Locked"_s;
+    QVERIFY(QDir().mkpath(locked));
+    QFile board(locked + u"/Board.md"_s);
+    QVERIFY(board.open(QIODevice::WriteOnly));
+    board.write("[Mara](../Ashfall/Characters/Mara%20Vey.md)\n");
+    board.close();
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Characters/Mara Vey.md"_s);
+    QVERIFY(QFile::setPermissions(locked, QFileDevice::ReadOwner | QFileDevice::ExeOwner));
+
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not move.*"_s));
+    const bool moved = m_vault->renameNotebook(u"Ashfall/Characters"_s, u"Cast"_s);
+    QFile::setPermissions(locked,
+                          QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+    QVERIFY(!moved);
     QVERIFY(!m_vault->problem().isEmpty());
+    // The folder did move, so the note shown and the index follow it there.
+    QVERIFY(QFileInfo::exists(m_root + u"/Ashfall/Cast/Mara Vey.md"_s));
+    QCOMPARE(m_vault->current(), u"Ashfall/Cast/Mara Vey.md"_s);
+    QVERIFY(m_vault->index()->note(u"Ashfall/Cast/Mara Vey.md"_s));
+    QVERIFY(!m_vault->index()->note(u"Ashfall/Characters/Mara Vey.md"_s));
 }
 
 void TestVaultController::movesANoteToAnotherNotebook()

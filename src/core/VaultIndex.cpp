@@ -652,6 +652,22 @@ QList<NoteLink> VaultIndex::backlinks(const QString &path) const
     return jot::linksFrom(query);
 }
 
+QStringList VaultIndex::sourcesLinkingInto(const QString &folder) const
+{
+    // A prefix compare rather than LIKE, which would read % and _ in a folder's name.
+    const QString prefix = folder + u'/';
+    QSqlQuery query(QSqlDatabase::database(m_connection));
+    query.prepare(u"SELECT DISTINCT source FROM links WHERE substr(target, 1, ?) = ?"_s);
+    query.addBindValue(prefix.size());
+    query.addBindValue(prefix);
+    QStringList sources;
+    if (query.exec()) {
+        while (query.next())
+            sources.append(query.value(0).toString());
+    }
+    return sources;
+}
+
 QList<NoteLink> VaultIndex::unresolved() const
 {
     QSqlQuery query(QSqlDatabase::database(m_connection));
