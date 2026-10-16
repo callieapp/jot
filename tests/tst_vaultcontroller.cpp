@@ -34,6 +34,8 @@ private Q_SLOTS:
     void ordersNotesAsAsked();
     void followsTheOrderInSettings();
     void switcherFindsByTitleAliasAndPath();
+    void makesRenamesAndMovesNotebooks();
+    void movesANoteToAnotherNotebook();
     void suggestsLinksThatResolve();
     void showsTheCurrentNote();
     void followsChangesOnDisk();
@@ -293,6 +295,48 @@ void TestVaultController::suggestsLinksThatResolve()
     for (const QString &target : std::as_const(targets))
         QCOMPARE(m_vault->index()->resolve(target, {}), target + u".md"_s);
     QCOMPARE(links.suggestions(1).size(), 1);
+}
+
+void TestVaultController::makesRenamesAndMovesNotebooks()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_settings->setCollapsedNotebooks({u"Ashfall"_s, u"Ashfall/Characters"_s});
+    const QString made = m_vault->newNotebook(u"Ashfall"_s);
+    QCOMPARE(made, u"Ashfall/New notebook"_s);
+    QVERIFY(QFileInfo(m_root + u"/Ashfall/New notebook"_s).isDir());
+    // Its parent opens so it shows.
+    QCOMPARE(m_settings->collapsedNotebooks(), QStringList{u"Ashfall/Characters"_s});
+    QVERIFY(column(*m_vault->notebooks(), "path").contains(made));
+
+    m_vault->setCurrent(u"Ashfall/Characters/Mara Vey.md"_s);
+    m_vault->notes()->setNotebook(u"Ashfall/Characters"_s);
+    QVERIFY(m_vault->renameNotebook(u"Ashfall/Characters"_s, u"Cast"_s));
+    QCOMPARE(m_vault->current(), u"Ashfall/Cast/Mara Vey.md"_s);
+    QVERIFY(m_vault->currentText().contains(u"[[Soren]]"_s));
+    QCOMPARE(m_vault->notes()->notebook(), u"Ashfall/Cast"_s);
+    QCOMPARE(m_settings->collapsedNotebooks(), QStringList{u"Ashfall/Cast"_s});
+    QVERIFY(!column(*m_vault->notebooks(), "path").contains(u"Ashfall/Characters"_s));
+
+    QVERIFY(m_vault->moveNotebook(u"Ashfall/Cast"_s, {}));
+    QCOMPARE(m_vault->current(), u"Cast/Mara Vey.md"_s);
+    QCOMPARE(m_vault->index()->resolve(u"Mara"_s, {}), u"Cast/Mara Vey.md"_s);
+    // A notebook cannot go inside itself, and the problem says why.
+    QTest::ignoreMessage(QtWarningMsg, QRegularExpression(u".*could not move.*"_s));
+    QVERIFY(!m_vault->moveNotebook(u"Ashfall"_s, u"Ashfall/New notebook"_s));
+    QVERIFY(!m_vault->problem().isEmpty());
+}
+
+void TestVaultController::movesANoteToAnotherNotebook()
+{
+    QVERIFY(m_vault->openPath(m_root));
+    m_vault->setCurrent(u"Ashfall/Places/The Ferry.md"_s);
+    QVERIFY(m_vault->moveNoteTo(u"Ashfall/Places/The Ferry.md"_s, u"Inbox"_s));
+    QCOMPARE(m_vault->current(), u"Inbox/The Ferry.md"_s);
+    QVERIFY(QFileInfo::exists(m_root + u"/Inbox/The Ferry.assets/ferry.png"_s));
+    // Links to it still reach it, and its picture still shows.
+    QCOMPARE(m_vault->index()->resolve(u"The Ferry"_s, {}), u"Inbox/The Ferry.md"_s);
+    QVERIFY(!m_vault->attachmentPath(u"The Ferry.assets/ferry.png"_s, false).isEmpty());
+    QVERIFY(!m_vault->moveNoteTo(u"Inbox/The Ferry.md"_s, u"Inbox"_s));
 }
 
 void TestVaultController::switcherFindsByTitleAliasAndPath()

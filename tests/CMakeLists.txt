@@ -42,6 +42,10 @@ jot_add_test(tst_noteeditor)
 target_link_libraries(tst_noteeditor PRIVATE jotui jotuiplugin Qt6::QuickControls2)
 target_compile_definitions(tst_noteeditor PRIVATE
     JOT_SAMPLE_VAULT="${CMAKE_CURRENT_SOURCE_DIR}/data/sample-vault")
+jot_add_test(tst_sidebar)
+target_link_libraries(tst_sidebar PRIVATE jotui jotuiplugin Qt6::QuickControls2)
+target_compile_definitions(tst_sidebar PRIVATE
+    JOT_SAMPLE_VAULT="${CMAKE_CURRENT_SOURCE_DIR}/data/sample-vault")
 jot_add_test(tst_dialogs)
 target_link_libraries(tst_dialogs PRIVATE jotui jotuiplugin Qt6::QuickControls2)
 jot_add_test(tst_markdownhighlighter)

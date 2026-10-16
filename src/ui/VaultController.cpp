@@ -302,6 +302,113 @@ bool VaultController::renameCurrent(const QString &title)
     return true;
 }
 
+QString VaultController::newNotebook(const QString &parent)
+{
+    if (!m_vault)
+        return {};
+    QString error;
+    const std::optional<QString> path = m_vault->createFolder(parent, tr("New notebook"), &error);
+    if (!path) {
+        qCWarning(lcVault) << "could not make a notebook:" << error;
+        setProblem(tr("Could not make a notebook: %1").arg(error));
+        return {};
+    }
+    // Its parent opens, so the new notebook shows.
+    QStringList collapsed = m_settings.collapsedNotebooks();
+    if (collapsed.removeOne(parent))
+        m_settings.setCollapsedNotebooks(collapsed);
+    if (m_watcher)
+        m_watcher->start();
+    reloadModels();
+    return *path;
+}
+
+bool VaultController::renameNotebook(const QString &path, const QString &name)
+{
+    const QString base = Vault::fileNameFor(name.trimmed()).remove(u'/');
+    if (base.isEmpty() || base.startsWith(u'.'))
+        return false;
+    const QString parent = path.contains(u'/') ? path.section(u'/', 0, -2) : QString();
+    return relocateNotebook(path, parent.isEmpty() ? base : parent + u'/' + base);
+}
+
+bool VaultController::moveNotebook(const QString &path, const QString &parent)
+{
+    const QString name = path.section(u'/', -1);
+    return relocateNotebook(path, parent.isEmpty() ? name : parent + u'/' + name);
+}
+
+bool VaultController::relocateNotebook(const QString &from, const QString &to)
+{
+    if (!m_vault || !m_index || from.isEmpty() || to == from)
+        return false;
+    saveNow();
+    QString error;
+    const auto expect = [this](const QString &path, const QString &text) {
+        if (m_watcher)
+            m_watcher->expectWrite(path, text);
+    };
+    const std::optional<QStringList> written =
+        jot::moveNotebook(*m_vault, *m_index, from, to, &error, expect);
+    if (!written) {
+        qCWarning(lcVault) << "could not move" << from << "to" << to << error;
+        setProblem(tr("Could not move the notebook: %1").arg(error));
+        if (m_watcher)
+            m_watcher->start();
+        reloadModels();
+        return false;
+    }
+    // Whatever named a path inside it now names the same place in its new spot.
+    const auto follow = [&](const QString &path) {
+        return path == from || path.startsWith(from + u'/') ? to + path.mid(from.size()) : path;
+    };
+    QStringList collapsed;
+    for (const QString &folded : m_settings.collapsedNotebooks())
+        collapsed.append(follow(folded));
+    collapsed.sort();
+    m_settings.setCollapsedNotebooks(collapsed);
+    m_notes.setNotebook(follow(m_notes.notebook()));
+    if (m_watcher)
+        m_watcher->start();
+    afterMove(follow(m_current), *written);
+    return true;
+}
+
+bool VaultController::moveNoteTo(const QString &path, const QString &notebook)
+{
+    if (!m_vault || !m_index || path.isEmpty())
+        return false;
+    const QString folder = path.contains(u'/') ? path.section(u'/', 0, -2) : QString();
+    if (folder == notebook)
+        return false;
+    saveNow();
+    const QString to = m_vault->freePath(notebook, Vault::titleFromPath(path));
+    QString error;
+    const auto expect = [this](const QString &note, const QString &text) {
+        if (m_watcher)
+            m_watcher->expectWrite(note, text);
+    };
+    const std::optional<QStringList> written =
+        renameNote(*m_vault, *m_index, path, to, &error, expect);
+    if (!written) {
+        qCWarning(lcVault) << "could not move" << path << "to" << notebook << error;
+        resyncAfterRename(path, to);
+        setProblem(tr("Could not move the note: %1").arg(error));
+        return false;
+    }
+    afterMove(m_current == path ? to : m_current, *written);
+    return true;
+}
+
+void VaultController::afterMove(const QString &current, const QStringList &written)
+{
+    if (current != m_current || written.contains(current)) {
+        m_current = current;
+        readCurrent();
+    }
+    reloadModels();
+}
+
 QString VaultController::pasteImage()
 {
     if (!m_vault || m_current.isEmpty())

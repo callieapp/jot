@@ -61,6 +61,13 @@ public:
     /// Renames or moves a note and its `.assets` folder. Links to it are the index's job.
     bool moveNote(const QString &from, const QString &to, QString *error) const;
 
+    /// Makes a notebook called `name` in the notebook `parent`, or "name 2" and so on when
+    /// that is taken. Gives its vault path.
+    std::optional<QString> createFolder(const QString &parent, const QString &name,
+                                        QString *error) const;
+    /// Renames or moves a notebook with everything in it. Links are the caller's job.
+    bool moveFolder(const QString &from, const QString &to, QString *error) const;
+
     /// Keeps `bytes` as an attachment of the note at `notePath`, in its `.assets` folder,
     /// as `fileName` or, when that is taken, "name 2.ext". Gives the attachment's vault path.
     std::optional<QString> addAttachment(const QString &notePath, const QString &fileName,

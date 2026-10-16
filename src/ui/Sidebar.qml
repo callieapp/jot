@@ -4,9 +4,27 @@ import QtQuick
 import QtQuick.Controls
 
 /// The notebooks, as a tree that folds, and the tags below them. Choosing either fills
-/// the note list.
+/// the note list. Notes and notebooks dropped on a notebook move into it; a notebook is
+/// renamed by double-clicking it.
 Rectangle {
     id: root
+
+    /// The notebook whose name is being typed, or "".
+    property string renamingPath
+
+    /// Moves what was dropped, a note or a notebook, into the notebook at `path`.
+    function dropInto(path, drop) {
+        if (drop.hasFormat("application/x-jot-note")) {
+            Vault.moveNoteTo(drop.getDataAsString("application/x-jot-note"), path)
+        } else if (drop.hasFormat("application/x-jot-notebook")) {
+            const moving = drop.getDataAsString("application/x-jot-notebook")
+            const parent = moving.includes("/") ? moving.slice(0, moving.lastIndexOf("/")) : ""
+            // Not into itself, nor where it already is.
+            if (path !== moving && !path.startsWith(moving + "/") && path !== parent)
+                Vault.moveNotebook(moving, path)
+        }
+        drop.accept(Qt.MoveAction)
+    }
 
     color: Theme.surface
 
@@ -49,6 +67,8 @@ Rectangle {
 
         Column {
             width: parent.width
+            // Room between the title bar and the first entry.
+            topPadding: Theme.space3
 
             Entry {
                 id: todos
@@ -87,8 +107,56 @@ Rectangle {
                 }
             }
 
-            Heading {
-                text: qsTr("Notebooks")
+            Item {
+                width: root.width
+                height: notebooksHeading.height
+
+                Heading {
+                    id: notebooksHeading
+                    text: qsTr("Notebooks")
+                }
+                AbstractButton {
+                    id: addNotebook
+
+                    objectName: "addNotebook"
+
+                    anchors {
+                        right: parent.right
+                        rightMargin: Theme.space4
+                        bottom: parent.bottom
+                        bottomMargin: Theme.space1
+                    }
+                    width: Theme.listRowHeight - Theme.space2
+                    height: width
+                    visible: Vault.writable
+                    focusPolicy: Qt.NoFocus
+                    Accessible.name: qsTr("New notebook")
+                    onClicked: root.renamingPath = Vault.newNotebook()
+
+                    HoverHandler {
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                    background: Rectangle {
+                        radius: Theme.radiusSm
+                        color: addNotebook.hovered ? Theme.surfaceAlt : Theme.tint(Theme.surfaceAlt,
+                                                                                   0)
+                    }
+                    contentItem: Item {
+                        Glyph {
+                            anchors.centerIn: parent
+                            width: Theme.smallGlyphSize
+                            height: Theme.smallGlyphSize
+                            name: "plus"
+                            color: addNotebook.hovered ? Theme.text : Theme.textFaint
+                            stroke: Theme.smallGlyphStroke
+                        }
+                    }
+                    Tip {
+                        visible: addNotebook.hovered
+                        text: addNotebook.Accessible.name
+                        delay: Theme.durSlow * 2
+                    }
+                }
             }
 
             Repeater {
@@ -104,6 +172,9 @@ Rectangle {
                     required property bool expanded
                     required property int count
 
+                    readonly property bool renaming: root.renamingPath !== "" && root.renamingPath
+                                                     === path
+
                     width: root.width
                     label: name
                     selected: !Vault.showingTodos && Vault.notes.tag === "" && Vault.notes.notebook
@@ -111,6 +182,86 @@ Rectangle {
                     onClicked: {
                         Vault.showingTodos = false
                         Vault.notes.notebook = path
+                    }
+                    // "All notes" is the vault itself, which has no name to change.
+                    onDoubleClicked: {
+                        if (path !== "" && Vault.writable)
+                            root.renamingPath = path
+                    }
+
+                    // A notebook drags onto another to go inside it.
+                    DragHandler {
+                        id: notebookDrag
+                        target: null
+                        enabled: notebook.path !== "" && Vault.writable && !notebook.renaming
+                    }
+                    Drag.active: notebookDrag.active
+                    Drag.dragType: Drag.Automatic
+                    Drag.supportedActions: Qt.MoveAction
+                    Drag.mimeData: ({
+                                        "application/x-jot-notebook": notebook.path
+                                    })
+
+                    DropArea {
+                        id: dropHere
+                        anchors.fill: parent
+                        keys: ["application/x-jot-note", "application/x-jot-notebook"]
+                        enabled: Vault.writable
+                        onDropped: drop => root.dropInto(notebook.path, drop)
+                    }
+
+                    Rectangle {
+                        anchors {
+                            fill: parent
+                            leftMargin: Theme.space3
+                            rightMargin: Theme.space3
+                        }
+                        visible: dropHere.containsDrag
+                        radius: Theme.radiusSm
+                        color: "transparent"
+                        border.width: 2
+                        border.color: Theme.accent
+                    }
+
+                    // Typing a new name: Return or leaving keeps it, Escape does not.
+                    Loader {
+                        anchors {
+                            fill: parent
+                            leftMargin: Theme.space3 + notebook.depth * Theme.treeIndent
+                            rightMargin: Theme.space3
+                        }
+                        active: notebook.renaming
+                        sourceComponent: Field {
+                            id: nameField
+
+                            property bool done: false
+
+                            function finish(keep) {
+                                if (done)
+                                    return
+                                done = true
+                                if (keep && text.trim() !== "" && text !== notebook.name)
+                                    Vault.renameNotebook(notebook.path, text)
+                                root.renamingPath = ""
+                            }
+
+                            text: notebook.name
+                            topPadding: Theme.space1
+                            bottomPadding: Theme.space1
+                            leftPadding: Theme.space2
+                            font.pixelSize: Theme.textMd
+                            Accessible.name: qsTr("Name of %1").arg(notebook.name)
+                            Component.onCompleted: {
+                                forceActiveFocus()
+                                selectAll()
+                            }
+                            onAccepted: finish(true)
+                            onActiveFocusChanged: {
+                                if (!activeFocus)
+                                    finish(true)
+                            }
+                            Keys.onEscapePressed: finish(false)
+                        }
                     }
 
                     contentItem: Item {

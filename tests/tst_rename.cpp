@@ -22,6 +22,8 @@ private Q_SLOTS:
     void keepsTheMovedNotesOwnPathsWorking();
     void reportsWhatItWrote();
     void parenthesesStayInsideTheLink();
+    void movesANotebookAndKeepsItsLinksWorking();
+    void refusesToMoveANotebookIntoItself();
 
 private:
     void write(const QString &path, const QString &text);
@@ -179,6 +181,54 @@ void TestRename::parenthesesStayInsideTheLink()
     // And it can be renamed again from there.
     QVERIFY(renameNote(*m_vault, *m_index, u"Plan (draft).md"_s, u"Plan.md"_s, &error));
     QCOMPARE(read(u"Scene.md"_s), u"[x](<Plan.md>) and [y](<Plan.md>)\n"_s);
+}
+
+void TestRename::movesANotebookAndKeepsItsLinksWorking()
+{
+    write(u"Pitch.md"_s,
+          u"[Mara](Cast/Mara.md), [[Mara]], [[Cast/Soren]], [deep](Cast/Minor/Tam.md)\n"_s);
+    write(u"Cast/Mara.md"_s, u"[brother](Soren.md), [pitch](../Pitch.md), [[Pitch]]\n"_s);
+    write(u"Cast/Soren.md"_s, u"soren\n"_s);
+    write(u"Cast/Minor/Tam.md"_s, u"[mara](../Mara.md)\n"_s);
+    write(u"Cast/Mara.assets/face.png"_s, u"png"_s);
+    open();
+
+    // Deeper, so paths that lead out of the notebook have further to go.
+    QString error;
+    const std::optional<QStringList> written =
+        moveNotebook(*m_vault, *m_index, u"Cast"_s, u"Story/People"_s, &error);
+    QVERIFY2(written, qPrintable(error));
+
+    QVERIFY(!QFileInfo::exists(m_vault->absolute(u"Cast"_s)));
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Story/People/Mara.assets/face.png"_s)));
+    QCOMPARE(read(u"Pitch.md"_s),
+             u"[Mara](Story/People/Mara.md), [[Mara]], [[Story/People/Soren]], "
+             "[deep](Story/People/Minor/Tam.md)\n"_s);
+    // Inside, paths between its own notes still work; the one out has a level more.
+    QCOMPARE(read(u"Story/People/Mara.md"_s),
+             u"[brother](Soren.md), [pitch](../../Pitch.md), [[Pitch]]\n"_s);
+    QCOMPARE(read(u"Story/People/Minor/Tam.md"_s), u"[mara](../Mara.md)\n"_s);
+    QCOMPARE(*written, (QStringList{u"Pitch.md"_s, u"Story/People/Mara.md"_s}));
+
+    QCOMPARE(m_index->resolve(u"Story/People/Soren"_s, {}), u"Story/People/Soren.md"_s);
+    QVERIFY(!m_index->note(u"Cast/Mara.md"_s));
+    QCOMPARE(m_index->notesIn(u"Story"_s).size(), 3);
+}
+
+void TestRename::refusesToMoveANotebookIntoItself()
+{
+    write(u"Cast/Mara.md"_s, u"mara\n"_s);
+    open();
+    QString error;
+    QVERIFY(!moveNotebook(*m_vault, *m_index, u"Cast"_s, u"Cast/Old"_s, &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Cast/Mara.md"_s)));
+
+    QVERIFY(m_vault->createFolder({}, u"Cast"_s, &error));
+    QCOMPARE(*m_vault->createFolder({}, u"Cast"_s, &error), u"Cast 3"_s);
+    // Names are cleaned as note file names are, so none comes out hidden.
+    QCOMPARE(*m_vault->createFolder({}, u".hidden"_s, &error), u"hidden"_s);
+    QVERIFY(!m_vault->moveFolder(u"Cast"_s, u"Cast 2"_s, &error));
 }
 
 QTEST_GUILESS_MAIN(TestRename)

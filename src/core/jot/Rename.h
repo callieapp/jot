@@ -20,6 +20,14 @@ std::optional<QStringList> renameNote(const Vault &vault, VaultIndex &index, con
                                       const QString &to, QString *error,
                                       const BeforeWrite &beforeWrite = {});
 
+/// Moves the notebook at `from` to `to`, with every note and attachment in it, and rewrites
+/// links so they still reach the same notes: links from other notes to notes inside it, and
+/// the Markdown paths in its notes that lead out of it. Gives the notes it rewrote, by their
+/// paths after the move. The index is brought up to date with all of them.
+std::optional<QStringList> moveNotebook(const Vault &vault, VaultIndex &index, const QString &from,
+                                        const QString &to, QString *error,
+                                        const BeforeWrite &beforeWrite = {});
+
 /// The target to write for a link that reached `from` from `source` and should now reach `to`:
 /// a name or vault path for a wikilink, as `raw` was; a path from the source's folder for a
 /// Markdown link. Any `#heading` stays.
