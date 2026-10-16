@@ -8,7 +8,7 @@ import QtQuick.Controls
 Popup {
     id: root
 
-    /// Done was pressed.
+    /// Closed, by Done, the X or Escape: the colors are saved either way.
     signal finished
 
     parent: Overlay.overlay
@@ -20,6 +20,7 @@ Popup {
     modal: true
     focus: true
     closePolicy: Popup.CloseOnEscape
+    onClosed: finished()
 
     Overlay.modal: Item {}
 
@@ -63,16 +64,10 @@ Popup {
                 StickerButton {
                     accent: true
                     text: qsTr("Done")
-                    onClicked: {
-                        root.close()
-                        root.finished()
-                    }
+                    onClicked: root.close()
                 }
                 CloseButton {
-                    onClicked: {
-                        root.close()
-                        root.finished()
-                    }
+                    onClicked: root.close()
                 }
             }
         }
