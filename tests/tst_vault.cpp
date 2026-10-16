@@ -31,6 +31,7 @@ private Q_SLOTS:
     void createdNotesCarryTheirDateAndTitle();
     void movingANoteTakesItsAttachments();
     void keepsItsOwnTrashWhereTheDriveHasNone();
+    void trashesANotebookWithEverythingInIt();
     void relativePathsStayInside();
     void keepsAttachmentsBesideTheirNote();
     void writesLinkTargetsOtherToolsRead_data();
@@ -218,6 +219,46 @@ void TestVault::keepsItsOwnTrashWhereTheDriveHasNone()
     QVERIFY(!QFileInfo::exists(m_vault->absolute(u"A/Mara.assets"_s)));
     // The trash is out of sight: not a notebook, not a note.
     QCOMPARE(m_vault->entries(), (QList<VaultEntry>{{u"A"_s, true}, {u"B"_s, true}}));
+}
+
+void TestVault::trashesANotebookWithEverythingInIt()
+{
+    m_vault->setSystemTrash(false);
+    write(u"Story/Cast/Mara.md"_s);
+    write(u"Story/Cast/Mara.assets/face.png"_s);
+    write(u"Story/Pitch.md"_s);
+    QVERIFY(QDir().mkpath(m_vault->absolute(u".jot"_s)));
+    QString error;
+
+    // Only a notebook inside the vault goes: not the vault, its own folder, a path that
+    // leaves it, or a note.
+    for (const QString &path :
+         {QString(), u".jot"_s, u"../x"_s, u"Story/Pitch.md"_s, u"Missing"_s}) {
+        error.clear();
+        QVERIFY2(!m_vault->trashFolder(path, &error), qPrintable(path));
+        QVERIFY2(!error.isEmpty(), qPrintable(path));
+    }
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Story/Pitch.md"_s)));
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u".jot"_s)));
+
+    QVERIFY2(m_vault->trashFolder(u"Story/Cast"_s, &error), qPrintable(error));
+    QVERIFY(!QFileInfo::exists(m_vault->absolute(u"Story/Cast"_s)));
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Story/Pitch.md"_s)));
+    QStringList trashed;
+    QDirIterator files(m_vault->absolute(u".jot/trash"_s), QDir::Files,
+                       QDirIterator::Subdirectories);
+    while (files.hasNext())
+        trashed.append(QFileInfo(files.next()).fileName());
+    trashed.sort();
+    QCOMPARE(trashed, (QStringList{u"Mara.md"_s, u"face.png"_s}));
+
+    // A vault from a newer Jot is only read.
+    write(u".jot/vault.yaml"_s, "format: 2\n");
+    const Vault newer(m_dir->path());
+    error.clear();
+    QVERIFY(!newer.trashFolder(u"Story"_s, &error));
+    QVERIFY(error.contains(u"newer Jot"_s));
+    QVERIFY(QFileInfo::exists(m_vault->absolute(u"Story/Pitch.md"_s)));
 }
 
 void TestVault::keepsAttachmentsBesideTheirNote()
