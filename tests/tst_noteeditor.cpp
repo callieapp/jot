@@ -13,6 +13,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QRegularExpression>
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QtQml/qqmlextensionplugin.h>
@@ -47,6 +48,7 @@ private Q_SLOTS:
     void completesWikilinksFromTheKeyboard();
     void togglesSourceMode();
     void writesInTheChosenFont();
+    void editsInViModes();
 
 private:
     /// Pixels in the body's area that are not the background, as a measure of text drawn.
@@ -439,6 +441,71 @@ void TestNoteEditor::writesInTheChosenFont()
     m_settings->setNoteFont({});
     QCOMPARE(family(), theme.editorFontFamily());
     QCOMPARE(styler->fontFamily(), theme.editorFontFamily());
+}
+
+void TestNoteEditor::editsInViModes()
+{
+    m_settings->setViMode(true);
+    m_vault->setCurrent(u"Welcome.md"_s);
+    QQuickItem *body = find(u"body"_s);
+    auto *vi = body->findChild<QObject *>(u"vi"_s);
+    QVERIFY(vi);
+    body->forceActiveFocus();
+    body->setProperty("text", u"alpha beta\ngamma"_s);
+    body->setProperty("cursorPosition", 0);
+    const auto text = [body] { return body->property("text").toString(); };
+    const auto type = [this](const QString &keys) {
+        for (const QChar c : keys)
+            QTest::keyClick(m_window.get(), c.toLatin1());
+    };
+    QSignalSpy left(m_editor.get(), SIGNAL(leftNote()));
+
+    // A note opens in normal mode, where letters move and edit rather than type.
+    QCOMPARE(vi->property("mode").toString(), u"normal"_s);
+    type(u"xw"_s);
+    QCOMPARE(text(), u"lpha beta\ngamma"_s);
+    QCOMPARE(body->property("cursorPosition").toInt(), 5);
+    type(u"i"_s);
+    QCOMPARE(vi->property("mode").toString(), u"insert"_s);
+    type(u"big "_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Escape);
+    QCOMPARE(vi->property("mode").toString(), u"normal"_s);
+    QCOMPARE(text(), u"lpha big beta\ngamma"_s);
+
+    // Lines are cut and pasted whole, and undone.
+    type(u"jdd"_s);
+    QCOMPARE(text(), u"lpha big beta"_s);
+    type(u"p"_s);
+    QCOMPARE(text(), u"lpha big beta\ngamma"_s);
+    type(u"u"_s);
+    QCOMPARE(text(), u"lpha big beta"_s);
+
+    // Visual mode selects with the same moves, and cuts what it selected.
+    type(u"0vll"_s);
+    QCOMPARE(vi->property("mode").toString(), u"visual"_s);
+    type(u"d"_s);
+    QCOMPARE(text(), u"ha big beta"_s);
+    QCOMPARE(vi->property("mode").toString(), u"normal"_s);
+
+    type(u"oz"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_Escape);
+    QCOMPARE(text(), u"ha big beta\nz"_s);
+    // With no router, the leader is only swallowed.
+    type(u","_s);
+    QCOMPARE(text(), u"ha big beta\nz"_s);
+    // Ctrl and a letter vi does not use still formats.
+    type(u"0"_s);
+    QTest::keyClick(m_window.get(), Qt::Key_B, Qt::ControlModifier);
+    QCOMPARE(text(), u"ha big beta\n**z**"_s);
+
+    // Escape in normal mode hands the keyboard back; off, keys type as ever.
+    QTest::keyClick(m_window.get(), Qt::Key_Escape);
+    QCOMPARE(left.size(), 1);
+    m_settings->setViMode(false);
+    body->forceActiveFocus();
+    body->setProperty("cursorPosition", 0);
+    type(u"j"_s);
+    QCOMPARE(text(), u"jha big beta\n**z**"_s);
 }
 
 QTEST_MAIN(TestNoteEditor)

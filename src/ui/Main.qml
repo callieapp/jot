@@ -355,6 +355,9 @@ ApplicationWindow {
             NoteEditor {
                 id: editor
 
+                router: keys
+                onLeftNote: noteList.focusList()
+
                 visible: Vault.isOpen
                 anchors {
                     left: noteList.right
@@ -388,7 +391,7 @@ ApplicationWindow {
     LazyPopup {
         id: keyHelp
         sourceComponent: KeyHelp {
-            actions: window.shortcuts
+            actions: keys.actions
         }
     }
     LazyPopup {
@@ -416,149 +419,92 @@ ApplicationWindow {
         }
     }
 
-    /// What the keyboard shortcuts dialog lists.
-    readonly property var shortcuts: [
-        {
-            "keys": ["Ctrl+N"],
-            "label": qsTr("New note")
-        },
-        {
-            "keys": ["Ctrl+P"],
-            "label": qsTr("Go to a note")
-        },
-        {
-            "keys": ["Ctrl+F"],
-            "label": qsTr("Search notes")
-        },
-        {
-            "keys": ["Ctrl+,"],
-            "label": qsTr("Settings")
-        },
-        {
-            "keys": ["Delete"],
-            "label": qsTr("Move the selected note or notebook to the trash")
-        },
-        {
-            "keys": ["F1"],
-            "label": qsTr("Keyboard shortcuts")
-        },
-        {
-            "keys": ["Ctrl+S"],
-            "label": qsTr("Save now"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+/"],
-            "label": qsTr("Markdown as written, or styled"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+B"],
-            "label": qsTr("Bold"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+I"],
-            "label": qsTr("Italic"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+Shift+X"],
-            "label": qsTr("Strikethrough"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+E"],
-            "label": qsTr("Code"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+K"],
-            "label": qsTr("Link"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+1", "Ctrl+2", "Ctrl+3"],
-            "label": qsTr("Headings"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+Enter"],
-            "label": qsTr("Checkbox"),
-            "inNote": true
-        },
-        {
-            "keys": ["Enter"],
-            "label": qsTr("Next list item, or end the list"),
-            "inNote": true
-        },
-        {
-            "keys": ["Shift+Enter"],
-            "label": qsTr("New line in a list item"),
-            "inNote": true
-        },
-        {
-            "keys": ["Tab", "Shift+Tab"],
-            "label": qsTr("Nest or unnest list items"),
-            "inNote": true
-        },
-        {
-            "keys": ["Tab", "Shift+Tab"],
-            "label": qsTr("Next or previous table cell"),
-            "inNote": true
-        },
-        {
-            "keys": ["Enter"],
-            "label": qsTr("New table row, or end the table"),
-            "inNote": true
-        },
-        {
-            "keys": ["[["],
-            "label": qsTr("Link to a note, chosen as you type"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+Click"],
-            "label": qsTr("Follow a link"),
-            "inNote": true
-        },
-        {
-            "keys": ["Ctrl+V"],
-            "label": qsTr("Paste an image"),
-            "inNote": true
-        }
-    ]
-
-    Shortcut {
-        sequences: [StandardKey.New]
-        enabled: Vault.isOpen && Vault.writable
-        onActivated: {
-            if (Vault.newNote() !== "")
+    // ---- Keyboard ----------------------------------------------------------------
+    /// Does what the keyboard asked for, by KeyRouter's action id.
+    function run(id) {
+        const note = Vault.current !== ""
+        switch (id) {
+        case "newNote":
+            if (Vault.isOpen && Vault.writable && Vault.newNote() !== "")
                 editor.editTitle()
+            break
+        case "goTo":
+            if (Vault.isOpen)
+                switcher.open()
+            break
+        case "search":
+            if (Vault.isOpen)
+                noteList.focusSearch()
+            break
+        case "save":
+            if (Vault.isOpen)
+                Vault.saveNow()
+            break
+        case "tasks":
+            if (Vault.isOpen)
+                Vault.showingTasks = !Vault.showingTasks
+            break
+        case "settings":
+            settingsDialog.open()
+            break
+        case "help":
+            keyHelp.open()
+            break
+        case "nextNote":
+        case "previousNote":
+        case "firstNote":
+        case "lastNote":
+            if (Vault.isOpen && !Vault.showingTasks)
+                noteList.step(id)
+            break
+        case "editNote":
+            if (note)
+                editor.write()
+            break
+        case "rename":
+            if (note && Vault.writable)
+                editor.editTitle()
+            break
+        case "trash":
+            if (note && Vault.writable)
+                noteList.askToTrash(Vault.current)
+            break
+        case "sourceMode":
+            Settings.sourceMode = !Settings.sourceMode
+            break
         }
     }
-    Shortcut {
-        sequences: [StandardKey.Save]
-        enabled: Vault.isOpen
-        onActivated: Vault.saveNow()
+
+    KeyRouter {
+        id: keys
+        window: window
+        viMode: Settings.viMode
+        leaderKey: Settings.leaderKey
+        leaderTimeout: Settings.leaderTimeout
+        onTriggered: id => window.run(id)
     }
-    Shortcut {
-        sequence: "Ctrl+P"
-        enabled: Vault.isOpen
-        onActivated: switcher.open()
+
+    // The shortcuts that work anywhere. Those for the list and the note are their own.
+    Instantiator {
+        model: keys.actions.filter(a => a.scope === "window" && a.standard.length > 0)
+
+        Shortcut {
+            required property var modelData
+            sequences: modelData.standard
+            onActivated: window.run(modelData.id)
+        }
     }
-    Shortcut {
-        sequences: [StandardKey.Preferences, "Ctrl+,"]
-        onActivated: settingsDialog.open()
+
+    // Dims the window while the leader's keys are shown, as a popup does.
+    Scrim {
+        anchors.fill: parent
+        z: 899
+        opacity: whichKey.shown ? 1 : 0
+        visible: opacity > 0
     }
-    Shortcut {
-        sequences: [StandardKey.HelpContents]
-        onActivated: keyHelp.open()
-    }
-    Shortcut {
-        sequences: [StandardKey.Find]
-        enabled: Vault.isOpen
-        onActivated: noteList.focusSearch()
+    WhichKey {
+        id: whichKey
+        router: keys
     }
 
     Rectangle {

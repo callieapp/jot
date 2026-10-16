@@ -96,6 +96,8 @@ class ThemeController : public QObject
 
     /// How long the leader key waits before showing what can follow it, in ms.
     Q_PROPERTY(int whichKeyDelay READ whichKeyDelay CONSTANT)
+    /// How faint a control that cannot be used yet is drawn.
+    Q_PROPERTY(qreal fadedOpacity READ fadedOpacity CONSTANT)
     /// The widest a search box opens, on a large window.
     Q_PROPERTY(int searchWidth READ searchWidth CONSTANT)
     /// The title bar, which is also the toolbar.
@@ -214,6 +216,7 @@ public:
     QColor dangerText() const;
 
     int whichKeyDelay() const { return 300; }
+    qreal fadedOpacity() const { return 0.5; }
     int searchWidth() const { return 560; }
     int titleBarHeight() const { return 58; }
     int resizeBorder() const { return 6; }

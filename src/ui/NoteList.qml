@@ -27,6 +27,31 @@ Rectangle {
         search.selectAll()
     }
 
+    /// Puts the keyboard in the list of notes.
+    function focusList() {
+        list.forceActiveFocus()
+    }
+
+    /// Shows the next, previous, first or last note, by KeyRouter's action id.
+    function step(id) {
+        if (list.count === 0)
+            return
+        list.forceActiveFocus()
+        if (id === "firstNote" || list.currentIndex < 0)
+            list.currentIndex = 0
+        else if (id === "lastNote")
+            list.currentIndex = list.count - 1
+        else if (id === "nextNote")
+            list.incrementCurrentIndex()
+        else
+            list.decrementCurrentIndex()
+    }
+
+    /// Asks before the note at `path` goes to the trash.
+    function askToTrash(path) {
+        trashConfirm.askForNote(path)
+    }
+
     color: Theme.bg
 
     Column {

@@ -53,8 +53,7 @@ void TestDialogs::opensCleanly_data()
     // Each as Main.qml makes it, with what it is given there.
     QTest::addColumn<QString>("dialog");
     QTest::newRow("settings") << u"SettingsDialog {}"_s;
-    QTest::newRow("shortcuts") << u"KeyHelp { actions: [{keys: ['Ctrl+N'], label: 'New note'}, "
-                                  "{keys: ['Ctrl+S'], label: 'Save now', inNote: true}] }"_s;
+    QTest::newRow("shortcuts") << u"KeyHelp { KeyRouter { id: keys } actions: keys.actions }"_s;
     QTest::newRow("about") << u"AboutDialog {}"_s;
     QTest::newRow("what's new") << u"WhatsNewDialog {}"_s;
     QTest::newRow("update") << u"UpdateDialog {}"_s;
