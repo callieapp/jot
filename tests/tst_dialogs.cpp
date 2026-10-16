@@ -9,6 +9,7 @@
 #include <QQuickItem>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
 #include <QtQml/qqmlextensionplugin.h>
@@ -30,6 +31,7 @@ private Q_SLOTS:
     void opensCleanly();
     void everyModalHasAClose_data();
     void everyModalHasAClose();
+    void themeColorsFinishHoweverClosed();
 
 private:
     QTemporaryDir m_dir;
@@ -129,6 +131,38 @@ void TestDialogs::everyModalHasAClose()
     const QPointF centre = close->mapToScene(QPointF(close->width() / 2, close->height() / 2));
     QTest::mouseClick(&window, Qt::LeftButton, {}, centre.toPoint());
     QTRY_VERIFY(!popup->property("visible").toBool());
+}
+
+void TestDialogs::themeColorsFinishHoweverClosed()
+{
+    QQuickWindow window;
+    window.resize(900, 700);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import Jot.Ui\nThemeEditor {}\n", QUrl(u"qrc:/test.qml"_s));
+    std::unique_ptr<QObject> editor(component.create());
+    QVERIFY2(editor, qPrintable(component.errorString()));
+    editor->setProperty("parent", QVariant::fromValue(window.contentItem()));
+    QSignalSpy finished(editor.get(), SIGNAL(finished()));
+
+    // The X, and Escape, go back to Settings as Done does.
+    QMetaObject::invokeMethod(editor.get(), "open");
+    QTRY_VERIFY(editor->property("opened").toBool());
+    auto *close =
+        editor->property("contentItem").value<QQuickItem *>()->findChild<QQuickItem *>(u"close"_s);
+    QVERIFY(close);
+    QTest::mouseClick(
+        &window, Qt::LeftButton, {},
+        close->mapToScene(QPointF(close->width() / 2, close->height() / 2)).toPoint());
+    QTRY_COMPARE(finished.size(), 1);
+
+    QMetaObject::invokeMethod(editor.get(), "open");
+    QTRY_VERIFY(editor->property("opened").toBool());
+    QTest::keyClick(&window, Qt::Key_Escape);
+    QTRY_COMPARE(finished.size(), 2);
 }
 
 QTEST_MAIN(TestDialogs)
