@@ -12,14 +12,15 @@ are plain files in a folder you choose, and sync is optional: none, a folder Syn
 Nextcloud already syncs, S3, Dropbox or Google Drive. It is built for everyday notes first, and
 for writers and worldbuilders next.
 
-Jot is at the very start. [docs/ROADMAP.md](docs/ROADMAP.md) has the plan.
+Jot is at the very start. [callieapp.org/jot](https://callieapp.org/jot/) shows what it does so
+far, and [docs/ROADMAP.md](docs/ROADMAP.md) has the plan.
 
 ## Installation
 
 On Fedora 44 or later, Debian 13 (trixie) or later, or Ubuntu 26.04 or later, on x86_64:
 
 ```sh
-curl -fsSL https://larakelley.com/sh/jot | sh
+curl -fsSL https://callieapp.org/jot/install.sh | sh
 ```
 
 It finds the latest [GitHub release](https://github.com/callieapp/jot/releases), checks the
