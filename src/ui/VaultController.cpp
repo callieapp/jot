@@ -585,6 +585,7 @@ void VaultController::setCurrent(const QString &path)
         return;
     saveNow();
     m_current = path;
+    Q_EMIT opening();
     readCurrent();
 }
 

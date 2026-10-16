@@ -45,13 +45,14 @@ Rectangle {
     // The editor holds the text; the vault hears of each change and saves it shortly after.
     // A note loaded from disk replaces the text without counting as an edit.
     property bool loading: false
-    /// The note the editor holds, to tell another note from this one changed on disk.
-    property string loadedPath
+    /// Another note is on its way in, rather than this one changed on disk or renamed.
+    property bool fresh: true
 
     function load() {
         loading = true
         // Another note starts at its top; the same one, reloaded, stays where it was.
-        const another = Vault.current !== loadedPath
+        const another = fresh
+        fresh = false
         const cursor = another ? 0 : body.cursorPosition
         // Swapping a whole note in under a live highlighter leaves the TextEdit blank, so
         // the styling comes off for the swap and goes back on after.
@@ -60,7 +61,6 @@ Rectangle {
         styler.document = body.textDocument
         body.cursorPosition = Math.min(cursor, body.length)
         title.text = Vault.currentTitle
-        loadedPath = Vault.current
         if (another)
             flick.contentY = 0
         loading = false
@@ -68,8 +68,11 @@ Rectangle {
 
     Connections {
         target: Vault
+        function onOpening() {
+            root.fresh = true
+        }
         function onCurrentChanged() {
-            if (Vault.currentText !== body.text || Vault.currentTitle !== title.text)
+            if (root.fresh || Vault.currentText !== body.text || Vault.currentTitle !== title.text)
                 root.load()
         }
         function onRevealPosition(position) {

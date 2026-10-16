@@ -155,6 +155,9 @@ Q_SIGNALS:
     void errorChanged();
     void notesChanged();
     void currentChanged();
+    /// Another note is about to be shown, just before currentChanged(). Not sent when the
+    /// note shown is renamed or moved, which keeps it the same note.
+    void opening();
     void unsavedChanged();
     void problemChanged();
     void showingTodosChanged();
