@@ -4,6 +4,8 @@
 
 #include <QStandardPaths>
 
+#include <algorithm>
+
 using namespace Qt::StringLiterals;
 
 namespace jot {
@@ -20,6 +22,14 @@ const QString kCheckForUpdates = u"updates/check"_s;
 const QString kLastSeenVersion = u"app/lastSeenVersion"_s;
 const QString kSourceMode = u"editor/sourceMode"_s;
 const QString kNoteFont = u"editor/font"_s;
+const QString kSidebarWidth = u"layout/sidebarWidth"_s;
+const QString kNoteListWidth = u"layout/noteListWidth"_s;
+
+/// A dragged width within its bounds; 0 stays 0, the theme's own.
+int bounded(int width, int lowest, int highest)
+{
+    return width <= 0 ? 0 : std::clamp(width, lowest, highest);
+}
 
 } // namespace
 
@@ -36,6 +46,8 @@ Settings::Settings(const QString &path, QObject *parent)
     m_lastSeenVersion = m_store.value(kLastSeenVersion).toString();
     m_sourceMode = m_store.value(kSourceMode, false).toBool();
     m_noteFont = m_store.value(kNoteFont).toString();
+    m_sidebarWidth = bounded(m_store.value(kSidebarWidth, 0).toInt(), 180, 480);
+    m_noteListWidth = bounded(m_store.value(kNoteListWidth, 0).toInt(), 220, 640);
     if (!noteFonts().contains(m_noteFont))
         m_noteFont.clear();
 }
@@ -105,6 +117,26 @@ void Settings::setLastSeenVersion(const QString &version)
     Q_EMIT lastSeenVersionChanged();
 }
 
+void Settings::setSidebarWidth(int width)
+{
+    width = bounded(width, 180, 480);
+    if (m_sidebarWidth == width)
+        return;
+    m_sidebarWidth = width;
+    m_store.setValue(kSidebarWidth, width);
+    Q_EMIT sidebarWidthChanged();
+}
+
+void Settings::setNoteListWidth(int width)
+{
+    width = bounded(width, 220, 640);
+    if (m_noteListWidth == width)
+        return;
+    m_noteListWidth = width;
+    m_store.setValue(kNoteListWidth, width);
+    Q_EMIT noteListWidthChanged();
+}
+
 QStringList Settings::noteFonts()
 {
     return {QString(), u"serif"_s, u"mono"_s};
@@ -135,6 +167,8 @@ void Settings::reset()
     setCheckForUpdates(true);
     setSourceMode(false);
     setNoteFont({});
+    setSidebarWidth(0);
+    setNoteListWidth(0);
 }
 
 } // namespace jot

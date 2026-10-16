@@ -36,24 +36,36 @@ Rectangle {
             right: parent.right
             verticalCenter: parent.verticalCenter
             leftMargin: Theme.space5
-            rightMargin: taskButton.width + sourceButton.width + Theme.space1 + 2 * Theme.space5
+            rightMargin: trailing.width + Theme.space5 + Theme.space3
         }
         spacing: Theme.space1
 
+        // One button for the three heading sizes, so the row has room for the rest.
         FormatButton {
-            label: "H1"
-            format: "h1"
-            tip: qsTr("Heading (Ctrl+1)")
-        }
-        FormatButton {
-            label: "H2"
-            format: "h2"
-            tip: qsTr("Smaller heading (Ctrl+2)")
-        }
-        FormatButton {
-            label: "H3"
-            format: "h3"
-            tip: qsTr("Smallest heading (Ctrl+3)")
+            id: headings
+
+            label: "H"
+            tip: qsTr("Heading")
+            onClicked: headingMenu.popup(headings, 0, headings.height + Theme.space1)
+
+            MenuCard {
+                id: headingMenu
+
+                minimumWidth: 160
+
+                MenuEntry {
+                    text: qsTr("Heading 1   Ctrl+1")
+                    onTriggered: root.formatRequested("h1")
+                }
+                MenuEntry {
+                    text: qsTr("Heading 2   Ctrl+2")
+                    onTriggered: root.formatRequested("h2")
+                }
+                MenuEntry {
+                    text: qsTr("Heading 3   Ctrl+3")
+                    onTriggered: root.formatRequested("h3")
+                }
+            }
         }
         Divider {}
         FormatButton {
@@ -120,36 +132,63 @@ Rectangle {
         }
     }
 
-    // The Markdown as written, for when live preview gets in the way.
-    PillButton {
-        id: sourceButton
-
-        anchors {
-            right: taskButton.left
-            rightMargin: Theme.space1
-            top: row.top
-        }
-        label: qsTr("Source")
-        tip: qsTr("Show the Markdown as written (Ctrl+/)")
-        selected: Settings.sourceMode
-        focusPolicy: Qt.NoFocus
-        onClicked: root.formatRequested("source")
-    }
-
-    // A note that is a task shows in Tasks until it is done.
-    PillButton {
-        id: taskButton
+    Row {
+        id: trailing
 
         anchors {
             right: parent.right
             rightMargin: Theme.space5
-            top: row.top
+            verticalCenter: parent.verticalCenter
         }
-        label: qsTr("Task")
-        tip: root.task === "" ? qsTr("Make this note a task") : qsTr("No longer a task")
-        selected: root.task !== ""
-        focusPolicy: Qt.NoFocus
-        onClicked: root.formatRequested("taskNote")
+        spacing: Theme.space3
+
+        // The note styled as it is typed, or its Markdown as written, side by side.
+        Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: modes.width + 2 * Theme.space1
+            height: modes.height + 2 * Theme.space1
+            radius: Theme.radiusMd + Theme.space1
+            color: Theme.surfaceAlt
+
+            Row {
+                id: modes
+
+                anchors.centerIn: parent
+                spacing: 0
+
+                PillButton {
+                    label: qsTr("Formatted")
+                    tip: qsTr("Style the Markdown as you type (Ctrl+/)")
+                    selected: !Settings.sourceMode
+                    hoverColor: Theme.border
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Settings.sourceMode = false
+                }
+                PillButton {
+                    label: qsTr("Source")
+                    tip: qsTr("Show the Markdown as written (Ctrl+/)")
+                    selected: Settings.sourceMode
+                    hoverColor: Theme.border
+                    focusPolicy: Qt.NoFocus
+                    onClicked: Settings.sourceMode = true
+                }
+            }
+        }
+
+        // A note that is a task shows in Tasks until it is done.
+        Toggle {
+            anchors.verticalCenter: parent.verticalCenter
+            text: qsTr("Task")
+            // Follows the note: a click asks for the change, and the text says what it is.
+            checked: root.task !== ""
+            focusPolicy: Qt.NoFocus
+            Accessible.description: checked ? qsTr("No longer a task") : qsTr(
+                                                  "Make this note a task")
+            onToggled: {
+                checked = Qt.binding(() => root.task !== "")
+                root.formatRequested("taskNote")
+            }
+        }
     }
 
     /// A small button that formats: a label drawn in the style it gives, or a glyph.
@@ -167,11 +206,14 @@ Rectangle {
         property bool mono
 
         implicitWidth: Math.max(implicitHeight, caption.implicitWidth + 2 * Theme.space2)
-        // As tall as the Task pill, so the row lines up.
+        // As tall as the pills beside it, so the row lines up.
         implicitHeight: 32
         focusPolicy: Qt.NoFocus
         Accessible.name: tip
-        onClicked: root.formatRequested(format)
+        onClicked: {
+            if (format !== "")
+                root.formatRequested(format)
+        }
 
         HoverHandler {
             cursorShape: Qt.PointingHandCursor

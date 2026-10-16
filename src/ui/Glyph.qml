@@ -19,12 +19,6 @@ Item {
     // Each bar is [length, angle, x, y], with sizes as fractions of the icon.
     readonly property var bars: {
         switch (name) {
-        case "chevron-left":
-            return [[0.5, -45, 0.47, 0.36], [0.5, 45, 0.47, 0.64]]
-        case "chevron-right":
-            return [[0.5, 45, 0.53, 0.36], [0.5, -45, 0.53, 0.64]]
-        case "chevron-down":
-            return [[0.5, 45, 0.36, 0.53], [0.5, -45, 0.64, 0.53]]
         case "minimize":
             return [[0.62, 0, 0.5, 0.5]]
         case "close":
@@ -100,6 +94,9 @@ Item {
         anchors.fill: parent
         sourceComponent: ({
                               "bell": bellShape,
+                              "chevron-left": chevronShape,
+                              "chevron-right": chevronShape,
+                              "chevron-down": chevronShape,
                               "refresh": refreshShape,
                               "more": moreShape,
                               "search": searchShape,
@@ -144,6 +141,54 @@ Item {
                     function onColorChanged() {
                         bell.requestPaint()
                     }
+                }
+            }
+        }
+    }
+
+    // A chevron as one line with a round join, so its tip has no seam where two bars meet.
+    Component {
+        id: chevronShape
+
+        Canvas {
+            id: chevron
+            antialiasing: true
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+                // On a 24-unit grid inset by half the stroke, so nothing pokes out, centred in
+                // whatever box the glyph is given.
+                const size = Math.min(width, height)
+                const unit = (size - root.stroke) / 24
+                const atX = v => (width - size) / 2 + root.stroke / 2 + v * unit
+                const atY = v => (height - size) / 2 + root.stroke / 2 + v * unit
+                const points = root.name === "chevron-down" ? [[6, 9], [12, 15], [18, 9]] :
+                                                              root.name === "chevron-left" ? [[15,
+                                                                                               6], [9, 12],
+                                                                                              [15, 18]] :
+                                                                                             [[9, 6], [15,
+                                                                                                       12], [9, 18]]
+                ctx.strokeStyle = root.color
+                ctx.lineWidth = root.stroke
+                ctx.lineCap = "round"
+                ctx.lineJoin = "round"
+                ctx.beginPath()
+                ctx.moveTo(atX(points[0][0]), atY(points[0][1]))
+                ctx.lineTo(atX(points[1][0]), atY(points[1][1]))
+                ctx.lineTo(atX(points[2][0]), atY(points[2][1]))
+                ctx.stroke()
+            }
+
+            Connections {
+                target: root
+                function onColorChanged() {
+                    chevron.requestPaint()
+                }
+                function onStrokeChanged() {
+                    chevron.requestPaint()
+                }
+                function onNameChanged() {
+                    chevron.requestPaint()
                 }
             }
         }

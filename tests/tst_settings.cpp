@@ -18,6 +18,7 @@ private Q_SLOTS:
     void refusesAnUnknownSort();
     void resetKeepsTheVault();
     void refusesAnUnknownNoteFont();
+    void keepsColumnWidthsInBounds();
 };
 
 void TestSettings::startsWithDefaults()
@@ -103,6 +104,24 @@ void TestSettings::refusesAnUnknownNoteFont()
     settings.setNoteFont(u"comic"_s);
     QCOMPARE(settings.noteFont(), u"mono"_s);
     QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteFont(), u"mono"_s);
+}
+
+void TestSettings::keepsColumnWidthsInBounds()
+{
+    QTemporaryDir dir;
+    Settings settings(dir.filePath(u"settings.ini"_s));
+    QCOMPARE(settings.sidebarWidth(), 0);
+    settings.setSidebarWidth(300);
+    QCOMPARE(settings.sidebarWidth(), 300);
+    settings.setSidebarWidth(20);
+    QCOMPARE(settings.sidebarWidth(), 180);
+    settings.setNoteListWidth(5000);
+    QCOMPARE(settings.noteListWidth(), 640);
+    QCOMPARE(Settings(dir.filePath(u"settings.ini"_s)).noteListWidth(), 640);
+    // 0 is the theme's own width, which reset goes back to.
+    settings.reset();
+    QCOMPARE(settings.sidebarWidth(), 0);
+    QCOMPARE(settings.noteListWidth(), 0);
 }
 
 QTEST_GUILESS_MAIN(TestSettings)

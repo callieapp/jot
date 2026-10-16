@@ -147,12 +147,27 @@ Rectangle {
             }
 
             // A note drags onto a notebook in the sidebar to move there.
+            // The row itself floats under the pointer while it drags: a picture of it is
+            // taken as the drag starts, held where it was grabbed.
             DragHandler {
                 id: noteDrag
                 target: null
                 enabled: Vault.writable
+                onActiveChanged: {
+                    if (!active) {
+                        note.Drag.active = false
+                        return
+                    }
+                    const grabbed = centroid.pressPosition
+                    note.grabToImage(result => {
+                        if (!noteDrag.active)
+                            return
+                        note.Drag.imageSource = result.url
+                        note.Drag.hotSpot = grabbed
+                        note.Drag.active = true
+                    })
+                }
             }
-            Drag.active: noteDrag.active
             Drag.dragType: Drag.Automatic
             Drag.supportedActions: Qt.MoveAction
             Drag.mimeData: ({

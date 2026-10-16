@@ -294,7 +294,17 @@ ApplicationWindow {
                     top: parent.top
                     bottom: parent.bottom
                 }
-                width: Theme.sidebarWidth
+                width: Settings.sidebarWidth > 0 ? Settings.sidebarWidth : Theme.sidebarWidth
+            }
+            ColumnSplitter {
+                visible: sidebar.visible
+                anchors {
+                    horizontalCenter: sidebar.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                columnWidth: sidebar.width
+                onResized: width => Settings.sidebarWidth = width
             }
             TaskList {
                 visible: Vault.isOpen && Vault.showingTasks
@@ -303,7 +313,7 @@ ApplicationWindow {
                     top: parent.top
                     bottom: parent.bottom
                 }
-                width: Theme.noteListWidth
+                width: Settings.noteListWidth > 0 ? Settings.noteListWidth : Theme.noteListWidth
             }
             NoteList {
                 id: noteList
@@ -315,7 +325,17 @@ ApplicationWindow {
                     top: parent.top
                     bottom: parent.bottom
                 }
-                width: Theme.noteListWidth
+                width: Settings.noteListWidth > 0 ? Settings.noteListWidth : Theme.noteListWidth
+            }
+            ColumnSplitter {
+                visible: Vault.isOpen
+                anchors {
+                    horizontalCenter: noteList.right
+                    top: parent.top
+                    bottom: parent.bottom
+                }
+                columnWidth: noteList.width
+                onResized: width => Settings.noteListWidth = width
             }
             NoteEditor {
                 id: editor

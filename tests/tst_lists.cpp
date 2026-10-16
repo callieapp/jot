@@ -42,6 +42,7 @@ private Q_SLOTS:
     void noteMenuMakesATask();
     void notebookMenuMakesANotebookInside();
     void trashAsksFirst();
+    void columnBordersDragToResize();
 
 private:
     /// The visible menu entry reading `text`, anywhere in the window.
@@ -298,6 +299,35 @@ void TestLists::trashAsksFirst()
                      m_window->contentItem())));
     click(confirm);
     QTRY_VERIFY(!QFileInfo::exists(m_root + u"/Recipes/Sourdough.md"_s));
+}
+
+void TestLists::columnBordersDragToResize()
+{
+    QQmlComponent component(m_engine.get());
+    component.setData("import Jot.Ui\nimport QtQuick\n"
+                      "Item { property int asked: -1\n"
+                      "  ColumnSplitter { objectName: 'splitter'; x: 100; height: 200\n"
+                      "    columnWidth: 100; onResized: width => parent.asked = width } }\n",
+                      QUrl(u"qrc:/splitter.qml"_s));
+    std::unique_ptr<QObject> holder(component.create());
+    QVERIFY2(holder, qPrintable(component.errorString()));
+    auto *item = qobject_cast<QQuickItem *>(holder.get());
+    item->setParentItem(m_window->contentItem());
+    item->setZ(100);
+    item->setSize(m_window->size());
+    QTest::qWait(50);
+
+    const QPoint from(104, 100);
+    QTest::mousePress(m_window.get(), Qt::LeftButton, {}, from);
+    // Over the rows of the list beneath, whose own drags must not take over.
+    for (int step = 1; step <= 6; ++step)
+        QTest::mouseMove(m_window.get(), from + QPoint(10 * step, 0), 20);
+    QTest::mouseRelease(m_window.get(), Qt::LeftButton, {}, from + QPoint(60, 0));
+    QCOMPARE(holder->property("asked").toInt(), 160);
+
+    // A double click asks for the theme's width again.
+    QTest::mouseDClick(m_window.get(), Qt::LeftButton, {}, from);
+    QCOMPARE(holder->property("asked").toInt(), 0);
 }
 
 QTEST_MAIN(TestLists)

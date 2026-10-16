@@ -19,7 +19,7 @@ Row {
 
     spacing: Theme.space2
 
-    Toggle {
+    CheckBox {
         anchors.verticalCenter: parent.verticalCenter
         text: qsTr("Done")
         // Follows the note: a click asks for the change, and the text says what it is.

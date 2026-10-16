@@ -199,12 +199,26 @@ Rectangle {
                     }
 
                     // A notebook drags onto another to go inside it.
+                    // It floats under the pointer as a picture of the row, as notes do.
                     DragHandler {
                         id: notebookDrag
                         target: null
                         enabled: notebook.path !== "" && Vault.writable && !notebook.renaming
+                        onActiveChanged: {
+                            if (!active) {
+                                notebook.Drag.active = false
+                                return
+                            }
+                            const grabbed = centroid.pressPosition
+                            notebook.grabToImage(result => {
+                                if (!notebookDrag.active)
+                                    return
+                                notebook.Drag.imageSource = result.url
+                                notebook.Drag.hotSpot = grabbed
+                                notebook.Drag.active = true
+                            })
+                        }
                     }
-                    Drag.active: notebookDrag.active
                     Drag.dragType: Drag.Automatic
                     Drag.supportedActions: Qt.MoveAction
                     Drag.mimeData: ({
