@@ -45,6 +45,10 @@ qt_add_qml_module(jotui
         SupportActions.cpp
         ThemesController.h
         ThemesController.cpp
+        KeyRouter.h
+        KeyRouter.cpp
+        ViEditor.h
+        ViEditor.cpp
     QML_FILES
         Main.qml
         AboutDialog.qml
@@ -78,6 +82,7 @@ qt_add_qml_module(jotui
         StickerButton.qml
         SuggestionPopup.qml
         ThemeEditor.qml
+        WhichKey.qml
         Tip.qml
         TaskDetails.qml
         TrashConfirm.qml

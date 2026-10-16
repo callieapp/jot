@@ -9,6 +9,12 @@ import QtQuick.Controls
 Rectangle {
     id: root
 
+    /// Where the leader key goes from the note in vi mode.
+    property KeyRouter router: null
+
+    /// Escape in vi's normal mode: the keyboard is done with the note.
+    signal leftNote
+
     /// Puts the cursor in the title, all selected, as for a note just made.
     function editTitle() {
         title.forceActiveFocus()
@@ -19,6 +25,13 @@ Rectangle {
     function editBody() {
         body.forceActiveFocus()
         body.cursorPosition = body.length
+        vi.mode = "insert"
+    }
+
+    /// Puts the cursor back in the body where it was, to type.
+    function write() {
+        body.forceActiveFocus()
+        vi.mode = "insert"
     }
 
     /// Formats the selection, or the word or line at the cursor, and keeps the cursor in
@@ -68,8 +81,10 @@ Rectangle {
         styler.document = body.textDocument
         body.cursorPosition = Math.min(cursor, body.length)
         title.text = Vault.currentTitle
-        if (another)
+        if (another) {
             flick.contentY = 0
+            vi.mode = "normal"
+        }
         loading = false
     }
 
@@ -286,6 +301,13 @@ Rectangle {
                     Qt.callLater(findLink)
                 }
                 onCursorRectangleChanged: flick.follow(cursorRectangle)
+                onActiveFocusChanged: {
+                    if (!activeFocus && vi.mode === "visual")
+                        vi.mode = "normal"
+                }
+                // Vi's normal and visual modes show a block on the character; insert mode
+                // keeps the TextEdit's own line.
+                cursorDelegate: Settings.viMode && vi.mode !== "insert" ? blockCursor : null
                 onContentHeightChanged: layoutTick++
                 onWidthChanged: layoutTick++
 
@@ -387,6 +409,33 @@ Rectangle {
                         return
                     insertBlock(cursorPosition, markdown)
                     event.accepted = true
+                }
+
+                ViEditor {
+                    id: vi
+
+                    objectName: "vi"
+                    target: body
+                    router: root.router
+                    enabled: Settings.viMode
+                    busy: linkPopup.visible
+                    onLeaveRequested: root.leftNote()
+                }
+
+                Component {
+                    id: blockCursor
+
+                    Rectangle {
+                        width: Math.max(2, glyphs.averageCharacterWidth)
+                        visible: body.activeFocus
+                        color: Theme.accent
+                        opacity: 0.45
+
+                        FontMetrics {
+                            id: glyphs
+                            font: body.font
+                        }
+                    }
                 }
 
                 // The card of notes for a wikilink sits under the cursor, kept inside the note.
@@ -524,5 +573,22 @@ Rectangle {
                 width: parent.width - 2 * parent.padding
             }
         }
+    }
+
+    // Which of vi's modes the note is in, while vi mode is on and the note has the keys.
+    Text {
+        anchors {
+            right: parent.right
+            bottom: parent.bottom
+            margins: Theme.space4
+        }
+        visible: Settings.viMode && body.activeFocus
+        text: vi.mode === "insert" ? qsTr("Insert") : vi.mode === "visual" ? qsTr("Visual") : vi.pending
+                                                                             !== "" ? vi.pending :
+                                                                                      qsTr("Normal")
+        color: Theme.textFaint
+        font.family: Theme.fontFamily
+        font.pixelSize: Theme.textSm
+        font.weight: Theme.weightHeavy
     }
 }

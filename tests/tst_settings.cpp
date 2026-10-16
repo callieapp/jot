@@ -19,6 +19,7 @@ private Q_SLOTS:
     void resetKeepsTheVault();
     void refusesAnUnknownNoteFont();
     void keepsColumnWidthsInBounds();
+    void keepsKeyboardChoices();
 };
 
 void TestSettings::startsWithDefaults()
@@ -130,6 +131,28 @@ void TestSettings::keepsColumnWidthsInBounds()
     settings.reset();
     QCOMPARE(settings.sidebarWidth(), 0);
     QCOMPARE(settings.noteListWidth(), 0);
+}
+
+void TestSettings::keepsKeyboardChoices()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(u"settings.ini"_s);
+    Settings settings(path);
+    QVERIFY(!settings.viMode());
+    QCOMPARE(settings.leaderKey(), u","_s);
+    QCOMPARE(settings.leaderTimeout(), 5000);
+    settings.setViMode(true);
+    settings.setLeaderKey(u" "_s);
+    settings.setLeaderKey(u"x"_s);
+    settings.setLeaderTimeout(-10);
+    const Settings again(path);
+    QVERIFY(again.viMode());
+    QCOMPARE(again.leaderKey(), u" "_s);
+    QCOMPARE(again.leaderTimeout(), 0);
+    settings.reset();
+    QVERIFY(!settings.viMode());
+    QCOMPARE(settings.leaderKey(), u","_s);
+    QCOMPARE(settings.leaderTimeout(), 5000);
 }
 
 QTEST_GUILESS_MAIN(TestSettings)

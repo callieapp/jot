@@ -24,6 +24,12 @@ as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md)
   a checkbox.
 - Delete moves the selected note, or the notebook clicked in the sidebar, to the trash after
   asking; a notebook's menu offers the same. A notebook goes with everything in it.
+- Vi mode, under Settings, Keyboard. Notes open in normal mode, where h, j, k and l move, x, dd
+  and p edit and u undoes; i, a or o start typing and Esc stops, and v selects. Out of a note,
+  j and k go through the list. A leader key, comma by default, starts commands such as a new
+  note or the tasks, and shows what can follow it if the next key is slow to come.
+- The keyboard shortcuts list (F1) is made from the same table as the shortcuts themselves,
+  vi mode's keys included.
 
 ### Changed
 

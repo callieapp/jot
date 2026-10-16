@@ -33,6 +33,12 @@ class Settings : public QObject
     Q_PROPERTY(QString noteFont READ noteFont WRITE setNoteFont NOTIFY noteFontChanged)
     /// Notes show their Markdown as written rather than styled.
     Q_PROPERTY(bool sourceMode READ sourceMode WRITE setSourceMode NOTIFY sourceModeChanged)
+    /// Single keys act, as in vi: notes are written in insert mode and moved around in
+    /// normal mode, and a leader key starts a command.
+    Q_PROPERTY(bool viMode READ viMode WRITE setViMode NOTIFY keyboardChanged)
+    Q_PROPERTY(QString leaderKey READ leaderKey WRITE setLeaderKey NOTIFY keyboardChanged)
+    /// Milliseconds the leader waits for the next key; 0 waits until Escape.
+    Q_PROPERTY(int leaderTimeout READ leaderTimeout WRITE setLeaderTimeout NOTIFY keyboardChanged)
     /// The version that ran last, so a new one can say what changed.
     Q_PROPERTY(QString lastSeenVersion READ lastSeenVersion WRITE setLastSeenVersion NOTIFY
                    lastSeenVersionChanged)
@@ -69,6 +75,15 @@ public:
     void setNoteFont(const QString &font);
     [[nodiscard]] bool sourceMode() const { return m_sourceMode; }
     void setSourceMode(bool source);
+    [[nodiscard]] bool viMode() const { return m_viMode; }
+    void setViMode(bool on);
+    [[nodiscard]] QString leaderKey() const { return m_leaderKey; }
+    /// One of kLeaderKeys; anything else is ignored.
+    void setLeaderKey(const QString &key);
+    [[nodiscard]] int leaderTimeout() const { return m_leaderTimeout; }
+    void setLeaderTimeout(int ms);
+    static inline const QStringList kLeaderKeys = {QStringLiteral(","), QStringLiteral(":"),
+                                                   QStringLiteral(" ")};
     [[nodiscard]] QString lastSeenVersion() const { return m_lastSeenVersion; }
     void setLastSeenVersion(const QString &version);
 
@@ -86,6 +101,7 @@ Q_SIGNALS:
     void sidebarWidthChanged();
     void noteListWidthChanged();
     void sourceModeChanged();
+    void keyboardChanged();
     void lastSeenVersionChanged();
 
 private:
@@ -99,6 +115,9 @@ private:
     int m_sidebarWidth = 0;
     int m_noteListWidth = 0;
     bool m_sourceMode = false;
+    bool m_viMode = false;
+    QString m_leaderKey = QStringLiteral(",");
+    int m_leaderTimeout = 5000;
     QString m_lastSeenVersion;
 };
 

@@ -24,6 +24,9 @@ const QString kSourceMode = u"editor/sourceMode"_s;
 const QString kNoteFont = u"editor/font"_s;
 const QString kSidebarWidth = u"layout/sidebarWidth"_s;
 const QString kNoteListWidth = u"layout/noteListWidth"_s;
+const QString kViMode = u"keyboard/viMode"_s;
+const QString kLeaderKey = u"keyboard/leaderKey"_s;
+const QString kLeaderTimeout = u"keyboard/leaderTimeout"_s;
 
 /// A saved width within its bounds; 0 stays 0, the theme's own.
 int bounded(int width, int lowest, int highest)
@@ -56,6 +59,10 @@ Settings::Settings(const QString &path, QObject *parent)
         bounded(m_store.value(kNoteListWidth, 0).toInt(), kMinNoteListWidth, kMaxNoteListWidth);
     if (!noteFonts().contains(m_noteFont))
         m_noteFont.clear();
+    m_viMode = m_store.value(kViMode, false).toBool();
+    const QString leader = m_store.value(kLeaderKey).toString();
+    m_leaderKey = kLeaderKeys.contains(leader) ? leader : u","_s;
+    m_leaderTimeout = std::max(0, m_store.value(kLeaderTimeout, 5000).toInt());
 }
 
 QString Settings::defaultPath()
@@ -185,6 +192,34 @@ void Settings::setSourceMode(bool source)
     Q_EMIT sourceModeChanged();
 }
 
+void Settings::setViMode(bool on)
+{
+    if (m_viMode == on)
+        return;
+    m_viMode = on;
+    m_store.setValue(kViMode, on);
+    Q_EMIT keyboardChanged();
+}
+
+void Settings::setLeaderKey(const QString &key)
+{
+    if (m_leaderKey == key || !kLeaderKeys.contains(key))
+        return;
+    m_leaderKey = key;
+    m_store.setValue(kLeaderKey, key);
+    Q_EMIT keyboardChanged();
+}
+
+void Settings::setLeaderTimeout(int ms)
+{
+    ms = std::max(0, ms);
+    if (m_leaderTimeout == ms)
+        return;
+    m_leaderTimeout = ms;
+    m_store.setValue(kLeaderTimeout, ms);
+    Q_EMIT keyboardChanged();
+}
+
 void Settings::reset()
 {
     setTheme({});
@@ -194,6 +229,9 @@ void Settings::reset()
     setNoteFont({});
     resetSidebarWidth();
     resetNoteListWidth();
+    setViMode(false);
+    setLeaderKey(u","_s);
+    setLeaderTimeout(5000);
 }
 
 } // namespace jot

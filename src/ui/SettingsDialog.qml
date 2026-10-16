@@ -95,6 +95,10 @@ Popup {
                         "label": qsTr("Theme")
                     },
                     {
+                        "id": "keyboard",
+                        "label": qsTr("Keyboard")
+                    },
+                    {
                         "id": "developer",
                         "label": qsTr("Developer")
                     }
@@ -277,6 +281,106 @@ Popup {
                 color: Theme.textMuted
                 font.family: Theme.fontFamily
                 font.pixelSize: Theme.textSm
+            }
+        }
+
+        Section {
+            title: qsTr("Vi mode")
+            visible: root.tab === "keyboard"
+
+            Toggle {
+                width: parent.width
+                text: qsTr("Move around and edit with single keys")
+                checked: Settings.viMode
+                onToggled: Settings.viMode = checked
+            }
+            Text {
+                width: parent.width
+                wrapMode: Text.Wrap
+                text: qsTr(
+                          "Notes open in normal mode: h, j, k and l move, i or a starts typing, Esc stops, v selects. Out of a note, j and k go through the list. The leader key starts a command; ? lists them all.")
+                color: Theme.textMuted
+                font.family: Theme.fontFamily
+                font.pixelSize: Theme.textSm
+            }
+            Row {
+                enabled: Settings.viMode
+                opacity: enabled ? 1 : Theme.fadedOpacity
+                spacing: Theme.space2
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Leader")
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.textSm
+                    font.weight: Theme.weightHeavy
+                }
+                Repeater {
+                    model: [
+                        {
+                            "key": ",",
+                            "label": ","
+                        },
+                        {
+                            "key": ":",
+                            "label": ":"
+                        },
+                        {
+                            "key": " ",
+                            "label": qsTr("Space")
+                        }
+                    ]
+
+                    PillButton {
+                        id: leaderChoice
+                        required property var modelData
+                        label: leaderChoice.modelData.label
+                        selected: Settings.leaderKey === leaderChoice.modelData.key
+                        onClicked: Settings.leaderKey = leaderChoice.modelData.key
+                    }
+                }
+            }
+            Row {
+                enabled: Settings.viMode
+                opacity: enabled ? 1 : Theme.fadedOpacity
+                spacing: Theme.space2
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: qsTr("Wait for the next key")
+                    color: Theme.textFaint
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.textSm
+                    font.weight: Theme.weightHeavy
+                }
+                StickerButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    glyph: "minimize"
+                    Accessible.name: qsTr("Wait half a second less")
+                    enabled: Settings.leaderTimeout > 0
+                    onClicked: Settings.leaderTimeout = Math.max(0, Settings.leaderTimeout - 500)
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 90
+                    horizontalAlignment: Text.AlignHCenter
+                    text: Settings.leaderTimeout === 0 ? qsTr("until Esc") : qsTr("%1 s").arg(Number(
+                                                                                                  Settings.leaderTimeout
+                                                                                                  / 1000).toLocaleString(
+                                                                                                  Qt.locale(
+                                                                                                      ), "f", 1))
+                    color: Theme.text
+                    font.family: Theme.fontFamily
+                    font.pixelSize: Theme.textMd
+                    font.weight: Theme.weightBold
+                }
+                StickerButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    glyph: "plus"
+                    Accessible.name: qsTr("Wait half a second more")
+                    onClicked: Settings.leaderTimeout += 500
+                }
             }
         }
 
