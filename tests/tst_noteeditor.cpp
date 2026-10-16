@@ -424,13 +424,23 @@ void TestNoteEditor::togglesSourceMode()
     QQuickItem *modes = find(u"modes"_s);
     QVERIFY(modes);
     QQuickItem *thumb = find(u"thumb"_s, modes);
-    const qreal start = thumb->x();
-    const QPointF source = modes->mapToScene(QPointF(modes->width() * 0.75, modes->height() / 2));
-    QTest::mouseClick(m_window.get(), Qt::LeftButton, {}, source.toPoint());
+    // At rest under Formatted, once back from the Ctrl+/ above.
+    const qreal start = ThemeController::instance()->space1();
+    QTRY_COMPARE(thumb->x(), start);
+    const auto click = [this, modes](qreal across) {
+        const QPointF at = modes->mapToScene(QPointF(modes->width() * across, modes->height() / 2));
+        QTest::mouseClick(m_window.get(), Qt::LeftButton, {}, at.toPoint());
+    };
+    click(0.75);
     QVERIFY(m_settings->sourceMode());
     QTRY_COMPARE(thumb->x(), start + modes->property("segment").toReal());
+    click(0.25);
+    QVERIFY(!m_settings->sourceMode());
+    QTRY_COMPARE(thumb->x(), start);
     // Slimmer than the row, so it does not touch its edges.
-    QVERIFY(modes->height() < modes->parentItem()->parentItem()->height() - 8);
+    const int slim = ThemeController::instance()->switchHeight();
+    QCOMPARE(modes->height(), qreal(slim));
+    QVERIFY(find(u"formatBar"_s)->height() >= slim + 2 * ThemeController::instance()->space2());
 }
 
 void TestNoteEditor::writesInTheChosenFont()
