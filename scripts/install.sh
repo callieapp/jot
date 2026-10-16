@@ -1,8 +1,10 @@
 #!/bin/sh
-# Jot installer - https://github.com/callieapp/jot
+# Jot installer - https://callieapp.org/jot
 #
-#   curl -fsSL https://github.com/callieapp/jot/releases/latest/download/install.sh | sh
-#   curl -fsSL https://github.com/callieapp/jot/releases/latest/download/install.sh | sh -s -- --dry-run
+#   curl -fsSL https://callieapp.org/jot/install.sh | sh
+#   curl -fsSL https://callieapp.org/jot/install.sh | sh -s -- --dry-run
+#
+# That address runs this script from the latest release, where it is attached as install.sh.
 #
 # Installs the latest release's package with the system's package manager, on
 # the systems Jot ships packages for: Fedora 44 or later, Debian 13 (trixie) or
