@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/callieapp/jot/main/assets/logo.svg"
+<img src="https://raw.githubusercontent.com/greylocklabs/jot/main/assets/logo.svg"
      width="48" height="48" alt="Jot logo" />
 
 # jot
@@ -13,7 +13,7 @@ Syncthing, Nextcloud or Dropbox to have it on more than one computer, and Jot pi
 Its own sync, to S3, Dropbox or Google Drive, is planned. It is built for everyday notes first, and
 for writers and worldbuilders next.
 
-Jot is at the very start. [callieapp.org/jot](https://callieapp.org/jot/) shows what it does so
+Jot is at the very start. [jotwriter.org](https://jotwriter.org/) shows what it does so
 far, and [docs/ROADMAP.md](docs/ROADMAP.md) has the plan.
 
 ## Installation
@@ -21,10 +21,10 @@ far, and [docs/ROADMAP.md](docs/ROADMAP.md) has the plan.
 On Fedora 44 or later, Debian 13 (trixie) or later, or Ubuntu 26.04 or later, on x86_64:
 
 ```sh
-curl -fsSL https://callieapp.org/jot/install.sh | sh
+curl -fsSL https://jotwriter.org/install.sh | sh
 ```
 
-It finds the latest [GitHub release](https://github.com/callieapp/jot/releases), checks the
+It finds the latest [GitHub release](https://github.com/greylocklabs/jot/releases), checks the
 package against the checksum GitHub records for it, and installs it with `dnf` or `apt`. On any
 other system it stops before changing anything. Run again, it updates Jot, or says it is up to
 date. `sh -s -- --dry-run` shows what it would do, `--version 0.0.1` installs that version, and

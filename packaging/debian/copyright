@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: jot
 Upstream-Contact: Lara Kelley <larakelley@higharc.ai>
-Source: https://github.com/callieapp/jot
+Source: https://github.com/greylocklabs/jot
 
 Files: *
 Copyright: 2026 Lara Kelley

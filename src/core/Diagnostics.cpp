@@ -95,7 +95,7 @@ QString collect(const QString &extra)
 QUrl issueUrl(const QString &report)
 {
     const auto build = [](const QString &body) {
-        QUrl url(QStringLiteral("https://github.com/callieapp/jot/issues/new"));
+        QUrl url(QStringLiteral("https://github.com/greylocklabs/jot/issues/new"));
         QUrlQuery query;
         query.addQueryItem(QStringLiteral("template"), QStringLiteral("bug_report.yml"));
         query.addQueryItem(QStringLiteral("diagnostics"), body);

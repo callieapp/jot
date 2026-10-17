@@ -5,8 +5,8 @@ Summary:        Plain-file notes for Linux
 
 # The bundled Nunito and Fraunces fonts are OFL-1.1.
 License:        MIT AND OFL-1.1
-URL:            https://callieapp.org/jot
-Source0:        https://github.com/callieapp/jot/releases/download/v%{version}/%{name}-%{version}.tar.xz
+URL:            https://jotwriter.org
+Source0:        https://github.com/greylocklabs/jot/releases/download/v%{version}/%{name}-%{version}.tar.xz
 
 BuildRequires:  cmake >= 3.28
 BuildRequires:  gcc-c++

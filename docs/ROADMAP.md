@@ -6,8 +6,8 @@ for people building fictional worlds and games, with first-class support for cha
 and other story entities.
 
 Jot is the second app in a small suite with Callie (and later a task app). The code lives at
-`github.com/callieapp/jot`, the app id is `org.callieapp.Jot`, and the website is a section of
-Callie's site at <https://callieapp.org/jot>. The first packages are .deb and .rpm for Fedora,
+`github.com/greylocklabs/jot`, the app id is `org.callieapp.Jot`, and the website is
+<https://jotwriter.org>. The first packages are .deb and .rpm for Fedora,
 Debian and Ubuntu.
 
 Background research lives in [docs/research/](research/):
@@ -55,7 +55,7 @@ These follow Callie's GUIDELINES.md and DESIGN.md unless noted.
   - `jot-gallery`: a component and theme viewer.
 - **Design language:** Callie's theme system, palette, fonts (Nunito and Fraunces), radii,
   motion, sticker buttons, frameless window and design rules. Dark first, light equal. Pink is
-  reserved for a fixed set of uses. The editor needs one added font role ([#27](https://github.com/callieapp/jot/issues/27)).
+  reserved for a fixed set of uses. The editor needs one added font role ([#27](https://github.com/greylocklabs/jot/issues/27)).
 - **License:** MIT, matching Callie. Never copy Joplin source (AGPL); write Joplin import from its
   documented formats.
 - **Storage:** plain files are the source of truth. SQLite holds the index, search and sync state.
@@ -64,17 +64,16 @@ These follow Callie's GUIDELINES.md and DESIGN.md unless noted.
   is rewriting its editor because that round trip was lossy.
 - **Sync engine:** Jot's own, Unison-style three-way engine over thin transports. Not rclone
   bisync and not the Joplin sync format.
-- **Names:** repo `callieapp/jot`, app id `org.callieapp.Jot`, binaries `jot-gui` and `jot`.
+- **Names:** repo `greylocklabs/jot`, app id `org.callieapp.Jot`, binaries `jot-gui` and `jot`.
   Debian's `athena-jot` package may also install `/usr/bin/jot`. If it does, the .deb declares
   `Conflicts: athena-jot`.
 - **Platforms:** Fedora 44+, Debian 13+ and Ubuntu 26.04+ on x86_64. All three ship Qt 6.8 or
   newer. Ubuntu 24.04 (Qt 6.4) waits for Flatpak.
 - **Packaging:** hand-written rpm spec and debian/ directory, built and smoke-tested in containers
-  in CI, plus an installer at `callieapp.org/jot/install.sh`.
-- **Website:** a `www/jot/` section of Callie's site, in the Callie repo, with its own landing
-  page, privacy and terms pages adapted from Callie's, and installer. It shares Callie's
-  stylesheet and theme script. Links stay relative so the section can move to its own domain
-  later.
+  in CI, plus an installer at `jotwriter.org/install.sh`.
+- **Website:** jotwriter.org, from `www/` in this repo, with its landing page, privacy and terms
+  pages adapted from Callie's, and the installer. Its stylesheet, scripts and fonts are copies of
+  Callie's site files, kept identical.
 
 ## Reuse from Callie
 
@@ -109,30 +108,30 @@ and sync state stay outside the vault.
 
 Each milestone ends in a release that is useful on its own. Versions follow Callie (0.x until
 the format and sync are trusted). The work itself is tracked as issues under each
-[GitHub milestone](https://github.com/callieapp/jot/milestones); this section keeps only the order
+[GitHub milestone](https://github.com/greylocklabs/jot/milestones); this section keeps only the order
 and the goal of each.
 
 - **Foundation:** tooling, CI, packaging, themes and window chrome from Callie. Done; its loose
   ends (the website and the final vault format) are in 0.1.
-- **[0.1: A notes app I can live in](https://github.com/callieapp/jot/milestone/1):** Lara can
+- **[0.1: A notes app I can live in](https://github.com/greylocklabs/jot/milestone/1):** Lara can
   move off Joplin for local use. Vault and notebooks, the live-preview editor, links and
   backlinks, tags, tasks, search, outside edits, Joplin import, the CLI and the website.
-- **[0.2: Sync](https://github.com/callieapp/jot/milestone/2):** the same vault on a laptop and a
+- **[0.2: Sync](https://github.com/greylocklabs/jot/milestone/2):** the same vault on a laptop and a
   desktop through a cloud the user picks. Jot's own three-way engine, then folder, S3, Dropbox
   and Google Drive transports, and note history. Versions 0.2 to 0.4 as transports land.
-- **[0.5: Writer basics](https://github.com/callieapp/jot/milestone/3):** pleasant for daily
+- **[0.5: Writer basics](https://github.com/greylocklabs/jot/milestone/3):** pleasant for daily
   writing, not just notes. Focus mode, counts and targets, templates, export, spellcheck, math,
   diagrams and audio.
-- **[0.6: Types, properties and views](https://github.com/callieapp/jot/milestone/4):** note types,
+- **[0.6: Types, properties and views](https://github.com/greylocklabs/jot/milestone/4):** note types,
   typed properties and saved views, the foundation for everything after, and presets of them for
   note takers, game masters, game developers and novelists.
-- **[0.7: Writing projects](https://github.com/callieapp/jot/milestone/5):** binder, corkboard,
+- **[0.7: Writing projects](https://github.com/greylocklabs/jot/milestone/5):** binder, corkboard,
   scrivenings, compile, snapshots, Fountain, and Scrivener import.
-- **[0.8: Worldbuilding and characters](https://github.com/callieapp/jot/milestone/6):** codex
+- **[0.8: Worldbuilding and characters](https://github.com/greylocklabs/jot/milestone/6):** codex
   mentions, relationships, timelines, progressions and image maps.
-- **[0.9: Game narrative](https://github.com/callieapp/jot/milestone/7):** Ink, Yarn and Twine
+- **[0.9: Game narrative](https://github.com/greylocklabs/jot/milestone/7):** Ink, Yarn and Twine
   files, game design documents, and JSON export.
-- **[Later](https://github.com/callieapp/jot/milestone/8):** encryption, more transports, Flatpak,
+- **[Later](https://github.com/greylocklabs/jot/milestone/8):** encryption, more transports, Flatpak,
   plugins, capture by email and hotkey, and mobile.
 
 Research passes on other apps carry the `research` label and land in [docs/research/](research/).

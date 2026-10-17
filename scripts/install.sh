@@ -1,8 +1,8 @@
 #!/bin/sh
-# Jot installer - https://callieapp.org/jot
+# Jot installer - https://jotwriter.org
 #
-#   curl -fsSL https://callieapp.org/jot/install.sh | sh
-#   curl -fsSL https://callieapp.org/jot/install.sh | sh -s -- --dry-run
+#   curl -fsSL https://jotwriter.org/install.sh | sh
+#   curl -fsSL https://jotwriter.org/install.sh | sh -s -- --dry-run
 #
 # That address runs this script from the latest release, where it is attached as install.sh.
 #
@@ -12,7 +12,7 @@
 # Run again, it updates Jot, or says it is up to date without downloading.
 set -eu
 
-repo="callieapp/jot"
+repo="greylocklabs/jot"
 dry_run=0
 force=0
 version=""
