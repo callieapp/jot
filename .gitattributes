@@ -3,7 +3,7 @@
 # Directories are listed without a trailing slash, which export-ignore requires.
 www                     export-ignore
 .github                 export-ignore
-# The installer's test and its stand-in release go with the installer. The sample vault
+# The installer's test and its stand-in release go with the site. The sample vault
 # stays, since the tests read it.
 tests/install_test.sh   export-ignore
 tests/data/github-release.json export-ignore
