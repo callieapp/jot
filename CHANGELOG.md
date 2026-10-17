@@ -3,6 +3,16 @@
 What changed in each version of Jot, for the people using it. Notes collect under Unreleased
 as changes land, and `make release` dates them; see [RELEASING.md](RELEASING.md).
 
+## Unreleased
+
+### Changed
+
+- Jot has its own website, [jotwriter.org](https://jotwriter.org), and its installer moved there:
+  `curl -fsSL https://jotwriter.org/install.sh | sh`. The old addresses on callieapp.org keep
+  working.
+- Jot's code, issues and releases moved to [github.com/greylocklabs/jot](https://github.com/greylocklabs/jot).
+  The About dialog, problem reports and `jot upgrade` use the new addresses.
+
 ## 0.0.5 - 2026-10-16
 
 ### New

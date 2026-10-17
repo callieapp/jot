@@ -67,7 +67,7 @@ QJsonObject TestUpgrade::release(const QString &version, bool prerelease) const
     }
     return {{u"tag_name"_s, u"v"_s + version},
             {u"prerelease"_s, prerelease},
-            {u"html_url"_s, u"https://github.com/callieapp/jot/releases/v"_s + version},
+            {u"html_url"_s, u"https://github.com/greylocklabs/jot/releases/v"_s + version},
             {u"assets"_s, assets}};
 }
 
@@ -250,7 +250,7 @@ void TestUpgrade::refusesWhatItCannotDo()
 
     // Not from a package: the installer is the way in.
     QCOMPARE(run({}, QString()), 1);
-    QVERIFY(m_err.contains(u"curl -fsSL https://callieapp.org/jot/install.sh | sh"_s));
+    QVERIFY(m_err.contains(u"curl -fsSL https://jotwriter.org/install.sh | sh"_s));
     QVERIFY(m_ran.isEmpty());
 }
 

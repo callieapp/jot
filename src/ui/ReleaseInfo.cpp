@@ -68,22 +68,22 @@ QString ReleaseInfo::version() const
 
 QUrl ReleaseInfo::website() const
 {
-    return QUrl(u"https://callieapp.org/jot/"_s);
+    return QUrl(u"https://jotwriter.org/"_s);
 }
 
 QUrl ReleaseInfo::privacy() const
 {
-    return QUrl(u"https://callieapp.org/jot/privacy.html"_s);
+    return QUrl(u"https://jotwriter.org/privacy.html"_s);
 }
 
 QUrl ReleaseInfo::terms() const
 {
-    return QUrl(u"https://callieapp.org/jot/terms.html"_s);
+    return QUrl(u"https://jotwriter.org/terms.html"_s);
 }
 
 QUrl ReleaseInfo::source() const
 {
-    return QUrl(u"https://github.com/callieapp/jot"_s);
+    return QUrl(u"https://github.com/greylocklabs/jot"_s);
 }
 
 QUrl ReleaseInfo::support() const
@@ -93,7 +93,7 @@ QUrl ReleaseInfo::support() const
 
 QUrl ReleaseInfo::history() const
 {
-    return QUrl(u"https://github.com/callieapp/jot/blob/main/CHANGELOG.md"_s);
+    return QUrl(u"https://github.com/greylocklabs/jot/blob/main/CHANGELOG.md"_s);
 }
 
 bool ReleaseInfo::takeUpdateNotice()

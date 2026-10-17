@@ -3,12 +3,12 @@
 ## Supported versions
 
 Fixes go into the latest release only. Please check that a problem still happens on the
-[latest release](https://github.com/callieapp/jot/releases/latest) before reporting it.
+[latest release](https://github.com/greylocklabs/jot/releases/latest) before reporting it.
 
 ## Reporting a vulnerability
 
 Please do not open a public issue. Report it privately through GitHub instead:
-[report a vulnerability](https://github.com/callieapp/jot/security/advisories/new).
+[report a vulnerability](https://github.com/greylocklabs/jot/security/advisories/new).
 
 Include what you can of:
 
@@ -23,7 +23,7 @@ unless you would rather not be named.
 ## Scope
 
 In scope: the app, the `jot` command, the packages and the installer script at
-callieapp.org/jot. That includes how Jot reads and writes notes, stores sync credentials,
+jotwriter.org. That includes how Jot reads and writes notes, stores sync credentials,
 talks to sync services, imports notes from other apps, and opens links in notes.
 
 Out of scope: problems in Dropbox, Google Drive, S3-compatible services or sync tools

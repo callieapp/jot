@@ -12,7 +12,7 @@ namespace releases {
 
 QUrl defaultApi()
 {
-    return QUrl(u"https://api.github.com/repos/callieapp/jot"_s);
+    return QUrl(u"https://api.github.com/repos/greylocklabs/jot"_s);
 }
 
 std::optional<Release> parse(const QJsonObject &release)

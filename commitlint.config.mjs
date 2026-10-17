@@ -10,7 +10,7 @@ const scopes = [
   "import", // Joplin and other importers
   "packaging", // rpm spec, debian/, repo metadata
   "data", // desktop entry, AppStream, icons
-  "site", // callieapp.org/jot
+  "site", // jotwriter.org
   "ci",
   "deps",
 ];
