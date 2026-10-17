@@ -12,7 +12,6 @@ on:
       - packaging/**
       - scripts/check-version.sh
       - scripts/release-notes.sh
-      - scripts/install.sh
       - tests/package_smoke.sh
       - CHANGELOG.md
       - .github/workflows/release.yml
@@ -59,7 +58,6 @@ jobs:
           path: |
             notes.md
             jot-*.tar.xz
-            scripts/install.sh
           if-no-files-found: error
 
   rpm:
@@ -188,4 +186,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
             --title "Jot ${{ needs.source.outputs.version }}" \
             --notes-file dist/notes.md \
-            dist/jot-*.tar.xz dist/scripts/install.sh $(find dist -name '*.deb' -o -name '*.rpm')
+            dist/jot-*.tar.xz $(find dist -name '*.deb' -o -name '*.rpm')

@@ -1,8 +1,8 @@
 #!/bin/sh
-# Checks scripts/install.sh against stand-in systems and a stand-in GitHub release,
+# Checks www/install.sh against stand-in systems and a stand-in GitHub release,
 # with --dry-run, so nothing is downloaded or installed.
 #
-#   tests/install_test.sh scripts/install.sh tests/data/github-release.json
+#   tests/install_test.sh www/install.sh tests/data/github-release.json
 set -u
 
 script="$1"

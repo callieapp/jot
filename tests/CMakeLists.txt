@@ -79,10 +79,11 @@ if(BASH)
     set_tests_properties(completion_script PROPERTIES ENVIRONMENT "TZ=UTC;NO_COLOR=1")
 endif()
 
-# The installer each release publishes, against stand-in systems and a stand-in
-# GitHub release. Release tarballs leave it out, and it only runs on x86_64.
-if(EXISTS ${PROJECT_SOURCE_DIR}/scripts/install.sh AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+# The installer jotwriter.org serves, against stand-in systems and a stand-in
+# GitHub release. Release tarballs leave out the site, and the installer only
+# runs on x86_64.
+if(EXISTS ${PROJECT_SOURCE_DIR}/www/install.sh AND CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     add_test(NAME install_script
         COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/install_test.sh
-            ${PROJECT_SOURCE_DIR}/scripts/install.sh ${CMAKE_CURRENT_SOURCE_DIR}/data/github-release.json)
+            ${PROJECT_SOURCE_DIR}/www/install.sh ${CMAKE_CURRENT_SOURCE_DIR}/data/github-release.json)
 endif()

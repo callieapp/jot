@@ -52,7 +52,7 @@ jobs:
       - name: Lint the shell scripts
         run: |
           shellcheck scripts/*.sh tests/package_smoke.sh
-          shellcheck -s sh scripts/install.sh tests/install_test.sh
+          shellcheck -s sh www/install.sh tests/install_test.sh
 
   format:
     # Needs clang-format and qmlformat, so it runs where Qt is packaged.
